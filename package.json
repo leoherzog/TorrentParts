@@ -1,0 +1,26 @@
+{
+  "name": "torrentparts",
+  "version": "0.0.1",
+  "description": "🗃️ A website to inspect and edit Torrent files and Magnet URLs",
+  "main": "bundle.js",
+  "dependencies": {
+    "browserify": "latest",
+    "Buffer": "latest",
+    "dropzone": "latest",
+    "filesize": "latest",
+    "parse-torrent": "latest"
+  },
+  "devDependencies": {
+    "watchify": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leoherzog/TorrentParts.git"
+  },
+  "author": "Leo Herzog",
+  "license": "CC BY-SA 4.0",
+  "bugs": {
+    "url": "https://github.com/leoherzog/TorrentParts/issues"
+  },
+  "homepage": "https://github.com/leoherzog/TorrentParts"
+}
