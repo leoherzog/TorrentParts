@@ -2379,6 +2379,10 @@ const Buffer = require('Buffer');
 const size = require('filesize');
 
 var name = document.getElementById('name');
+var creationDate = document.getElementById('creationDate');
+var createdBy = document.getElementById('createdBy');
+var comment = document.getElementById('comment');
+var hash = document.getElementById('hash');
 var parsed;
 
 document.addEventListener('DOMContentLoaded', start);
@@ -2400,7 +2404,6 @@ function start() {
 }
 
 function parse(toLoad) {
-  console.info(toLoad);
   if (typeof toLoad === "string" && toLoad.toLowerCase().trim().startsWith("http")) {
     parser.remote(toLoad, handleRemote);
   } else {
@@ -2416,7 +2419,17 @@ function handleRemote(err, result) {
 
 function display() {
   console.log(parsed);
-  name.value = parsed.name;
+  name.value = parsed.name || "";
+  if (parsed.created) {
+    creationDate.disabled = false;
+    creationDate.value = parsed.created.toISOString().slice(0, 19);
+  } else {
+    creationDate.disabled = true;
+    creationDate.value = "";
+  }
+  createdBy.value = parsed.createdBy || "";
+  comment.value = parsed.comment || "";
+  hash.value = parsed.infoHash;
 }
 },{"Buffer":1,"filesize":6,"parse-torrent":9}],21:[function(require,module,exports){
 'use strict'

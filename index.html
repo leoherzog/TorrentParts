@@ -14,7 +14,24 @@
 
   <div class="form-group">
     <label class="col-form-label" for="name">Torrent Name</label>
-    <input id="name" type="text" class="form-control" value="" />
+    <input id="name" type="text" class="form-control" value="" placeholder="No name" />
+  </div>
+
+  <div class="form-group">
+    <label class="col-form-label" for="creationDate">Created</label>
+    <input id="creationDate" type="datetime-local" class="form-control" value="" placeholder="Empty" />
+    <label class="col-form-label" for="createdBy">with</label>
+    <input id="createdBy" type="text" class="form-control" value="" placeholder="Unspecified" disabled />
+  </div>
+
+  <div class="form-group">
+    <label class="col-form-label" for="comment">Comment</label>
+    <input id="comment" type="text" class="form-control" value="" placeholder="Empty" />
+  </div>
+
+  <div class="form-group">
+    <label class="col-form-label" for="hash">Unique Hash</label>
+    <input id="hash" type="text" class="form-control" value="" placeholder="" disabled/>
   </div>
 
   <script src="bundle.js"></script>

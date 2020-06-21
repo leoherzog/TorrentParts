@@ -1,7 +1,7 @@
 {
   "name": "torrentparts",
   "version": "0.0.1",
-  "description": "🗃️ A website to inspect and edit Torrent files and Magnet URLs",
+  "description": "📑 A website to inspect and edit Torrent files and Magnet URLs",
   "main": "bundle.js",
   "dependencies": {
     "browserify": "latest",
