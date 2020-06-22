@@ -8,6 +8,7 @@ var creationDate = document.getElementById('creationDate');
 var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
 var hash = document.getElementById('hash');
+var trackers = document.getElementById('trackers');
 var files = document.getElementById('filesBody');
 var size = document.getElementById('torrentSize');
 var parsed;
@@ -31,20 +32,25 @@ function start() {
 }
 
 function parse(toLoad) {
-  if (typeof toLoad === "string" && toLoad.toLowerCase().trim().startsWith("http")) {
-    parser.remote(toLoad, handleRemote);
-  } else {
+  try {
+    console.info("Attempting parse");
     parsed = parser(toLoad);
     display();
   }
-}
-
-function handleRemote(err, result) {
-  parsed = result;
-  display();
+  catch(e) {
+    console.warn("That didn't work. Attempting remote parse.");
+    parser.remote(toLoad, function(err, result) {
+      if (err) return; // TODO: Display error to user
+      parsed = result;
+      display();
+    });
+  }
 }
 
 function display() {
+
+  document.getElementById('magnet').value = "";
+  document.getElementById('torrent').value = "";
 
   console.log(parsed);
 
@@ -60,20 +66,38 @@ function display() {
   comment.value = parsed.comment || "";
   hash.value = parsed.infoHash;
 
-  size.innerText = bytes.format(parsed.length, {"decimalPlaces": 1, "unitSeparator": " "});
+  trackers.innerHTML = "";
+  if (parsed.announce) {
+    for (var url of parsed.announce) {
+      let tracker = document.createElement('input');
+      tracker.className = 'tracker';
+      tracker.type = 'text';
+      tracker.value = url;
+      trackers.appendChild(tracker);
+    }
+  } else {
+    trackers.innerHTML = "<em>No trackers specified in the URL/File provided</em>";
+  }
+
+  size.innerHTML = "";
+  if (parsed.length) size.innerText = "(" + bytes.format(parsed.length, {"decimalPlaces": 1, "unitSeparator": " "}) + ")";
   files.innerHTML = "";
-  for (let file of parsed.files) {
-    let row = document.createElement('tr');
-    let iconcell = document.createElement('td');
-    iconcell.innerHTML = '<span class="far fa-' + getFontAwesomeIconForMimetype(mime.lookup(file.name)) + '"></span>';
-    row.appendChild(iconcell);
-    let namecell = document.createElement('td');
-    namecell.innerHTML = file.path;
-    row.appendChild(namecell);
-    let sizecell = document.createElement('td');
-    sizecell.innerHTML = bytes.format(file.length, {"unitSeparator": " "});
-    row.appendChild(sizecell);
-    files.appendChild(row);
+  if (parsed.files) {
+    for (let file of parsed.files) {
+      let row = document.createElement('tr');
+      let iconcell = document.createElement('td');
+      iconcell.innerHTML = '<span class="far fa-' + getFontAwesomeIconForMimetype(mime.lookup(file.name)) + '"></span>';
+      row.appendChild(iconcell);
+      let namecell = document.createElement('td');
+      namecell.innerHTML = file.path;
+      row.appendChild(namecell);
+      let sizecell = document.createElement('td');
+      sizecell.innerHTML = bytes.format(file.length, {"unitSeparator": " "});
+      row.appendChild(sizecell);
+      files.appendChild(row);
+    }
+  } else {
+    files.innerHTML = "<em>Files information isn't included in the URL/File provided</em>";
   }
 
 }

@@ -7,7 +7,7 @@
 <body>
 
   <div class="form-group">
-    <label class="col-form-label" for="magnet">Magnet URL</label>
+    <label class="col-form-label" for="magnet">URL</label>
     <input id="magnet" type="text" class="form-control" placeholder="magnet:?xt=urn:btih…" />
     <div>or</div>
     <label class="col-form-label" for="torrent">Upload Torrent</label>
@@ -34,6 +34,11 @@
   <div class="form-group">
     <label class="col-form-label" for="hash">Unique Hash</label>
     <input id="hash" type="text" class="form-control" value="" placeholder="" disabled/>
+  </div>
+
+  <div class="form-group">
+    <label class="col-form-label" for="trackers">Tracker URLs</label>
+    <div id="trackers"></div>
   </div>
 
   <div class="form-group">
