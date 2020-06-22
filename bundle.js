@@ -10921,6 +10921,7 @@ var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
 var hash = document.getElementById('hash');
 var trackers = document.getElementById('trackers');
+var webseeds = document.getElementById('webseeds');
 var files = document.getElementById('filesBody');
 var size = document.getElementById('torrentSize');
 var parsed;
@@ -10991,10 +10992,23 @@ function display() {
     trackers.innerHTML = "<em>No trackers specified in the URL/File provided</em>";
   }
 
+  webseeds.innerHTML = "";
+  if (parsed.urlList && parsed.urlList.length) {
+    for (var url of parsed.urlList) {
+      let webseed = document.createElement('input');
+      webseed.className = 'tracker';
+      webseed.type = 'text';
+      webseed.value = url;
+      webseeds.appendChild(webseed);
+    }
+  } else {
+    webseeds.innerHTML = "<em>No webseed URLs in the URL/File provided</em>";
+  }
+
   size.innerHTML = "";
   if (parsed.length) size.innerText = "(" + bytes.format(parsed.length, {"decimalPlaces": 1, "unitSeparator": " "}) + ")";
   files.innerHTML = "";
-  if (parsed.files) {
+  if (parsed.files && parsed.files.length) {
     for (let file of parsed.files) {
       let row = document.createElement('tr');
       let iconcell = document.createElement('td');
