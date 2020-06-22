@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 
-<head></head>
+<head>
+  <script src="https://kit.fontawesome.com/9ca49f101f.js"></script>
+</head>
 
 <body>
 
@@ -32,6 +34,13 @@
   <div class="form-group">
     <label class="col-form-label" for="hash">Unique Hash</label>
     <input id="hash" type="text" class="form-control" value="" placeholder="" disabled/>
+  </div>
+
+  <div class="form-group">
+    <label class="col-form-label" for="files">Files <span id="torrentSize"></span></label>
+    <table id="files">
+      <tbody id="filesBody"></tbody>
+    </table>
   </div>
 
   <script src="bundle.js"></script>

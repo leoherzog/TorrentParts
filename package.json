@@ -4,10 +4,11 @@
   "description": "📑 A website to inspect and edit Torrent files and Magnet URLs",
   "main": "bundle.js",
   "dependencies": {
-    "browserify": "latest",
     "Buffer": "latest",
+    "browserify": "latest",
+    "bytes": "latest",
     "dropzone": "latest",
-    "filesize": "latest",
+    "mime-types": "^2.1.27",
     "parse-torrent": "latest"
   },
   "devDependencies": {
