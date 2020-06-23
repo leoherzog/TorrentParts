@@ -7,8 +7,9 @@
     "Buffer": "latest",
     "browserify": "latest",
     "bytes": "latest",
+    "clipboard": "latest",
     "dropzone": "latest",
-    "mime-types": "^2.1.27",
+    "mime-types": "latest",
     "parse-torrent": "latest"
   },
   "devDependencies": {

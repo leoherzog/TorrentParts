@@ -2,6 +2,7 @@ const parser = require('parse-torrent');
 const Buffer = require('Buffer');
 const bytes = require('bytes');
 const mime = require('mime-types');
+const clipboard = require('clipboard');
 
 var name = document.getElementById('name');
 var creationDate = document.getElementById('creationDate');
@@ -11,7 +12,8 @@ var hash = document.getElementById('hash');
 var trackers = document.getElementById('trackers');
 var webseeds = document.getElementById('webseeds');
 var files = document.getElementById('filesBody');
-var size = document.getElementById('torrentSize');
+var copyMagnet = document.getElementById('copyMagnet');
+var downloadTorrent = document.getElementById('downloadTorrent');
 var parsed;
 
 document.addEventListener('DOMContentLoaded', start);
@@ -29,6 +31,9 @@ function start() {
     event.preventDefault();
     event.target.files[0].arrayBuffer().then(arrayBuffer => parse(Buffer.from(arrayBuffer)));
   });
+
+  new clipboard('#copyMagnet'); // TODO: Alert user to success
+  downloadTorrent.addEventListener('click', saveTorrent);
 
 }
 
@@ -93,27 +98,33 @@ function display() {
     webseeds.innerHTML = "<em>No webseed URLs in the URL/File provided</em>";
   }
 
-  size.innerHTML = "";
-  if (parsed.length) size.innerText = "(" + bytes.format(parsed.length, {"decimalPlaces": 1, "unitSeparator": " "}) + ")";
   files.innerHTML = "";
   if (parsed.files && parsed.files.length) {
     for (let file of parsed.files) {
-      let row = document.createElement('tr');
-      let iconcell = document.createElement('td');
-      iconcell.innerHTML = '<span class="far fa-' + getFontAwesomeIconForMimetype(mime.lookup(file.name)) + '"></span>';
-      row.appendChild(iconcell);
-      let namecell = document.createElement('td');
-      namecell.innerHTML = file.path;
-      row.appendChild(namecell);
-      let sizecell = document.createElement('td');
-      sizecell.innerHTML = bytes.format(file.length, {"unitSeparator": " "});
-      row.appendChild(sizecell);
-      files.appendChild(row);
+      let icon = getFontAwesomeIconForMimetype(mime.lookup(file.name));
+      files.appendChild(createFileRow(icon, file.name, file.length));
     }
+    files.appendChild(createFileRow('folder-tree', '', parsed.length));
   } else {
     files.innerHTML = "<em>Files information isn't included in the URL/File provided</em>";
   }
 
+  copyMagnet.setAttribute('data-clipboard-text', parser.toMagnetURI(parsed));
+
+}
+
+function createFileRow(icon, name, size) {
+  let row = document.createElement('tr');
+  let iconcell = document.createElement('td');
+  iconcell.innerHTML = '<span class="far fa-' + icon + '"></span>';
+  row.appendChild(iconcell);
+  let namecell = document.createElement('td');
+  namecell.innerHTML = name;
+  row.appendChild(namecell);
+  let totalcell = document.createElement('td');
+  totalcell.innerHTML = bytes.format(size, {"decimalPlaces": 1, "unitSeparator": " "});
+  row.appendChild(totalcell);
+  return row;
 }
 
 function getFontAwesomeIconForMimetype(mimetype) {
@@ -142,4 +153,20 @@ function getFontAwesomeIconForMimetype(mimetype) {
     default:
       return 'file';
   }
+}
+
+// https://stackoverflow.com/a/36899900/2700296
+function saveTorrent() {
+  let data = parser.toTorrentFile(parsed);
+  if (data !== null && navigator.msSaveBlob)
+    return navigator.msSaveBlob(new Blob([data], { "type": "application/x-bittorrent" }), parsed.name + '.torrent');
+  let a = document.createElement('a');
+  a.style.display = 'none';
+  let url = window.URL.createObjectURL(new Blob([data], { "type": "application/x-bittorrent" }));
+  a.setAttribute("href", url);
+  a.setAttribute("download", parsed.name + '.torrent');
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  a.remove();
 }
