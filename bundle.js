@@ -11884,11 +11884,11 @@ function wrappy (fn, cb) {
 }
 
 },{}],24:[function(require,module,exports){
+const clipboard = require('clipboard');
 const parser = require('parse-torrent');
 const Buffer = require('Buffer');
 const bytes = require('bytes');
 const mime = require('mime-types');
-const clipboard = require('clipboard');
 
 var name = document.getElementById('name');
 var creationDate = document.getElementById('creationDate');
@@ -11898,6 +11898,7 @@ var hash = document.getElementById('hash');
 var trackers = document.getElementById('trackers');
 var webseeds = document.getElementById('webseeds');
 var files = document.getElementById('filesBody');
+var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
 var downloadTorrent = document.getElementById('downloadTorrent');
 var parsed;
@@ -11918,8 +11919,26 @@ function start() {
     event.target.files[0].arrayBuffer().then(arrayBuffer => parse(Buffer.from(arrayBuffer)));
   });
 
-  new clipboard('#copyMagnet'); // TODO: Alert user to success
+  let copyurl = new clipboard('#copyURL');
+  copyurl.on('success', function(e) {
+    console.info(e); // TODO: Alert user to success
+  });
+  copyurl.on('failure', function(e) {
+    console.error(e);
+  });
+
+  let copymagnet = new clipboard('#copyMagnet');
+  copymagnet.on('success', function(e) {
+    console.info(e); // TODO: Alert user to success
+  });
+  copymagnet.on('failure', function(e) {
+    console.error(e);
+  });
+
   downloadTorrent.addEventListener('click', saveTorrent);
+
+  if (window.location.hash) parse(window.location.hash.split('#')[1]);
+  window.addEventListener('hashchange', function() { if (window.location.hash) parse(window.location.hash.split('#')[1]); });
 
 }
 
@@ -11930,9 +11949,13 @@ function parse(toLoad) {
     display();
   }
   catch(e) {
-    console.warn("That didn't work. Attempting remote parse.");
+    console.warn(e);
+    console.info("Attempting remote parse");
     parser.remote(toLoad, function(err, result) {
-      if (err) return; // TODO: Display error to user
+      if (err) { // TODO: Display error to user
+        console.error(err);
+        return;
+       }
       parsed = result;
       display();
     });
@@ -11995,6 +12018,7 @@ function display() {
     files.innerHTML = "<em>Files information isn't included in the URL/File provided</em>";
   }
 
+  copyURL.setAttribute('data-clipboard-text', window.location.origin + "#" + parser.toMagnetURI(parsed));
   copyMagnet.setAttribute('data-clipboard-text', parser.toMagnetURI(parsed));
 
 }
