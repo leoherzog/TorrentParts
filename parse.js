@@ -4,13 +4,14 @@ const Buffer = require('Buffer');
 const bytes = require('bytes');
 const mime = require('mime-types');
 
+var properties = document.getElementById('properties');
 var name = document.getElementById('name');
 var creationDate = document.getElementById('creationDate');
 var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
 var hash = document.getElementById('hash');
-var trackers = document.getElementById('trackers');
-var webseeds = document.getElementById('webseeds');
+var announce = document.getElementById('announce');
+var urlList = document.getElementById('urlList');
 var files = document.getElementById('filesBody');
 var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
@@ -50,6 +51,11 @@ function start() {
   });
 
   downloadTorrent.addEventListener('click', saveTorrent);
+
+  name.addEventListener('input', propertyChange);
+  creationDate.addEventListener('change', propertyChange);
+  createdBy.addEventListener('change', propertyChange);
+  comment.addEventListener('input', propertyChange);
 
   if (window.location.hash) parse(window.location.hash.split('#')[1]);
   window.addEventListener('hashchange', function() { if (window.location.hash) parse(window.location.hash.split('#')[1]); });
@@ -104,30 +110,36 @@ function display() {
   comment.value = parsed.comment || "";
   hash.value = parsed.infoHash;
 
-  trackers.innerHTML = "";
-  if (parsed.announce) {
-    for (var url of parsed.announce) {
+  announce.innerHTML = "";
+  if (parsed.announce && parsed.announce.length) {
+    for (let i = 0; i < parsed.announce.length; i++) {
       let tracker = document.createElement('input');
       tracker.className = 'tracker';
       tracker.type = 'text';
-      tracker.value = url;
-      trackers.appendChild(tracker);
+      tracker.value = parsed.announce[i];
+      tracker.dataset.index = i;
+      tracker.dataset.group = 'announce';
+      tracker.addEventListener('input', propertyChange);
+      announce.appendChild(tracker);
     }
   } else {
-    trackers.innerHTML = "<em>No trackers specified in the URL/File provided</em>";
+    announce.innerHTML = "<em>No trackers specified in the URL/File provided</em>";
   }
 
-  webseeds.innerHTML = "";
+  urlList.innerHTML = "";
   if (parsed.urlList && parsed.urlList.length) {
-    for (var url of parsed.urlList) {
+    for (let i = 0; i < parsed.urlList.length; i++) {
       let webseed = document.createElement('input');
-      webseed.className = 'tracker';
+      webseed.className = 'webseed';
       webseed.type = 'text';
-      webseed.value = url;
-      webseeds.appendChild(webseed);
+      webseed.value = parsed.urlList[i];
+      webseed.dataset.index = i;
+      webseed.dataset.group = 'urlList';
+      webseed.addEventListener('input', propertyChange);
+      urlList.appendChild(webseed);
     }
   } else {
-    webseeds.innerHTML = "<em>No webseed URLs in the URL/File provided</em>";
+    urlList.innerHTML = "<em>No webseed URLs in the URL/File provided</em>";
   }
 
   files.innerHTML = "";
@@ -143,6 +155,8 @@ function display() {
 
   copyURL.setAttribute('data-clipboard-text', window.location.origin + "#" + parser.toMagnetURI(parsed));
   copyMagnet.setAttribute('data-clipboard-text', parser.toMagnetURI(parsed));
+
+  properties.style.display = 'block';
 
 }
 
@@ -186,6 +200,19 @@ function getFontAwesomeIconForMimetype(mimetype) {
     default:
       return 'file';
   }
+}
+
+function propertyChange(e) {
+  console.log(e);
+  if (e.target.dataset.group) {
+    parsed[e.target.dataset.group][e.target.dataset.index] = e.target.value;
+  } else {
+    parsed[e.target.id] = e.target.value;
+  }
+  if (e.target.id != "creationDate") creationDate.value = new Date().toISOString().slice(0, 19);
+  createdBy.value = "Torrent Parts <https://torrent.parts/>";
+  parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
+  console.log(parsed);
 }
 
 // https://stackoverflow.com/a/36899900/2700296

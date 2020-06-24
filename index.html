@@ -6,72 +6,78 @@
 
 <body>
 
+  <h1><span class="fad fa-file-search"></span> Torrent Parts</h1>
+
   <div class="form-group">
-    <label class="col-form-label" for="magnet">URL</label>
-    <input id="magnet" type="text" class="form-control" placeholder="magnet:?xt=urn:btih…" />
+    <label for="magnet">URL</label>
+    <input id="magnet" type="text" placeholder="magnet:?xt=urn:btih…" />
     <div>or</div>
-    <label class="col-form-label" for="torrent">Upload Torrent</label>
+    <label for="torrent">Upload Torrent</label>
     <input id="torrent" type="file" />
   </div>
 
-  <div class="form-group">
-    <label class="col-form-label" for="name">Torrent Name</label>
-    <input id="name" type="text" class="form-control" value="" placeholder="Unspecified" />
-  </div>
+  <div id="properties" style="display:none">
 
-  <div class="form-group">
-    <label class="col-form-label" for="creationDate">Created</label>
-    <input id="creationDate" type="datetime-local" class="form-control" value="" placeholder="Unspecified" />
-    <label class="col-form-label" for="createdBy">with</label>
-    <input id="createdBy" type="text" class="form-control" value="" placeholder="Unspecified" disabled />
-  </div>
-
-  <div class="form-group">
-    <label class="col-form-label" for="comment">Comment</label>
-    <input id="comment" type="text" class="form-control" value="" placeholder="Unspecified" />
-  </div>
-
-  <div class="form-group">
-    <label class="col-form-label" for="hash">Unique Hash</label>
-    <input id="hash" type="text" class="form-control" value="" placeholder="" disabled/>
-  </div>
-
-  <div class="form-group">
-    <label class="col-form-label" for="trackers">Tracker URLs</label>
-    <div id="trackers"></div>
-  </div>
-
-  <div class="form-group">
-    <label class="col-form-label" for="webseeds">Webseed URLs</label>
-    <div id="webseeds"></div>
-  </div>
-
-  <div class="form-group">
-    <label class="col-form-label" for="files">Files</label>
-    <table id="files">
-      <tbody id="filesBody"></tbody>
-    </table>
-  </div>
-
-  <div>
-    <div id="copyURL">
-      <span class="fa-stack fa-2x">
-        <span class="fas fa-circle fa-stack-2x"></span>
-        <span class="fas fa-share-alt fa-stack-1x fa-inverse" data-fa-transform="left-1"></span>
-      </span>
+    <div class="form-group">
+      <label for="name">Torrent Name</label>
+      <input id="name" type="text" placeholder="Unspecified" />
     </div>
-    <div id="copyMagnet">
-      <span class="fa-stack fa-2x">
-        <span class="fas fa-circle fa-stack-2x"></span>
-        <span class="fas fa-magnet fa-stack-1x fa-inverse" data-fa-transform="down-1"></span>
-      </span>
+
+    <div class="form-group">
+      <label for="creationDate">Created</label>
+      <input id="creationDate" type="datetime-local" />
+      <label for="createdBy">UTC with</label>
+      <input id="createdBy" type="text" placeholder="Unspecified" disabled />
     </div>
-    <div id="downloadTorrent">
-      <span class="fa-stack fa-2x">
-        <span class="fas fa-circle fa-stack-2x"></span>
-        <span class="fas fa-file-download fa-stack-1x fa-inverse"></span>
-      </span>
+
+    <div class="form-group">
+      <label for="comment">Comment</label>
+      <input id="comment" type="text" placeholder="Unspecified" />
     </div>
+
+    <div class="form-group">
+      <label for="hash">Unique Hash</label>
+      <input id="hash" type="text" placeholder="" disabled/>
+    </div>
+
+    <div class="form-group">
+      <label for="announce">Tracker URLs</label>
+      <div id="announce"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="urlList">Webseed URLs</label>
+      <div id="urlList"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="files">Files</label>
+      <table id="files">
+        <tbody id="filesBody"></tbody>
+      </table>
+    </div>
+
+    <div>
+      <div id="copyURL">
+        <span class="fa-stack fa-2x">
+          <span class="fas fa-circle fa-stack-2x"></span>
+          <span class="fas fa-share-alt fa-stack-1x fa-inverse" data-fa-transform="left-1"></span>
+        </span>
+      </div>
+      <div id="copyMagnet">
+        <span class="fa-stack fa-2x">
+          <span class="fas fa-circle fa-stack-2x"></span>
+          <span class="fas fa-magnet fa-stack-1x fa-inverse" data-fa-transform="down-1"></span>
+        </span>
+      </div>
+      <div id="downloadTorrent">
+        <span class="fa-stack fa-2x">
+          <span class="fas fa-circle fa-stack-2x"></span>
+          <span class="fas fa-file-download fa-stack-1x fa-inverse"></span>
+        </span>
+      </div>
+    </div>
+
   </div>
 
   <script src="bundle.js"></script>
