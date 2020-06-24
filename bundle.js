@@ -11947,19 +11947,28 @@ function parse(toLoad) {
     console.info("Attempting parse");
     parsed = parser(toLoad);
     display();
+    if (parsed.xs) {
+      console.log("Magnet includes xs, attempting remote parse");
+      parseRemote(parsed.xs);
+    }
   }
   catch(e) {
     console.warn(e);
     console.info("Attempting remote parse");
-    parser.remote(toLoad, function(err, result) {
-      if (err) { // TODO: Display error to user
-        console.error(err);
-        return;
-       }
-      parsed = result;
-      display();
-    });
+    parseRemote(toLoad);
   }
+}
+
+function parseRemote(toLoad) {
+  parser.remote(toLoad, function(err, result) {
+    if (err) { // TODO: Display error to user
+      console.error(err);
+      display();
+      return;
+    }
+    parsed = result;
+    display();
+  });
 }
 
 function display() {
