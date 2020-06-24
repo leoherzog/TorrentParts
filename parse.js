@@ -203,7 +203,6 @@ function getFontAwesomeIconForMimetype(mimetype) {
 }
 
 function propertyChange(e) {
-  console.log(e);
   if (e.target.dataset.group) {
     parsed[e.target.dataset.group][e.target.dataset.index] = e.target.value;
   } else {
@@ -212,7 +211,7 @@ function propertyChange(e) {
   if (e.target.id != "creationDate") creationDate.value = new Date().toISOString().slice(0, 19);
   createdBy.value = "Torrent Parts <https://torrent.parts/>";
   parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
-  console.log(parsed);
+  display();
 }
 
 // https://stackoverflow.com/a/36899900/2700296
