@@ -11944,7 +11944,6 @@ function start() {
   comment.addEventListener('input', propertyChange);
 
   if (window.location.hash) parse(window.location.hash.split('#')[1]);
-  window.addEventListener('hashchange', function() { if (window.location.hash) parse(window.location.hash.split('#')[1]); });
 
 }
 
@@ -12092,9 +12091,9 @@ function getFontAwesomeIconForMimetype(mimetype) {
 
 function propertyChange(e) {
   if (e.target.dataset.group) {
-    parsed[e.target.dataset.group][e.target.dataset.index] = e.target.value;
+    parsed[e.target.dataset.group][e.target.dataset.index] = e.target.value || "";
   } else {
-    parsed[e.target.id] = e.target.value;
+    parsed[e.target.id] = e.target.value || "";
   }
   if (e.target.id != "creationDate") creationDate.value = new Date().toISOString().slice(0, 19);
   createdBy.value = "Torrent Parts <https://torrent.parts/>";
