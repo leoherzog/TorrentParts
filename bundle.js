@@ -11892,7 +11892,7 @@ const mime = require('mime-types');
 
 var properties = document.getElementById('properties');
 var name = document.getElementById('name');
-var creationDate = document.getElementById('creationDate');
+var created = document.getElementById('created');
 var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
 var hash = document.getElementById('hash');
@@ -11939,7 +11939,6 @@ function start() {
   downloadTorrent.addEventListener('click', saveTorrent);
 
   name.addEventListener('input', propertyChange);
-  creationDate.addEventListener('change', propertyChange);
   createdBy.addEventListener('change', propertyChange);
   comment.addEventListener('input', propertyChange);
 
@@ -11984,13 +11983,7 @@ function display() {
   console.log(parsed);
 
   name.value = parsed.name || "";
-  if (parsed.created) {
-    creationDate.disabled = false;
-    creationDate.value = parsed.created.toISOString().slice(0, 19);
-  } else {
-    creationDate.disabled = true;
-    creationDate.value = "";
-  }
+  if (parsed.created) created.value = parsed.created.toISOString().slice(0, 19);
   createdBy.value = parsed.createdBy || "";
   comment.value = parsed.comment || "";
   hash.value = parsed.infoHash;
@@ -12095,7 +12088,8 @@ function propertyChange(e) {
   } else {
     parsed[e.target.id] = e.target.value || "";
   }
-  if (e.target.id != "creationDate") creationDate.value = new Date().toISOString().slice(0, 19);
+  created.value = new Date().toISOString().slice(0, 19);
+  parsed.created = new Date();
   createdBy.value = "Torrent Parts <https://torrent.parts/>";
   parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
   display();
