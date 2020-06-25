@@ -12044,6 +12044,8 @@ function display() {
 
   properties.style.display = 'block';
 
+  window.location.hash = parser.toMagnetURI(parsed);
+
 }
 
 function createFileRow(icon, name, size) {
