@@ -11896,6 +11896,7 @@ var created = document.getElementById('created');
 var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
 var hash = document.getElementById('hash');
+var addTrackers = document.getElementById('addTrackers');
 var announce = document.getElementById('announce');
 var urlList = document.getElementById('urlList');
 var files = document.getElementById('filesBody');
@@ -11941,6 +11942,7 @@ function start() {
   name.addEventListener('input', propertyChange);
   createdBy.addEventListener('change', propertyChange);
   comment.addEventListener('input', propertyChange);
+  addTrackers.addEventListener('click', addCurrentTrackers);
 
   if (window.location.hash) parse(window.location.hash.split('#')[1]);
 
@@ -12092,6 +12094,20 @@ function propertyChange(e) {
   parsed.created = new Date();
   createdBy.value = "Torrent Parts <https://torrent.parts/>";
   parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
+  display();
+}
+
+async function addCurrentTrackers() {
+  addTrackers.disabled = true;
+  let response = await fetch("https://newtrackon.com/api/100"); // 100% uptime
+  let trackers = await response.text();
+  parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
+  parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
+  created.value = new Date().toISOString().slice(0, 19);
+  parsed.created = new Date();
+  createdBy.value = "Torrent Parts <https://torrent.parts/>";
+  parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
+  addTrackers.disabled = false;
   display();
 }
 
