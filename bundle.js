@@ -11915,7 +11915,6 @@ function start() {
 
   document.getElementById('magnet').addEventListener('keyup', function(event) {
     event.preventDefault();
-    resetProperties();
     if (event.keyCode === 13) {
       originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
       originalSourceIcon.title = 'Originally sourced from Magnet URL';
@@ -11925,7 +11924,6 @@ function start() {
 
   document.getElementById('torrent').addEventListener('change', function(event) {
     event.preventDefault();
-    resetProperties();
     event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
       originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
       originalSourceIcon.title = 'Originally sourced from Torrent file';
@@ -11938,7 +11936,7 @@ function start() {
     console.info(e); // TODO: Alert user to success
   });
   copyurl.on('failure', function(e) {
-    console.error(e);
+    console.error(e); // TODO: Alert user to error
   });
 
   let copymagnet = new clipboard('#copyMagnet');
@@ -11946,7 +11944,7 @@ function start() {
     console.info(e); // TODO: Alert user to success
   });
   copymagnet.on('failure', function(e) {
-    console.error(e);
+    console.error(e); // TODO: Alert user to error
   });
 
   name.addEventListener('input', propertyChange);
@@ -11986,7 +11984,7 @@ function parseRemote(toLoad) {
   parser.remote(toLoad, function(err, result) {
     if (err) { // TODO: Display error to user
       console.error(err);
-      display();
+      resetProperties();
       return;
     }
     parsed = result;
@@ -11996,10 +11994,9 @@ function parseRemote(toLoad) {
 
 function display() {
 
-  document.getElementById('magnet').value = "";
-  document.getElementById('torrent').value = "";
-
   console.log(parsed);
+
+  resetProperties();
 
   name.value = parsed.name || "";
   if (parsed.created) created.value = parsed.created.toISOString().slice(0, 19);
@@ -12122,6 +12119,8 @@ function propertyChange(e) {
 }
 
 function resetProperties() {
+  document.getElementById('magnet').value = "";
+  document.getElementById('torrent').value = "";
   properties.style.display = 'none';
   name.value = "";
   created.value = "";
@@ -12139,11 +12138,18 @@ function resetProperties() {
 
 async function addCurrentTrackers() {
   addTrackers.disabled = true;
-  let response = await fetch("https://newtrackon.com/api/100"); // 100% uptime
-  let trackers = await response.text();
-  parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
-  parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
-  updateModified();
+  addTrackers.classList.add('fa-blink');
+  try {
+    let response = await fetch("https://newtrackon.com/api/100"); // get trackers with 100% uptime
+    let trackers = await response.text();
+    parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
+    parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
+    updateModified();
+  }
+  catch(e) {
+    console.error(e); // TODO: Alert user to error
+  }
+  addTrackers.classList.remove('fa-blink');
   addTrackers.disabled = false;
   display();
 }
