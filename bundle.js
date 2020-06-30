@@ -12040,6 +12040,12 @@ function display() {
 
   window.location.hash = parser.toMagnetURI(parsed);
 
+  if (parsed.name) {
+    document.title = "Torrent Parts | " + parsed.name;
+  } else {
+    document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
+  }
+
 }
 
 function createFileRow(icon, name, size) {
