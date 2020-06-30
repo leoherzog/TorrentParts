@@ -11,8 +11,10 @@ var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
 var hash = document.getElementById('hash');
 var addTrackers = document.getElementById('addTrackers');
+var removeTrackers = document.getElementById('removeTrackers');
 var announce = document.getElementById('announce');
 var urlList = document.getElementById('urlList');
+var removeWebseeds = document.getElementById('removeWebseeds');
 var files = document.getElementById('filesBody');
 var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
@@ -57,6 +59,8 @@ function start() {
   createdBy.addEventListener('change', propertyChange);
   comment.addEventListener('input', propertyChange);
   addTrackers.addEventListener('click', addCurrentTrackers);
+  removeTrackers.addEventListener('click', removeCurrentTrackers);
+  removeWebseeds.addEventListener('click', removeCurrentWebseeds);
 
   if (window.location.hash) parse(window.location.hash.split('#')[1]);
 
@@ -210,10 +214,7 @@ function propertyChange(e) {
   } else {
     parsed[e.target.id] = e.target.value || "";
   }
-  created.value = new Date().toISOString().slice(0, 19);
-  parsed.created = new Date();
-  createdBy.value = "Torrent Parts <https://torrent.parts/>";
-  parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
+  updateModified();
   display();
 }
 
@@ -223,12 +224,28 @@ async function addCurrentTrackers() {
   let trackers = await response.text();
   parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
   parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
+  updateModified();
+  addTrackers.disabled = false;
+  display();
+}
+
+function removeCurrentTrackers() {
+  parsed.announce = [];
+  updateModified();
+  display();
+}
+
+function removeCurrentWebseeds() {
+  parsed.urlList = [];
+  updateModified();
+  display();
+}
+
+function updateModified() {
   created.value = new Date().toISOString().slice(0, 19);
   parsed.created = new Date();
   createdBy.value = "Torrent Parts <https://torrent.parts/>";
   parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
-  addTrackers.disabled = false;
-  display();
 }
 
 // https://stackoverflow.com/a/36899900/2700296
