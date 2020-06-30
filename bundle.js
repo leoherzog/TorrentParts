@@ -11939,8 +11939,6 @@ function start() {
     console.error(e);
   });
 
-  downloadTorrent.addEventListener('click', saveTorrent);
-
   name.addEventListener('input', propertyChange);
   createdBy.addEventListener('change', propertyChange);
   comment.addEventListener('input', propertyChange);
@@ -12028,12 +12026,16 @@ function display() {
 
   files.innerHTML = "";
   if (parsed.files && parsed.files.length) {
+    downloadTorrent.addEventListener('click', saveTorrent);
+    downloadTorrent.disabled = false;
     for (let file of parsed.files) {
       let icon = getFontAwesomeIconForMimetype(mime.lookup(file.name));
       files.appendChild(createFileRow(icon, file.name, file.length));
     }
     files.appendChild(createFileRow('folder-tree', '', parsed.length));
   } else {
+    downloadTorrent.removeEventListener('click', saveTorrent);
+    downloadTorrent.disabled = true;
     files.innerHTML = "<em>Files information isn't included in the URL/File provided</em>";
   }
 
