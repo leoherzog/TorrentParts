@@ -7,6 +7,7 @@ const mime = require('mime-types');
 var properties = document.getElementById('properties');
 var originalSourceIcon = document.getElementById('originalSourceIcon');
 var name = document.getElementById('name');
+var reset = document.getElementById('reset');
 var created = document.getElementById('created');
 var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
@@ -28,19 +29,19 @@ function start() {
 
   document.getElementById('magnet').addEventListener('keyup', function(event) {
     event.preventDefault();
-    reset();
+    resetProperties();
     if (event.keyCode === 13) {
-      originalSourceIcon.className = 'fad fa-magnet';
-      originalSourceIcon.title = 'Originally sourced from Magnet link';
+      originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
+      originalSourceIcon.title = 'Originally sourced from Magnet URL';
       parse(magnet.value);
     }
   });
 
   document.getElementById('torrent').addEventListener('change', function(event) {
     event.preventDefault();
-    reset();
+    resetProperties();
     event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
-      originalSourceIcon.className = 'fad fa-file';
+      originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
       originalSourceIcon.title = 'Originally sourced from Torrent file';
       parse(Buffer.from(arrayBuffer));
     });
@@ -63,13 +64,18 @@ function start() {
   });
 
   name.addEventListener('input', propertyChange);
+  reset.addEventListener('click', resetProperties);
   createdBy.addEventListener('change', propertyChange);
   comment.addEventListener('input', propertyChange);
   addTrackers.addEventListener('click', addCurrentTrackers);
   removeTrackers.addEventListener('click', removeCurrentTrackers);
   removeWebseeds.addEventListener('click', removeCurrentWebseeds);
 
-  if (window.location.hash) parse(window.location.hash.split('#')[1]);
+  if (window.location.hash) {
+    originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
+    originalSourceIcon.title = 'Originally sourced from Magnet URL in the address bar of this site';
+    parse(window.location.hash.split('#')[1]);
+  }
 
 }
 
@@ -229,7 +235,7 @@ function propertyChange(e) {
   display();
 }
 
-function reset() {
+function resetProperties() {
   properties.style.display = 'none';
   name.value = "";
   created.value = "";
