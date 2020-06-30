@@ -5,6 +5,7 @@ const bytes = require('bytes');
 const mime = require('mime-types');
 
 var properties = document.getElementById('properties');
+var originalSourceIcon = document.getElementById('originalSourceIcon');
 var name = document.getElementById('name');
 var created = document.getElementById('created');
 var createdBy = document.getElementById('createdBy');
@@ -27,14 +28,22 @@ function start() {
 
   document.getElementById('magnet').addEventListener('keyup', function(event) {
     event.preventDefault();
+    reset();
     if (event.keyCode === 13) {
+      originalSourceIcon.className = 'fad fa-magnet';
+      originalSourceIcon.title = 'Originally sourced from Magnet link';
       parse(magnet.value);
     }
   });
 
   document.getElementById('torrent').addEventListener('change', function(event) {
     event.preventDefault();
-    event.target.files[0].arrayBuffer().then(arrayBuffer => parse(Buffer.from(arrayBuffer)));
+    reset();
+    event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
+      originalSourceIcon.className = 'fad fa-file';
+      originalSourceIcon.title = 'Originally sourced from Torrent file';
+      parse(Buffer.from(arrayBuffer));
+    });
   });
 
   let copyurl = new clipboard('#copyURL');
@@ -218,6 +227,22 @@ function propertyChange(e) {
   }
   updateModified();
   display();
+}
+
+function reset() {
+  properties.style.display = 'none';
+  name.value = "";
+  created.value = "";
+  createdBy.value = "";
+  comment.value = "";
+  hash.value = "";
+  announce.innerHTML = "";
+  urlList.innerHTML = "";
+  files.innerHTML = "";
+  window.location.hash = "";
+  copyURL.setAttribute('data-clipboard-text', "");
+  copyMagnet.setAttribute('data-clipboard-text', "");
+  document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
 }
 
 async function addCurrentTrackers() {
