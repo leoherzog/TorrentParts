@@ -13,9 +13,11 @@ var createdBy = document.getElementById('createdBy');
 var comment = document.getElementById('comment');
 var hash = document.getElementById('hash');
 var addTrackers = document.getElementById('addTrackers');
+var addTracker = document.getElementById('addTracker');
 var removeTrackers = document.getElementById('removeTrackers');
 var announce = document.getElementById('announce');
 var urlList = document.getElementById('urlList');
+var addWebseed = document.getElementById('addWebseed');
 var removeWebseeds = document.getElementById('removeWebseeds');
 var files = document.getElementById('filesBody');
 var copyURL = document.getElementById('copyURL');
@@ -62,11 +64,18 @@ function start() {
   });
 
   name.addEventListener('input', propertyChange);
+  name.addEventListener('change', propertyChange);
+  name.addEventListener('reset', propertyChange);
+  name.addEventListener('paste', propertyChange);
   reset.addEventListener('click', resetProperties);
-  createdBy.addEventListener('change', propertyChange);
   comment.addEventListener('input', propertyChange);
+  comment.addEventListener('change', propertyChange);
+  comment.addEventListener('reset', propertyChange);
+  comment.addEventListener('paste', propertyChange);
   addTrackers.addEventListener('click', addCurrentTrackers);
+  addTracker.addEventListener('click', addRow);
   removeTrackers.addEventListener('click', removeCurrentTrackers);
+  addWebseed.addEventListener('click', addRow);
   removeWebseeds.addEventListener('click', removeCurrentWebseeds);
 
   if (window.location.hash) {
@@ -121,14 +130,22 @@ function display() {
   announce.innerHTML = "";
   if (parsed.announce && parsed.announce.length) {
     for (let i = 0; i < parsed.announce.length; i++) {
+      let row = document.createElement('div');
+      row.className = 'announce';
+      row.dataset.index = i;
       let tracker = document.createElement('input');
-      tracker.className = 'tracker';
       tracker.type = 'text';
       tracker.value = parsed.announce[i];
       tracker.dataset.index = i;
       tracker.dataset.group = 'announce';
       tracker.addEventListener('input', propertyChange);
-      announce.appendChild(tracker);
+      row.appendChild(tracker);
+      let remove = document.createElement('button');
+      remove.dataset.index = i;
+      remove.innerHTML = '<span class="fas fa-minus"></span>';
+      remove.addEventListener('click', removeRow);
+      row.appendChild(remove);
+      announce.appendChild(row);
     }
   } else {
     announce.innerHTML = "<em>No trackers specified in the URL/File provided</em>";
@@ -137,14 +154,22 @@ function display() {
   urlList.innerHTML = "";
   if (parsed.urlList && parsed.urlList.length) {
     for (let i = 0; i < parsed.urlList.length; i++) {
+      let row = document.createElement('div');
+      row.className = 'urlList';
+      row.dataset.index = i;
       let webseed = document.createElement('input');
-      webseed.className = 'webseed';
       webseed.type = 'text';
       webseed.value = parsed.urlList[i];
       webseed.dataset.index = i;
       webseed.dataset.group = 'urlList';
       webseed.addEventListener('input', propertyChange);
-      urlList.appendChild(webseed);
+      row.appendChild(webseed);
+      let remove = document.createElement('button');
+      remove.dataset.index = i;
+      remove.innerHTML = '<span class="fas fa-minus"></span>';
+      remove.addEventListener('click', removeRow);
+      row.appendChild(remove);
+      urlList.appendChild(row);
     }
   } else {
     urlList.innerHTML = "<em>No webseed URLs in the URL/File provided</em>";
@@ -223,13 +248,13 @@ function getFontAwesomeIconForMimetype(mimetype) {
 }
 
 function propertyChange(e) {
-  if (e.target.dataset.group) {
-    parsed[e.target.dataset.group][e.target.dataset.index] = e.target.value || "";
+  if (this.dataset.group) {
+    parsed[this.dataset.group][this.dataset.index] = this.value || "";
   } else {
-    parsed[e.target.id] = e.target.value || "";
+    parsed[this.id] = this.value || "";
   }
+  window.location.hash = parser.toMagnetURI(parsed);
   updateModified();
-  display();
 }
 
 function resetProperties() {
@@ -274,6 +299,17 @@ function removeCurrentTrackers() {
   display();
 }
 
+function addRow() {
+  console.log(this.dataset.type);
+  parsed[this.dataset.type].push("");
+  display();
+}
+
+function removeRow() {
+  parsed[this.parentElement.className].splice(this.parentElement.dataset.index, 1);
+  display();
+}
+
 function removeCurrentWebseeds() {
   parsed.urlList = [];
   updateModified();
@@ -281,9 +317,7 @@ function removeCurrentWebseeds() {
 }
 
 function updateModified() {
-  created.value = new Date().toISOString().slice(0, 19);
   parsed.created = new Date();
-  createdBy.value = "Torrent Parts <https://torrent.parts/>";
   parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
 }
 
