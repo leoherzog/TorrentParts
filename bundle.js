@@ -11960,9 +11960,9 @@ function start() {
   comment.addEventListener('paste', propertyChange);
   addTrackers.addEventListener('click', addCurrentTrackers);
   addTracker.addEventListener('click', addRow);
-  removeTrackers.addEventListener('click', removeCurrentTrackers);
+  removeTrackers.addEventListener('click', () => removeAllRows('announce'));
   addWebseed.addEventListener('click', addRow);
-  removeWebseeds.addEventListener('click', removeCurrentWebseeds);
+  removeWebseeds.addEventListener('click', () => removeAllRows('urlList'));
 
   if (window.location.hash) {
     originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
@@ -12179,8 +12179,8 @@ async function addCurrentTrackers() {
   display();
 }
 
-function removeCurrentTrackers() {
-  parsed.announce = [];
+function removeAllRows(type) {
+  parsed[type] = [];
   updateModified();
   display();
 }
@@ -12193,12 +12193,6 @@ function addRow() {
 
 function removeRow() {
   parsed[this.parentElement.className].splice(this.parentElement.dataset.index, 1);
-  display();
-}
-
-function removeCurrentWebseeds() {
-  parsed.urlList = [];
-  updateModified();
   display();
 }
 
