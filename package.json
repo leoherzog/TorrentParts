@@ -10,7 +10,8 @@
     "clipboard": "latest",
     "dropzone": "latest",
     "mime-types": "latest",
-    "parse-torrent": "latest"
+    "parse-torrent": "latest",
+    "webtorrent": "latest"
   },
   "devDependencies": {
     "watchify": "latest"
