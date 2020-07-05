@@ -291,7 +291,7 @@ function resetProperties() {
 
 async function addCurrentTrackers() {
   addTrackers.disabled = true;
-  addTrackers.innerHTML = '<span class="fa-blink fa-stack fa-2x"><span class="fas fa-cloud fa-stack-2x"></span><span class="fas fa-plus fa-stack-1x fa-inverse" data-fa-transform="down-2"></span></span>'
+  addTrackers.innerHTML = '<span class="fa-blink fa-stack fa-2x"><span class="fas fa-cloud fa-stack-2x"></span><span class="fas fa-plus fa-stack-1x fa-inverse" data-fa-transform="down-2"></span></span>';
   try {
     let response = await fetch("https://newtrackon.com/api/100"); // get trackers with 100% uptime
     let trackers = await response.text();
@@ -339,9 +339,11 @@ function getFilesFromPeers() {
   getFiles.disabled = true;
   getFiles.innerHTML = '<span class="fa-blink fad fa-chart-network"></span>';
   client.add(parser.toMagnetURI(parsed), (torrent) => {
+    parsed.info = Object.assign({}, torrent.info); // clone object
     parsed.files = torrent.files;
     parsed.infoBuffer = torrent.infoBuffer;
     parsed.length = torrent.length;
+    parsed.lastPieceLength = torrent.lastPieceLength;
     getFiles.innerHTML = '<span class="fad fa-chart-network"></span>';
     display();
     torrent.destroy();
