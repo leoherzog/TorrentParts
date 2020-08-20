@@ -14,7 +14,14 @@
     "webtorrent": "latest"
   },
   "devDependencies": {
+    "terser": "latest",
     "watchify": "latest"
+  },
+  "scripts": {
+    "watch": "watchify parse.js -o bundle.js",
+    "compile": "browserify parse.js -o bundle.js",
+    "minify": "terser bundle.js -c -m -o bundle.min.js",
+    "build": "npm run compile && npm run minify"
   },
   "repository": {
     "type": "git",
