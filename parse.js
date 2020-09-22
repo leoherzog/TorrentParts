@@ -307,12 +307,6 @@ async function addCurrentTrackers() {
   display();
 }
 
-function removeAllRows(type) {
-  parsed[type] = [];
-  updateModified();
-  display();
-}
-
 function addRow() {
   parsed[this.dataset.type].push("");
   display();
@@ -320,6 +314,12 @@ function addRow() {
 
 function removeRow() {
   parsed[this.parentElement.className].splice(this.parentElement.dataset.index, 1);
+  display();
+}
+
+function removeAllRows(type) {
+  parsed[type] = [];
+  updateModified();
   display();
 }
 
