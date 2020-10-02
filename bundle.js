@@ -33484,6 +33484,8 @@ async function addCurrentTrackers() {
     let trackers = await response.text();
     parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
     parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
+    parsed.announce.push("http://bt1.archive.org:6969/announce");
+    parsed.announce.push("http://bt2.archive.org:6969/announce");
     updateModified();
   }
   catch(e) {
