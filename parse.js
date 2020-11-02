@@ -130,11 +130,11 @@ function display() {
 
   resetProperties();
 
+  hash.value = parsed.infoHash;
   name.value = parsed.name || "";
   if (parsed.created) created.value = parsed.created.toISOString().slice(0, 19);
   createdBy.value = parsed.createdBy || "";
   comment.value = parsed.comment || "";
-  hash.value = parsed.infoHash;
 
   announce.innerHTML = "";
   if (parsed.announce && parsed.announce.length) {
@@ -204,7 +204,7 @@ function display() {
   copyURL.setAttribute('data-clipboard-text', window.location.origin + "#" + parser.toMagnetURI(parsed));
   copyMagnet.setAttribute('data-clipboard-text', parser.toMagnetURI(parsed));
 
-  properties.style.display = 'block';
+  properties.style.display = 'flex';
 
   window.location.hash = parser.toMagnetURI(parsed);
 
@@ -233,24 +233,36 @@ function createFileRow(icon, name, size) {
 function getFontAwesomeIconForMimetype(mimetype) {
   if (!mimetype) return 'file';
   switch (true) {
+    case mimetype.includes("msword"):
+    case mimetype.includes("wordprocessingml"):
+    case mimetype.includes("opendocument.text"):
+    case mimetype.includes("abiword"):
+      return 'file-word';
+    case mimetype.includes("ms-excel"):
+    case mimetype.includes("spreadsheet"):
+      return 'file-powerpoint';
+    case mimetype.includes("powerpoint"):
+    case mimetype.includes("presentation"):
+        return 'file-powerpoint';
     case mimetype.includes("7z-"):
     case mimetype.includes("iso9660"):
     case mimetype.includes("zip"):
+    case mimetype.includes("octet-stream"):
       return 'file-archive';
-    case mimetype.includes("audio"):
-      return 'file-audio';
     case mimetype.includes("csv"):
       return 'file-csv';
-    case mimetype.includes("font"):
-      return 'file-contract';
-    case mimetype.includes("image"):
-      return 'file-image';
     case mimetype.includes("pdf"):
       return 'file-pdf';
+    case mimetype.includes("font"):
+      return 'file-contract';
     case mimetype.includes("text"):
     case mimetype.includes("subrip"):
     case mimetype.includes("vtt"):
       return 'file-alt';
+    case mimetype.includes("audio"):
+      return 'file-audio';
+    case mimetype.includes("image"):
+      return 'file-image';
     case mimetype.includes("video"):
       return 'file-video';
     default:

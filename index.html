@@ -2,49 +2,56 @@
 
 <head>
   <title>Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Alata&display=swap" rel="stylesheet">
   <script async src="https://kit.fontawesome.com/9ca49f101f.js"></script>
 </head>
 
 <body>
 
-  <h1><span class="fad fa-file-search"></span> Torrent Parts</h1>
+  <header>
+    <h1 id="logo">Torrent<span class="fad fa-magnet fa-fw"></span>Parts</h1>
+    <iframe src="https://ghbtns.com/github-btn.html?user=leoherzog&repo=TorrentParts&type=star&count=true" frameborder="0" scrolling="0" width="150" height="20" title="GitHub"></iframe>
+  </header>
 
-  <div class="form-group">
-    <label for="magnet">URL</label>
-    <input id="magnet" type="text" placeholder="magnet:?xt=urn:btih…" />
-    <div>or</div>
-    <label for="torrent">Upload Torrent</label>
+  <div id="startButtons">
+    <input id="magnet" type="text" placeholder="Enter Magnet URL" />
     <input id="torrent" type="file" />
+    <label for="torrent">
+      <span class="fas fa-cloud-upload"></span> Upload Torrent
+    </label>
+    
   </div>
 
   <div id="properties" style="display:none">
 
-    <div class="form-group">
-      <label for="name"><span id="originalSourceIcon"></span>Torrent Name</label>
-      <input id="name" type="text" placeholder="Unspecified" />
-      <button id="reset">
-        <span class="fas fa-minus-circle"></span> Reset
-      </button>
+    <button id="reset">
+      <span class="fas fa-minus-circle"></span> Reset
+    </button>
+
+    <div class="property">
+      <label for="hash">Unique Hash</label>
+      <input id="hash" type="text" placeholder="" disabled/>
     </div>
 
-    <div class="form-group">
+    <div class="property">
+      <label for="name"><span id="originalSourceIcon"></span>Torrent Name</label>
+      <input id="name" type="text" placeholder="Unspecified" />
+    </div>
+
+    <div class="property">
       <label for="created">Created</label>
       <input id="created" type="datetime-local" disabled />
       <label for="createdBy">UTC with</label>
       <input id="createdBy" type="text" placeholder="Unspecified" disabled />
     </div>
 
-    <div class="form-group">
+    <div class="property">
       <label for="comment">Comment</label>
       <input id="comment" type="text" placeholder="Unspecified" />
     </div>
 
-    <div class="form-group">
-      <label for="hash">Unique Hash</label>
-      <input id="hash" type="text" placeholder="" disabled/>
-    </div>
-
-    <div class="form-group">
+    <div class="property">
       <label for="announce">Tracker URLs</label>
       <button id="addTrackers">
         <span class="fa-stack fa-2x">
@@ -61,7 +68,7 @@
       <div id="announce"></div>
     </div>
 
-    <div class="form-group">
+    <div class="property">
       <label for="urlList">Webseed URLs</label>
       <button id="addWebseed" data-type="urlList">
         <span class="fas fa-plus"></span>
@@ -72,7 +79,7 @@
       <div id="urlList"></div>
     </div>
 
-    <div class="form-group">
+    <div class="property">
       <label for="files">Files</label>
       <button id="getFiles">
         <span class="fad fa-chart-network"></span>
@@ -106,7 +113,7 @@
   </div>
 
   <script src="bundle.min.js"></script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-172544485-1"></script>
+  <script async defer src="https://www.googletagmanager.com/gtag/js?id=UA-172544485-1"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
