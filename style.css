@@ -14,6 +14,8 @@ body {
   color: var(--white);
   background: var(--gradient);
   font-family: 'Alata', sans-serif;
+  height: 100vh;
+  width: 100vw;
 }
 
 input {
