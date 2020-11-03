@@ -11,7 +11,7 @@
 
   <header>
     <h1 id="logo">Torrent<span class="fad fa-magnet fa-fw"></span>Parts</h1>
-    <iframe src="https://ghbtns.com/github-btn.html?user=leoherzog&repo=TorrentParts&type=star&count=true" frameborder="0" scrolling="0" width="150" height="20" title="GitHub"></iframe>
+    <iframe src="https://ghbtns.com/github-btn.html?user=leoherzog&repo=TorrentParts&type=star&count=true" frameborder="0" scrolling="0" width="90" height="20" title="GitHub"></iframe>
   </header>
 
   <div id="startButtons">
@@ -26,8 +26,20 @@
   <div id="properties" style="display:none">
 
     <button id="reset">
-      <span class="fas fa-minus-circle"></span> Reset
+      <span class="far fa-times fa-fw"></span>
     </button>
+    
+    <div id="download">
+      <button id="copyURL">
+        <span class="fas fa-share-alt fa-fw fa-2x" data-fa-transform="left-1"></span>
+      </button>
+      <button id="copyMagnet">
+        <span class="fas fa-magnet fa-fw fa-2x" data-fa-transform="down-1"></span>
+      </button>
+      <button id="downloadTorrent">
+        <span class="fas fa-file-download fa-fw fa-2x"></span>
+      </button>
+    </div>
 
     <div class="property">
       <label for="hash">Unique Hash</label>
@@ -87,27 +99,6 @@
       <table id="files">
         <tbody id="filesBody"></tbody>
       </table>
-    </div>
-
-    <div>
-      <div id="copyURL">
-        <span class="fa-stack fa-2x">
-          <span class="fas fa-circle fa-stack-2x"></span>
-          <span class="fas fa-share-alt fa-stack-1x fa-inverse" data-fa-transform="left-1"></span>
-        </span>
-      </div>
-      <div id="copyMagnet">
-        <span class="fa-stack fa-2x">
-          <span class="fas fa-circle fa-stack-2x"></span>
-          <span class="fas fa-magnet fa-stack-1x fa-inverse" data-fa-transform="down-1"></span>
-        </span>
-      </div>
-      <div id="downloadTorrent">
-        <span class="fa-stack fa-2x">
-          <span class="fas fa-circle fa-stack-2x"></span>
-          <span class="fas fa-file-download fa-stack-1x fa-inverse"></span>
-        </span>
-      </div>
     </div>
 
   </div>

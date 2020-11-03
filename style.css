@@ -52,6 +52,7 @@ button {
   border-radius: 900px;
   text-align: center;
   margin: auto;
+  cursor: pointer;
 }
 
 button:disabled {
@@ -72,15 +73,21 @@ header {
 }
 
 #startButtons {
+  height: 80px;
+  max-width: 960px;
   margin: 64px auto;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
 }
 
 #startButtons > * {
   width: 440px;
+  height: 36px;
+}
+
+#magnet {
+  text-align: center;
 }
 
 #torrent {
@@ -99,13 +106,32 @@ label[for="torrent"] {
 }
 
 #properties {
+  position: relative;
+  max-width: 960px;
   background: var(--dark-blue);
-  margin: 80px 160px;
+  margin: 80px auto;
   padding: 40px;
   border-radius: 30px;
   flex-direction: column;
   justify-content: space-evenly;
+}
 
+#reset {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+}
+
+#download {
+  position: absolute;
+  top: 0;
+  left: -28px;
+  display: flex;
+  flex-direction: column;
+}
+
+#download > * {
+  margin: 4px 0;
 }
 
 .property {
@@ -113,14 +139,81 @@ label[for="torrent"] {
   margin: 20px 0px;
   display: flex;
   justify-content: space-between;
-
+  align-items: center;
 }
 
 .property > label {
-  width: 40%;
+  width: 160px;
+  text-align: right;
   text-transform: uppercase;
+  margin: 0 auto;
 }
 
 .property > input {
   width: 440px;
+}
+
+@media (max-width: 1080px) {
+
+  #reset {
+    top: 0px;
+    right: 8px;
+  }
+
+  #download {
+    justify-content: center;
+    width: 96%;
+    top: auto;
+    bottom: 16px;
+    left: auto;
+    right: auto;
+    flex-direction: row;
+  }
+
+  #download > * {
+    margin: 0 4px;
+  }
+
+  #properties {
+    padding-bottom: 80px !important;
+  }
+
+}
+
+@media (max-width: 900px) {
+
+  #startButtons {
+    flex-direction: column;
+    justify-content: space-around;
+  }
+
+  #properties {
+    margin: 0;
+    padding: 0 2vw;
+    width: 96vw;
+  }
+
+  .property {
+    margin: 8px 0;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .property > label {
+    width: fit-content;
+    margin: 8px 0;
+  }
+
+  input {
+    text-align: center;
+  }
+
+}
+
+@media (max-width: 460px) {
+  
+  #startButtons > *, .property > input {
+    width: 95%;
+  }
+
 }
