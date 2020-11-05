@@ -4,8 +4,8 @@
   "description": "📑 A website to inspect and edit Torrent files and Magnet URLs",
   "main": "bundle.js",
   "dependencies": {
-    "Buffer": "latest",
     "browserify": "latest",
+    "Buffer": "latest",
     "bytes": "latest",
     "clipboard": "latest",
     "dropzone": "latest",
