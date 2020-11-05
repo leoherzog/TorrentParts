@@ -33319,8 +33319,13 @@ function display() {
 
   hash.value = parsed.infoHash;
   name.value = parsed.name || "";
-  if (parsed.created) created.value = parsed.created.toISOString().slice(0, 19);
-  createdBy.value = parsed.createdBy || "";
+  if (parsed.created) {
+    created.value = parsed.created.toISOString().slice(0, 19);
+    created.type = "datetime-local";
+  } else {
+    created.type = "text";
+  }
+  createdBy.value = "by " + parsed.createdBy || "";
   comment.value = parsed.comment || "";
 
   announce.innerHTML = "";
@@ -33490,7 +33495,7 @@ function resetProperties() {
 
 async function addCurrentTrackers() {
   addTrackers.disabled = true;
-  addTrackers.innerHTML = '<span class="fa-blink fa-stack fa-2x"><span class="fas fa-cloud fa-stack-2x"></span><span class="fas fa-plus fa-stack-1x fa-inverse" data-fa-transform="down-2"></span></span>';
+  addTrackers.innerHTML = 'Adding...';
   try {
     let response = await fetch("https://newtrackon.com/api/100"); // get trackers with 100% uptime
     let trackers = await response.text();
@@ -33503,7 +33508,7 @@ async function addCurrentTrackers() {
   catch(e) {
     console.error(e); // TODO: Alert user to error
   }
-  addTrackers.innerHTML = '<span class="fa-stack fa-2x"><span class="fas fa-cloud fa-stack-2x"></span><span class="fas fa-plus fa-stack-1x fa-inverse" data-fa-transform="down-2"></span></span>'
+  addTrackers.innerHTML = 'Add Known Working Trackers';
   addTrackers.disabled = false;
   display();
 }

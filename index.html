@@ -53,9 +53,11 @@
 
     <div class="property">
       <label for="created">Created</label>
-      <input id="created" type="datetime-local" disabled />
-      <label for="createdBy">UTC with</label>
-      <input id="createdBy" type="text" placeholder="Unspecified" disabled />
+      <div>
+        <input id="created" type="text" placeholder="Time unspecified" disabled />
+        <br />
+        <input id="createdBy" type="text" placeholder="Client unspecified" disabled />
+      </div>
     </div>
 
     <div class="property">
@@ -64,18 +66,15 @@
     </div>
 
     <div class="property">
-      <label for="announce">Tracker URLs</label>
-      <button id="addTrackers">
-        <span class="fa-stack fa-2x">
-          <span class="fas fa-cloud fa-stack-2x"></span>
-          <span class="fas fa-plus fa-stack-1x fa-inverse" data-fa-transform="down-2"></span>
-        </span>
-      </button>
+      <div>
+        <label for="announce">Tracker URLs</label>
+        <br />
+        <a id="addTrackers">Add Known Working Trackers</a>
+        <br />
+        <a id="removeTrackers">Remove All</a>
+      </div>
       <button id="addTracker" data-type="announce">
         <span class="fas fa-plus"></span>
-      </button>
-      <button id="removeTrackers">
-        <span class="fas fa-eraser"></span>
       </button>
       <div id="announce"></div>
     </div>
