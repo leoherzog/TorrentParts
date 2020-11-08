@@ -61,6 +61,10 @@ button:disabled {
   filter: brightness(0.6);
 }
 
+a {
+  cursor: pointer;
+}
+
 header {
   width: 100%;
   height: 80px;
@@ -104,6 +108,7 @@ label[for="torrent"] {
   box-sizing: border-box;
   border-radius: 900px;
   text-align: center;
+  text-transform: none;
   cursor: pointer;
 }
 
@@ -155,6 +160,18 @@ label {
 
 input {
   width: 440px;
+}
+
+#addTracker, #addWebseed {
+  width: 440px;
+  color: var(--light-blue);
+  background: var(--dark-blue);
+  border: 1px solid var(--light-blue);
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 900px;
+  text-align: left;
+  cursor: pointer;
 }
 
 @media (max-width: 1080px) {

@@ -327,7 +327,7 @@ async function addCurrentTrackers() {
 }
 
 function addRow() {
-  parsed[this.dataset.type].push("");
+  parsed[this.dataset.type].unshift("");
   display();
 }
 

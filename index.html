@@ -3,7 +3,7 @@
 <head>
 
   <meta charset="utf-8" />
-  <meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, width=device-width, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <meta name="description" content="Inspect and edit what's in your Torrent file or Magnet link" />
   <meta name="keywords" content="torrent, webtorrent, magnet, p2p, peer to peer, filesharing, announce, tracker, webseed" />
@@ -83,28 +83,36 @@
         <br />
         <a id="removeTrackers">Remove All</a>
       </div>
-      <button id="addTracker" data-type="announce">
-        <span class="fas fa-plus"></span>
-      </button>
-      <div id="announce"></div>
+      <div>
+        <button id="addTracker" data-type="announce">
+          <span class="far fa-plus-circle"></span> Add Tracker
+        </button>
+        <div id="announce"></div>
+      </div>
     </div>
 
     <div class="property">
-      <label for="urlList">Webseed URLs</label>
-      <button id="addWebseed" data-type="urlList">
-        <span class="fas fa-plus"></span>
-      </button>
-      <button id="removeWebseeds">
-        <span class="fas fa-eraser"></span>
-      </button>
-      <div id="urlList"></div>
+      <div>
+        <label for="urlList">Webseed URLs</label>
+        <button id="removeWebseeds">
+          <span class="fas fa-eraser"></span>
+        </button>
+      </div>
+      <div>
+        <button id="addWebseed" data-type="urlList">
+          <span class="far fa-plus-circle"></span> Add Tracker
+        </button>
+        <div id="urlList"></div>
+      </div>
     </div>
 
     <div class="property">
-      <label for="files">Files</label>
-      <button id="getFiles">
-        <span class="fad fa-chart-network"></span>
-      </button>
+      <div>
+        <label for="files">Files</label>
+        <button id="getFiles">
+          <span class="fad fa-chart-network"></span>
+        </button>
+      </div>
       <table id="files">
         <tbody id="filesBody"></tbody>
       </table>
