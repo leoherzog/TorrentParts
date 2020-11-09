@@ -34,7 +34,7 @@ function start() {
 
   document.getElementById('magnet').addEventListener('keyup', function(event) {
     event.preventDefault();
-    if (event.keyCode === 13) {
+    if (event.key === "Enter") {
       originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
       originalSourceIcon.title = 'Originally sourced from Magnet URL';
       parse(magnet.value);
