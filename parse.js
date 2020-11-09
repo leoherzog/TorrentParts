@@ -129,8 +129,6 @@ function display() {
 
   console.log(parsed);
 
-  resetProperties();
-
   hash.value = parsed.infoHash;
   name.value = parsed.name ? parsed.name : "";
   if (parsed.created) {
@@ -203,10 +201,11 @@ function display() {
     downloadTorrent.addEventListener('click', saveTorrent);
     downloadTorrent.disabled = false;
   } else {
-    getFiles.style.display = "block";
     if (client.torrents.length > 0) {
+      getFiles.style.display = "none";
       files.innerHTML = '<input type="text" placeholder="Attempting fetching files from Webtorrent..." disabled>';
     } else {
+      getFiles.style.display = "block";
       files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" disabled>';
     }
     downloadTorrent.removeEventListener('click', saveTorrent);
@@ -313,7 +312,7 @@ function resetProperties() {
 }
 
 async function addCurrentTrackers() {
-  addTrackers.disabled = true;
+  addTrackers.className = 'disabled';
   addTrackers.innerHTML = 'Adding...';
   try {
     let response = await fetch("https://newtrackon.com/api/100"); // get trackers with 100% uptime
@@ -328,7 +327,7 @@ async function addCurrentTrackers() {
     console.error(e); // TODO: Alert user to error
   }
   addTrackers.innerHTML = 'Add Known Working Trackers';
-  addTrackers.disabled = false;
+  addTrackers.className = '';
   display();
 }
 

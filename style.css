@@ -67,10 +67,14 @@ button:disabled {
 
 a {
   color: var(--grey);
-  font-size: 85%;
   text-decoration: underline;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.disabled {
+  text-decoration: none;
+  cursor: not-allowed;
 }
 
 header {
@@ -177,6 +181,11 @@ label[for="torrent"] {
   flex-direction: column;
 }
 
+.labels > a {
+  font-size: 80%;
+  margin-top: 6px;
+}
+
 .content, #files {
   width: 460px;
 }
@@ -205,7 +214,7 @@ input {
 }
 
 .remove {
-  /* position: absolute; */
+  margin-left: 6px;
 }
 
 @media (max-width: 1080px) {
@@ -243,7 +252,7 @@ input {
   }
 
   #properties {
-    margin: 0 1.5vw;
+    margin: 0;
     padding: 0 1.5vw;
     width: 95vw;
   }
@@ -257,8 +266,8 @@ input {
     margin: 12px 0;
   }
 
-  input, button, #addTracker, #addWebseed {
-    width: 94vw;
+  input, button {
+    width: 80vw;
     text-align: center;
   }
 
@@ -269,10 +278,21 @@ input {
 
   .labels, .content, #files {
     width: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   #announce, #urlList {
     text-align: center;
+  }
+
+  #announce > * > *, #urlList > * > *, #addTracker, #addWebseed {
+    width: 80vw;
+  }
+
+  #addTracker, #addWebseed {
+    margin-right: 22px !important;
   }
 
 }
