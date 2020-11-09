@@ -102,13 +102,12 @@
     <div class="property">
       <div>
         <label for="urlList">Webseed URLs</label>
-        <button id="removeWebseeds">
-          <span class="fas fa-eraser"></span>
-        </button>
+        <br />
+        <a id="removeWebseeds">Remove All</a>
       </div>
       <div>
         <button id="addWebseed" data-type="urlList">
-          <span class="far fa-plus-circle"></span> Add Tracker
+          <span class="far fa-plus-circle"></span> Add Webseed
         </button>
         <div id="urlList"></div>
       </div>
@@ -117,9 +116,7 @@
     <div class="property">
       <div>
         <label for="files">Files</label>
-        <button id="getFiles">
-          <span class="fad fa-chart-network"></span>
-        </button>
+        <a id="getFiles">Attempt to Fetch Files from WebTorrent</a>
       </div>
       <table id="files">
         <tbody id="filesBody"></tbody>
@@ -128,7 +125,7 @@
 
   </div>
 
-  <script src="bundle.min.js"></script>
+  <script src="bundle.js"></script>
 
 </body>
 

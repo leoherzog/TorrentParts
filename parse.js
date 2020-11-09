@@ -89,13 +89,14 @@ function start() {
 
   if (window.location.hash) {
     originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
-    originalSourceIcon.title = 'Originally sourced from Magnet URL in the address bar of this site';
+    originalSourceIcon.title = 'Originally sourced from shared torrent.parts link';
     parse(window.location.hash.split('#')[1]);
   }
 
 }
 
 function parse(toLoad) {
+  resetProperties();
   try {
     console.info("Attempting parse");
     parsed = parser(toLoad);
@@ -131,15 +132,15 @@ function display() {
   resetProperties();
 
   hash.value = parsed.infoHash;
-  name.value = parsed.name || "";
+  name.value = parsed.name ? parsed.name : "";
   if (parsed.created) {
     created.value = parsed.created.toISOString().slice(0, 19);
     created.type = "datetime-local";
   } else {
     created.type = "text";
   }
-  createdBy.value = "by " + parsed.createdBy || "";
-  comment.value = parsed.comment || "";
+  createdBy.value = parsed.createdBy ? "by " + parsed.createdBy : "";
+  comment.value = parsed.comment ? parsed.comment : "";
 
   announce.innerHTML = "";
   if (parsed.announce && parsed.announce.length) {
@@ -154,9 +155,9 @@ function display() {
       tracker.dataset.group = 'announce';
       tracker.addEventListener('input', propertyChange);
       row.appendChild(tracker);
-      let remove = document.createElement('button');
+      let remove = document.createElement('a');
       remove.dataset.index = i;
-      remove.innerHTML = '<span class="fas fa-minus"></span>';
+      remove.innerHTML = '<span class="far fa-trash"></span>';
       remove.addEventListener('click', removeRow);
       row.appendChild(remove);
       announce.appendChild(row);
@@ -191,7 +192,7 @@ function display() {
 
   files.innerHTML = "";
   if (parsed.files && parsed.files.length) {
-    getFiles.disabled = true;
+    getFiles.style.display = "none";
     for (let file of parsed.files) {
       let icon = getFontAwesomeIconForMimetype(mime.lookup(file.name));
       files.appendChild(createFileRow(icon, file.name, file.length));
@@ -200,8 +201,12 @@ function display() {
     downloadTorrent.addEventListener('click', saveTorrent);
     downloadTorrent.disabled = false;
   } else {
-    getFiles.disabled = false;
-    files.innerHTML = "<em>Files information isn't included in the URL/File provided</em>";
+    getFiles.style.display = "block";
+    if (client.torrents.length > 0) {
+      files.innerHTML = "<em>Attempting fetching files from Webtorrent...</em>";
+    } else {
+      files.innerHTML = "<em>Files information isn't included in the URL/File provided</em>";
+    }
     downloadTorrent.removeEventListener('click', saveTorrent);
     downloadTorrent.disabled = true;
   }
@@ -277,9 +282,9 @@ function getFontAwesomeIconForMimetype(mimetype) {
 
 function propertyChange(e) {
   if (this.dataset.group) {
-    parsed[this.dataset.group][this.dataset.index] = this.value || "";
+    parsed[this.dataset.group][this.dataset.index] = this.value ? this.value : "";
   } else {
-    parsed[this.id] = this.value || "";
+    parsed[this.id] = this.value ? this.value : "";
   }
   window.location.hash = parser.toMagnetURI(parsed);
   updateModified();
@@ -297,8 +302,7 @@ function resetProperties() {
   announce.innerHTML = "";
   urlList.innerHTML = "";
   client.torrents.forEach(torrent => torrent.destroy());
-  getFiles.disabled = false;
-  getFiles.innerHTML = '<span class="fad fa-chart-network"></span>';
+  getFiles.style.display = "block";
   files.innerHTML = "";
   window.location.hash = "";
   copyURL.setAttribute('data-clipboard-text', "");
@@ -345,29 +349,34 @@ function removeAllRows(type) {
 function updateModified() {
   parsed.created = new Date();
   parsed.createdBy = "Torrent Parts <https://torrent.parts/>";
+  if (parsed.created) {
+    created.value = parsed.created.toISOString().slice(0, 19);
+    created.type = "datetime-local";
+  } else {
+    created.type = "text";
+  }
+  createdBy.value = parsed.createdBy ? "by " + parsed.createdBy : "";
 }
 
 function getFilesFromPeers() {
-  console.info("Attempting fetching files from Webtorrent");
+  console.info("Attempting fetching files from Webtorrent...");
+  getFiles.style.display = "none";
   parsed.announce.push("wss://tracker.webtorrent.io");
   parsed.announce.push("wss://tracker.openwebtorrent.com");
   parsed.announce.push("wss://tracker.btorrent.xyz");
   parsed.announce.push("wss://tracker.fastcast.nz");
   parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
-  display();
-  getFiles.disabled = true;
-  getFiles.innerHTML = '<span class="fa-blink fad fa-chart-network"></span>';
   client.add(parser.toMagnetURI(parsed), (torrent) => {
     parsed.info = Object.assign({}, torrent.info); // clone object
     parsed.files = torrent.files;
     parsed.infoBuffer = torrent.infoBuffer;
     parsed.length = torrent.length;
     parsed.lastPieceLength = torrent.lastPieceLength;
-    getFiles.innerHTML = '<span class="fad fa-chart-network"></span>';
     updateModified();
     display();
     torrent.destroy();
   });
+  display();
 }
 
 // https://stackoverflow.com/a/36899900/2700296
