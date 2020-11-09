@@ -156,14 +156,15 @@ function display() {
       tracker.addEventListener('input', propertyChange);
       row.appendChild(tracker);
       let remove = document.createElement('a');
+      remove.className = 'remove';
       remove.dataset.index = i;
       remove.innerHTML = '<span class="far fa-trash"></span>';
       remove.addEventListener('click', removeRow);
       row.appendChild(remove);
       announce.appendChild(row);
     }
-  } else {
-    announce.innerHTML = "<em>No trackers specified in the URL/File provided</em>";
+  // } else {
+  //   announce.innerHTML = "<em>No trackers specified in the URL/File provided</em>";
   }
 
   urlList.innerHTML = "";
@@ -179,15 +180,16 @@ function display() {
       webseed.dataset.group = 'urlList';
       webseed.addEventListener('input', propertyChange);
       row.appendChild(webseed);
-      let remove = document.createElement('button');
+      let remove = document.createElement('a');
+      remove.className = 'remove';
       remove.dataset.index = i;
-      remove.innerHTML = '<span class="fas fa-minus"></span>';
+      remove.innerHTML = '<span class="far fa-trash"></span>';
       remove.addEventListener('click', removeRow);
       row.appendChild(remove);
       urlList.appendChild(row);
     }
-  } else {
-    urlList.innerHTML = "<em>No webseed URLs in the URL/File provided</em>";
+  // } else {
+  //   urlList.innerHTML = "<em>No webseed URLs in the URL/File provided</em>";
   }
 
   files.innerHTML = "";
@@ -203,9 +205,9 @@ function display() {
   } else {
     getFiles.style.display = "block";
     if (client.torrents.length > 0) {
-      files.innerHTML = "<em>Attempting fetching files from Webtorrent...</em>";
+      files.innerHTML = '<input type="text" placeholder="Attempting fetching files from Webtorrent..." disabled>';
     } else {
-      files.innerHTML = "<em>Files information isn't included in the URL/File provided</em>";
+      files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" disabled>';
     }
     downloadTorrent.removeEventListener('click', saveTorrent);
     downloadTorrent.disabled = true;

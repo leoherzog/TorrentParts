@@ -29,14 +29,14 @@
 
   <header>
     <h1 id="logo">Torrent<span class="fad fa-magnet fa-fw"></span>Parts</h1>
-    <iframe src="https://ghbtns.com/github-btn.html?user=leoherzog&repo=TorrentParts&type=star&count=true" frameborder="0" scrolling="0" width="90" height="20" title="GitHub"></iframe>
+    <iframe src="https://ghbtns.com/github-btn.html?user=leoherzog&repo=TorrentParts&type=star&count=true" frameborder="0" scrolling="0" width="100" height="20" title="GitHub"></iframe>
   </header>
 
   <div id="startButtons">
     <input id="magnet" type="text" placeholder="Enter Magnet URL" />
     <input id="torrent" type="file" />
     <label for="torrent">
-      <span class="fas fa-cloud-upload"></span> Upload Torrent
+      <span class="fas fa-cloud-upload"></span> Select Torrent File
     </label>
     
   </div>
@@ -44,34 +44,44 @@
   <div id="properties" style="display:none">
 
     <button id="reset">
-      <span class="far fa-times fa-fw"></span>
+      <span class="far fa-times"></span>
     </button>
     
     <div id="download">
       <button id="copyURL">
-        <span class="fas fa-share-alt fa-fw fa-2x" data-fa-transform="left-1"></span>
+        <span class="fas fa-share-alt fa-2x" data-fa-transform="left-1"></span>
       </button>
       <button id="copyMagnet">
-        <span class="fas fa-magnet fa-fw fa-2x" data-fa-transform="down-1"></span>
+        <span class="fas fa-magnet fa-2x" data-fa-transform="down-1"></span>
       </button>
       <button id="downloadTorrent">
-        <span class="fas fa-file-download fa-fw fa-2x"></span>
+        <span class="fas fa-file-download fa-2x"></span>
       </button>
     </div>
 
     <div class="property">
-      <label for="hash">Unique Hash</label>
-      <input id="hash" type="text" placeholder="" disabled/>
+      <div class="labels">
+        <label for="hash">Unique Hash</label>
+      </div>
+      <div class="content">
+        <input id="hash" type="text" placeholder="" disabled/>
+      </div>
     </div>
 
     <div class="property">
-      <label for="name"><span id="originalSourceIcon"></span>Torrent Name</label>
-      <input id="name" type="text" placeholder="Unspecified" />
+      <div class="labels">
+        <label for="name"><span id="originalSourceIcon"></span>Torrent Name</label>
+      </div>
+      <div class="content">
+        <input id="name" type="text" placeholder="Unspecified" />
+      </div>
     </div>
 
     <div class="property">
-      <label for="created">Created</label>
-      <div>
+      <div class="labels">
+        <label for="created">Created</label>
+      </div>
+      <div class="content">
         <input id="created" type="text" placeholder="Time unspecified" disabled />
         <br />
         <input id="createdBy" type="text" placeholder="Client unspecified" disabled />
@@ -79,19 +89,21 @@
     </div>
 
     <div class="property">
-      <label for="comment">Comment</label>
-      <input id="comment" type="text" placeholder="Unspecified" />
+      <div class="labels">
+        <label for="comment">Comment</label>
+      </div>
+      <div class="content">
+        <input id="comment" type="text" placeholder="Unspecified" />
+      </div>
     </div>
 
     <div class="property">
-      <div>
+      <div class="labels">
         <label for="announce">Tracker URLs</label>
-        <br />
         <a id="addTrackers">Add Known Working Trackers</a>
-        <br />
         <a id="removeTrackers">Remove All</a>
       </div>
-      <div>
+      <div class="content">
         <button id="addTracker" data-type="announce">
           <span class="far fa-plus-circle"></span> Add Tracker
         </button>
@@ -100,12 +112,11 @@
     </div>
 
     <div class="property">
-      <div>
+      <div class="labels">
         <label for="urlList">Webseed URLs</label>
-        <br />
         <a id="removeWebseeds">Remove All</a>
       </div>
-      <div>
+      <div class="content">
         <button id="addWebseed" data-type="urlList">
           <span class="far fa-plus-circle"></span> Add Webseed
         </button>
@@ -114,9 +125,9 @@
     </div>
 
     <div class="property">
-      <div>
+      <div class="labels">
         <label for="files">Files</label>
-        <a id="getFiles">Attempt to Fetch Files from WebTorrent</a>
+        <a id="getFiles">Fetch Files List from WebTorrent</a>
       </div>
       <table id="files">
         <tbody id="filesBody"></tbody>
@@ -125,7 +136,7 @@
 
   </div>
 
-  <script src="bundle.js"></script>
+  <script src="bundle.min.js"></script>
 
 </body>
 
