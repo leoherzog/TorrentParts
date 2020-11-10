@@ -221,7 +221,8 @@ input {
   width: 440px;
   height: 40px;
   margin: 0 0 16px 0;
-  color: var(--light-blue);
+  color: var(--grey);
+  opacity: 0.6;
   background: var(--dark-blue);
   border: 1px solid var(--light-blue);
   box-sizing: border-box;
