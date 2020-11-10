@@ -33699,7 +33699,7 @@ function start() {
     event.preventDefault();
     if (event.key === "Enter") {
       originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
-      originalSourceIcon.title = 'Originally sourced from Magnet URL';
+      originalSourceIcon.title = 'Currently loaded information sourced from Magnet URL';
       parse(magnet.value);
     }
   });
@@ -33709,7 +33709,7 @@ function start() {
     try {
       event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
         originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
-        originalSourceIcon.title = 'Originally sourced from Torrent file';
+        originalSourceIcon.title = 'Currently loaded information sourced from Torrent file';
         parse(Buffer.from(arrayBuffer));
       });
     }
@@ -33752,7 +33752,7 @@ function start() {
 
   if (window.location.hash) {
     originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
-    originalSourceIcon.title = 'Originally sourced from shared torrent.parts link';
+    originalSourceIcon.title = 'Currently loaded information sourced from shared torrent.parts link';
     parse(window.location.hash.split('#')[1]);
   }
 
