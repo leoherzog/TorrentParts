@@ -9,6 +9,14 @@ html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}main{display:b
   --grey: #BDBDBD;
   --white: #FFF;
   background: #24384D;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overflow-x: hidden;
+}
+
+:root:-webkit-scrollbar { /* WebKit */
+  display: none;
 }
 
 body {
@@ -17,7 +25,14 @@ body {
   font-family: 'Alata', sans-serif;
   height: 100vh;
   width: 100vw;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   overflow-x: hidden;
+}
+
+body:-webkit-scrollbar { /* WebKit */
+  display: none;
 }
 
 input {
@@ -254,7 +269,6 @@ input {
   #properties {
     margin: 0;
     padding: 0 1.5vw;
-    width: 95vw;
   }
 
   .property {
