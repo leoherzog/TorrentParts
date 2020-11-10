@@ -1,5 +1,6 @@
 {
   "name": "Torrent Parts",
+  "short_name": "Torrent Parts",
   "description": "Inspect and edit what's in your Torrent file or Magnet link",
   "theme_color": "#102030",
   "background_color": "#102030",
@@ -20,7 +21,8 @@
     {
       "src": "/img/TorrentParts-Icon-2x.png",
       "sizes": "256x256",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
