@@ -33961,6 +33961,8 @@ function propertyChange(e) {
 function resetProperties() {
   document.getElementById('magnet').value = "";
   document.getElementById('torrent').value = "";
+  originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
+  originalSourceIcon.title = '';
   properties.style.display = 'none';
   name.value = "";
   created.value = "";
