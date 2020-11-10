@@ -1,5 +1,6 @@
-<!DOCTYPE html lang="en">
+<!DOCTYPE html>
 
+<html lang="en">
 <head>
 
   <meta charset="utf-8" />
@@ -33,8 +34,11 @@
   </header>
 
   <div id="startButtons">
-    <input id="magnet" type="text" placeholder="Enter Magnet URL" />
-    <input id="torrent" type="file" />
+    <input id="magnet" type="text" placeholder="Enter Magnet URL" aria-label="Enter Magnet URL and press enter" />
+    <label for="magnet" style="display:none">
+      Enter Magnet link and press enter
+    </label>
+    <input id="torrent" type="file" aria-label="Select Torrent file" />
     <label for="torrent">
       <span class="fas fa-cloud-upload"></span> Select Torrent File
     </label>
@@ -43,18 +47,18 @@
 
   <div id="properties" style="display:none">
 
-    <button id="reset">
+    <button id="reset" aria-label="Reset the page">
       <span class="far fa-times"></span>
     </button>
     
-    <div id="download">
-      <button id="copyURL">
+    <div id="share">
+      <button id="copyURL" aria-label="Copy this torrent.parts link to the clipboard">
         <span class="fas fa-share-alt fa-2x" data-fa-transform="left-1"></span>
       </button>
-      <button id="copyMagnet">
+      <button id="copyMagnet" aria-label="Copy this Magnet URL to the clipboard">
         <span class="fas fa-magnet fa-2x" data-fa-transform="down-1"></span>
       </button>
-      <button id="downloadTorrent">
+      <button id="downloadTorrent" aria-label="Download this as a Torrent file">
         <span class="fas fa-file-download fa-2x"></span>
       </button>
     </div>
@@ -80,11 +84,12 @@
     <div class="property">
       <div class="labels">
         <label for="created">Created</label>
+        <label for="createdBy" style="display:none">Created By</label>
       </div>
       <div class="content">
-        <input id="created" type="text" placeholder="Creation time unspecified" disabled />
+        <input id="created" type="text" placeholder="Creation time unspecified" aria-label="Creation time" disabled />
         <br />
-        <input id="createdBy" type="text" placeholder="Creation client unspecified" disabled />
+        <input id="createdBy" type="text" placeholder="Creation client unspecified" aria-label="Creation client" disabled />
       </div>
     </div>
 

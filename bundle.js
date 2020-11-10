@@ -33783,6 +33783,8 @@ function parseRemote(toLoad) {
       resetProperties();
       return;
     }
+    originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
+    originalSourceIcon.title = 'Currently loaded information sourced from remotely fetched Torrent file';
     parsed = result;
     display();
   });
@@ -33814,6 +33816,7 @@ function display() {
       tracker.value = parsed.announce[i];
       tracker.dataset.index = i;
       tracker.dataset.group = 'announce';
+      tracker.setAttribute('aria-label', 'Tracker URL #' + i);
       tracker.addEventListener('input', propertyChange);
       row.appendChild(tracker);
       let remove = document.createElement('a');
@@ -33839,6 +33842,7 @@ function display() {
       webseed.value = parsed.urlList[i];
       webseed.dataset.index = i;
       webseed.dataset.group = 'urlList';
+      webseed.setAttribute('aria-label', 'Webseed URL #' + i);
       webseed.addEventListener('input', propertyChange);
       row.appendChild(webseed);
       let remove = document.createElement('a');
@@ -33866,10 +33870,10 @@ function display() {
   } else {
     if (client.torrents.length > 0) {
       getFiles.style.display = "none";
-      files.innerHTML = '<input type="text" placeholder="Attempting fetching files from Webtorrent..." disabled>';
+      files.innerHTML = '<input type="text" placeholder="Attempting fetching files from Webtorrent..." aria-label="Attempting fetching files from Webtorrent..." disabled>';
     } else {
       getFiles.style.display = "block";
-      files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" disabled>';
+      files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" aria-label="Files information not included in the URL/File provided" disabled>';
     }
     downloadTorrent.removeEventListener('click', saveTorrent);
     downloadTorrent.disabled = true;

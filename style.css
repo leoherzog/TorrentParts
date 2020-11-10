@@ -5,7 +5,7 @@ html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}main{display:b
   --gradient: linear-gradient(180deg, #152332, #24384D);
   --dark-blue: #102030;
   --light-blue: #495563;
-  --accent: #63A079;
+  --accent: #46835C;
   --grey: #BDBDBD;
   --white: #FFF;
   background: #24384D;
@@ -15,7 +15,7 @@ html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}main{display:b
   overflow-x: hidden;
 }
 
-:root:-webkit-scrollbar { /* WebKit */
+:root:-webkit-scrollbar {
   display: none;
 }
 
@@ -31,7 +31,7 @@ body {
   overflow-x: hidden;
 }
 
-body:-webkit-scrollbar { /* WebKit */
+body:-webkit-scrollbar {
   display: none;
 }
 
@@ -157,12 +157,13 @@ label[for="torrent"] {
   height: 32px;
   border-radius: 50%;
   text-align: center;
+  line-height: 50%;
   position: absolute;
   top: -12px;
   right: -12px;
 }
 
-#download {
+#share {
   position: absolute;
   top: 0;
   left: -28px;
@@ -170,11 +171,12 @@ label[for="torrent"] {
   flex-direction: column;
 }
 
-#download > * {
-  width: 60px;
-  height: 60px;
+#share > * {
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   text-align: center;
+  line-height: 50%;
   margin: 4px 0;
 }
 
@@ -242,7 +244,7 @@ input {
     right: 8px;
   }
 
-  #download {
+  #share {
     justify-content: center;
     width: 95%;
     top: auto;
@@ -252,7 +254,7 @@ input {
     flex-direction: row;
   }
 
-  #download > * {
+  #share > * {
     margin: 0 4px;
   }
 
@@ -266,7 +268,8 @@ input {
 
   #startButtons {
     flex-direction: column;
-    justify-content: space-around;
+    justify-content: space-between;
+    height: 90px;
   }
 
   #properties {
