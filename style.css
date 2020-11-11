@@ -101,7 +101,7 @@ header {
   border-bottom: 1px solid var(--grey);
 }
 
-#logo {
+header > * {
   margin: 0 24px;
 }
 
