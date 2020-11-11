@@ -87,7 +87,10 @@
 
     <div class="property">
       <div class="labels">
-        <label for="hash">Unique Hash</label>
+        <label for="hash">
+          <span class="info" data-tippy-content="This is the unique identifier that makes Torrents work. All of the files contained in this Torrent are run through an algorithm that generates a unique string, or &ldquo;hash&rdquo;."><span class="far fa-info-circle"></span></span>
+          Unique Hash
+        </label>
       </div>
       <div class="content">
         <input id="hash" type="text" placeholder="" disabled/>
@@ -96,7 +99,10 @@
 
     <div class="property">
       <div class="labels">
-        <label for="name">Torrent Name</label>
+        <label for="name">
+          <span class="info" data-tippy-content="An optional title specified by the creator"><span class="far fa-info-circle"></span></span>
+          Torrent Name
+        </label>
       </div>
       <div class="content">
         <input id="name" type="text" placeholder="Unnamed" />
@@ -105,7 +111,10 @@
 
     <div class="property">
       <div class="labels">
-        <label for="created">Created</label>
+        <label for="created">
+          <span class="info" data-tippy-content="Data embedded into a Torrent file that says what program created it and when. Not included in Magnet links."><span class="far fa-info-circle"></span></span>
+          Created
+        </label>
         <label for="createdBy" style="display:none">Created By</label>
       </div>
       <div class="content">
@@ -117,7 +126,10 @@
 
     <div class="property">
       <div class="labels">
-        <label for="comment">Comment</label>
+        <label for="comment">
+          <span class="info" data-tippy-content="An optional description specified by the creator"><span class="far fa-info-circle"></span></span>
+          Comment
+        </label>
       </div>
       <div class="content">
         <input id="comment" type="text" placeholder="Not included in the URL/File provided" />
@@ -126,7 +138,10 @@
 
     <div class="property">
       <div class="labels">
-        <label for="announce">Tracker URLs</label>
+        <label for="announce">
+          <span class="info" data-tippy-content="Servers that keep track of other users who are actively downloading this Torrent, called &ldquo;peers&rdquo;. Your client will contact these servers first to find out who else is available to download the files from."><span class="far fa-info-circle"></span></span>
+          Tracker URLs
+        </label>
         <a id="addTrackers">Add Known Working Trackers</a>
         <a id="removeTrackers">Remove All</a>
       </div>
@@ -140,7 +155,10 @@
 
     <div class="property">
       <div class="labels">
-        <label for="urlList">Webseed URLs</label>
+        <label for="urlList">
+          <span class="info" data-tippy-content="A list of webservers on the internet that also have a copy of the file(s) in this Torrent, to use in case no peers are available"><span class="far fa-info-circle"></span></span>
+          Webseed URLs
+        </label>
         <a id="removeWebseeds">Remove All</a>
       </div>
       <div class="content">
@@ -153,7 +171,10 @@
 
     <div class="property">
       <div class="labels">
-        <label for="files">Files</label>
+        <label for="files">
+          <span class="info" data-tippy-content="The files listed in this Torrent file. Not included in Magnet links."><span class="far fa-info-circle"></span></span>
+          Files
+        </label>
         <a id="getFiles">Fetch Files List from WebTorrent</a>
       </div>
       <table id="files">

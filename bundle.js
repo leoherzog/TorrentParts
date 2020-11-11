@@ -1,4 +1,1874 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+(function (process){(function (){
+/**
+ * @popperjs/core v2.5.4 - MIT License
+ */
+
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+function getBoundingClientRect(element) {
+  var rect = element.getBoundingClientRect();
+  return {
+    width: rect.width,
+    height: rect.height,
+    top: rect.top,
+    right: rect.right,
+    bottom: rect.bottom,
+    left: rect.left,
+    x: rect.left,
+    y: rect.top
+  };
+}
+
+/*:: import type { Window } from '../types'; */
+
+/*:: declare function getWindow(node: Node | Window): Window; */
+function getWindow(node) {
+  if (node.toString() !== '[object Window]') {
+    var ownerDocument = node.ownerDocument;
+    return ownerDocument ? ownerDocument.defaultView || window : window;
+  }
+
+  return node;
+}
+
+function getWindowScroll(node) {
+  var win = getWindow(node);
+  var scrollLeft = win.pageXOffset;
+  var scrollTop = win.pageYOffset;
+  return {
+    scrollLeft: scrollLeft,
+    scrollTop: scrollTop
+  };
+}
+
+/*:: declare function isElement(node: mixed): boolean %checks(node instanceof
+  Element); */
+
+function isElement(node) {
+  var OwnElement = getWindow(node).Element;
+  return node instanceof OwnElement || node instanceof Element;
+}
+/*:: declare function isHTMLElement(node: mixed): boolean %checks(node instanceof
+  HTMLElement); */
+
+
+function isHTMLElement(node) {
+  var OwnElement = getWindow(node).HTMLElement;
+  return node instanceof OwnElement || node instanceof HTMLElement;
+}
+/*:: declare function isShadowRoot(node: mixed): boolean %checks(node instanceof
+  ShadowRoot); */
+
+
+function isShadowRoot(node) {
+  var OwnElement = getWindow(node).ShadowRoot;
+  return node instanceof OwnElement || node instanceof ShadowRoot;
+}
+
+function getHTMLElementScroll(element) {
+  return {
+    scrollLeft: element.scrollLeft,
+    scrollTop: element.scrollTop
+  };
+}
+
+function getNodeScroll(node) {
+  if (node === getWindow(node) || !isHTMLElement(node)) {
+    return getWindowScroll(node);
+  } else {
+    return getHTMLElementScroll(node);
+  }
+}
+
+function getNodeName(element) {
+  return element ? (element.nodeName || '').toLowerCase() : null;
+}
+
+function getDocumentElement(element) {
+  // $FlowFixMe: assume body is always available
+  return ((isElement(element) ? element.ownerDocument : element.document) || window.document).documentElement;
+}
+
+function getWindowScrollBarX(element) {
+  // If <html> has a CSS width greater than the viewport, then this will be
+  // incorrect for RTL.
+  // Popper 1 is broken in this case and never had a bug report so let's assume
+  // it's not an issue. I don't think anyone ever specifies width on <html>
+  // anyway.
+  // Browsers where the left scrollbar doesn't cause an issue report `0` for
+  // this (e.g. Edge 2019, IE11, Safari)
+  return getBoundingClientRect(getDocumentElement(element)).left + getWindowScroll(element).scrollLeft;
+}
+
+function getComputedStyle(element) {
+  return getWindow(element).getComputedStyle(element);
+}
+
+function isScrollParent(element) {
+  // Firefox wants us to check `-x` and `-y` variations as well
+  var _getComputedStyle = getComputedStyle(element),
+      overflow = _getComputedStyle.overflow,
+      overflowX = _getComputedStyle.overflowX,
+      overflowY = _getComputedStyle.overflowY;
+
+  return /auto|scroll|overlay|hidden/.test(overflow + overflowY + overflowX);
+}
+
+// Composite means it takes into account transforms as well as layout.
+
+function getCompositeRect(elementOrVirtualElement, offsetParent, isFixed) {
+  if (isFixed === void 0) {
+    isFixed = false;
+  }
+
+  var documentElement = getDocumentElement(offsetParent);
+  var rect = getBoundingClientRect(elementOrVirtualElement);
+  var isOffsetParentAnElement = isHTMLElement(offsetParent);
+  var scroll = {
+    scrollLeft: 0,
+    scrollTop: 0
+  };
+  var offsets = {
+    x: 0,
+    y: 0
+  };
+
+  if (isOffsetParentAnElement || !isOffsetParentAnElement && !isFixed) {
+    if (getNodeName(offsetParent) !== 'body' || // https://github.com/popperjs/popper-core/issues/1078
+    isScrollParent(documentElement)) {
+      scroll = getNodeScroll(offsetParent);
+    }
+
+    if (isHTMLElement(offsetParent)) {
+      offsets = getBoundingClientRect(offsetParent);
+      offsets.x += offsetParent.clientLeft;
+      offsets.y += offsetParent.clientTop;
+    } else if (documentElement) {
+      offsets.x = getWindowScrollBarX(documentElement);
+    }
+  }
+
+  return {
+    x: rect.left + scroll.scrollLeft - offsets.x,
+    y: rect.top + scroll.scrollTop - offsets.y,
+    width: rect.width,
+    height: rect.height
+  };
+}
+
+// Returns the layout rect of an element relative to its offsetParent. Layout
+// means it doesn't take into account transforms.
+function getLayoutRect(element) {
+  return {
+    x: element.offsetLeft,
+    y: element.offsetTop,
+    width: element.offsetWidth,
+    height: element.offsetHeight
+  };
+}
+
+function getParentNode(element) {
+  if (getNodeName(element) === 'html') {
+    return element;
+  }
+
+  return (// $FlowFixMe: this is a quicker (but less type safe) way to save quite some bytes from the bundle
+    element.assignedSlot || // step into the shadow DOM of the parent of a slotted node
+    element.parentNode || // DOM Element detected
+    // $FlowFixMe: need a better way to handle this...
+    element.host || // ShadowRoot detected
+    // $FlowFixMe: HTMLElement is a Node
+    getDocumentElement(element) // fallback
+
+  );
+}
+
+function getScrollParent(node) {
+  if (['html', 'body', '#document'].indexOf(getNodeName(node)) >= 0) {
+    // $FlowFixMe: assume body is always available
+    return node.ownerDocument.body;
+  }
+
+  if (isHTMLElement(node) && isScrollParent(node)) {
+    return node;
+  }
+
+  return getScrollParent(getParentNode(node));
+}
+
+/*
+given a DOM element, return the list of all scroll parents, up the list of ancesors
+until we get to the top window object. This list is what we attach scroll listeners
+to, because if any of these parent elements scroll, we'll need to re-calculate the 
+reference element's position.
+*/
+
+function listScrollParents(element, list) {
+  if (list === void 0) {
+    list = [];
+  }
+
+  var scrollParent = getScrollParent(element);
+  var isBody = getNodeName(scrollParent) === 'body';
+  var win = getWindow(scrollParent);
+  var target = isBody ? [win].concat(win.visualViewport || [], isScrollParent(scrollParent) ? scrollParent : []) : scrollParent;
+  var updatedList = list.concat(target);
+  return isBody ? updatedList : // $FlowFixMe: isBody tells us target will be an HTMLElement here
+  updatedList.concat(listScrollParents(getParentNode(target)));
+}
+
+function isTableElement(element) {
+  return ['table', 'td', 'th'].indexOf(getNodeName(element)) >= 0;
+}
+
+function getTrueOffsetParent(element) {
+  if (!isHTMLElement(element) || // https://github.com/popperjs/popper-core/issues/837
+  getComputedStyle(element).position === 'fixed') {
+    return null;
+  }
+
+  var offsetParent = element.offsetParent;
+
+  if (offsetParent) {
+    var html = getDocumentElement(offsetParent);
+
+    if (getNodeName(offsetParent) === 'body' && getComputedStyle(offsetParent).position === 'static' && getComputedStyle(html).position !== 'static') {
+      return html;
+    }
+  }
+
+  return offsetParent;
+} // `.offsetParent` reports `null` for fixed elements, while absolute elements
+// return the containing block
+
+
+function getContainingBlock(element) {
+  var currentNode = getParentNode(element);
+
+  while (isHTMLElement(currentNode) && ['html', 'body'].indexOf(getNodeName(currentNode)) < 0) {
+    var css = getComputedStyle(currentNode); // This is non-exhaustive but covers the most common CSS properties that
+    // create a containing block.
+
+    if (css.transform !== 'none' || css.perspective !== 'none' || css.willChange && css.willChange !== 'auto') {
+      return currentNode;
+    } else {
+      currentNode = currentNode.parentNode;
+    }
+  }
+
+  return null;
+} // Gets the closest ancestor positioned element. Handles some edge cases,
+// such as table ancestors and cross browser bugs.
+
+
+function getOffsetParent(element) {
+  var window = getWindow(element);
+  var offsetParent = getTrueOffsetParent(element);
+
+  while (offsetParent && isTableElement(offsetParent) && getComputedStyle(offsetParent).position === 'static') {
+    offsetParent = getTrueOffsetParent(offsetParent);
+  }
+
+  if (offsetParent && getNodeName(offsetParent) === 'body' && getComputedStyle(offsetParent).position === 'static') {
+    return window;
+  }
+
+  return offsetParent || getContainingBlock(element) || window;
+}
+
+var top = 'top';
+var bottom = 'bottom';
+var right = 'right';
+var left = 'left';
+var auto = 'auto';
+var basePlacements = [top, bottom, right, left];
+var start = 'start';
+var end = 'end';
+var clippingParents = 'clippingParents';
+var viewport = 'viewport';
+var popper = 'popper';
+var reference = 'reference';
+var variationPlacements = /*#__PURE__*/basePlacements.reduce(function (acc, placement) {
+  return acc.concat([placement + "-" + start, placement + "-" + end]);
+}, []);
+var placements = /*#__PURE__*/[].concat(basePlacements, [auto]).reduce(function (acc, placement) {
+  return acc.concat([placement, placement + "-" + start, placement + "-" + end]);
+}, []); // modifiers that need to read the DOM
+
+var beforeRead = 'beforeRead';
+var read = 'read';
+var afterRead = 'afterRead'; // pure-logic modifiers
+
+var beforeMain = 'beforeMain';
+var main = 'main';
+var afterMain = 'afterMain'; // modifier with the purpose to write to the DOM (or write into a framework state)
+
+var beforeWrite = 'beforeWrite';
+var write = 'write';
+var afterWrite = 'afterWrite';
+var modifierPhases = [beforeRead, read, afterRead, beforeMain, main, afterMain, beforeWrite, write, afterWrite];
+
+function order(modifiers) {
+  var map = new Map();
+  var visited = new Set();
+  var result = [];
+  modifiers.forEach(function (modifier) {
+    map.set(modifier.name, modifier);
+  }); // On visiting object, check for its dependencies and visit them recursively
+
+  function sort(modifier) {
+    visited.add(modifier.name);
+    var requires = [].concat(modifier.requires || [], modifier.requiresIfExists || []);
+    requires.forEach(function (dep) {
+      if (!visited.has(dep)) {
+        var depModifier = map.get(dep);
+
+        if (depModifier) {
+          sort(depModifier);
+        }
+      }
+    });
+    result.push(modifier);
+  }
+
+  modifiers.forEach(function (modifier) {
+    if (!visited.has(modifier.name)) {
+      // check for visited object
+      sort(modifier);
+    }
+  });
+  return result;
+}
+
+function orderModifiers(modifiers) {
+  // order based on dependencies
+  var orderedModifiers = order(modifiers); // order based on phase
+
+  return modifierPhases.reduce(function (acc, phase) {
+    return acc.concat(orderedModifiers.filter(function (modifier) {
+      return modifier.phase === phase;
+    }));
+  }, []);
+}
+
+function debounce(fn) {
+  var pending;
+  return function () {
+    if (!pending) {
+      pending = new Promise(function (resolve) {
+        Promise.resolve().then(function () {
+          pending = undefined;
+          resolve(fn());
+        });
+      });
+    }
+
+    return pending;
+  };
+}
+
+function format(str) {
+  for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  return [].concat(args).reduce(function (p, c) {
+    return p.replace(/%s/, c);
+  }, str);
+}
+
+var INVALID_MODIFIER_ERROR = 'Popper: modifier "%s" provided an invalid %s property, expected %s but got %s';
+var MISSING_DEPENDENCY_ERROR = 'Popper: modifier "%s" requires "%s", but "%s" modifier is not available';
+var VALID_PROPERTIES = ['name', 'enabled', 'phase', 'fn', 'effect', 'requires', 'options'];
+function validateModifiers(modifiers) {
+  modifiers.forEach(function (modifier) {
+    Object.keys(modifier).forEach(function (key) {
+      switch (key) {
+        case 'name':
+          if (typeof modifier.name !== 'string') {
+            console.error(format(INVALID_MODIFIER_ERROR, String(modifier.name), '"name"', '"string"', "\"" + String(modifier.name) + "\""));
+          }
+
+          break;
+
+        case 'enabled':
+          if (typeof modifier.enabled !== 'boolean') {
+            console.error(format(INVALID_MODIFIER_ERROR, modifier.name, '"enabled"', '"boolean"', "\"" + String(modifier.enabled) + "\""));
+          }
+
+        case 'phase':
+          if (modifierPhases.indexOf(modifier.phase) < 0) {
+            console.error(format(INVALID_MODIFIER_ERROR, modifier.name, '"phase"', "either " + modifierPhases.join(', '), "\"" + String(modifier.phase) + "\""));
+          }
+
+          break;
+
+        case 'fn':
+          if (typeof modifier.fn !== 'function') {
+            console.error(format(INVALID_MODIFIER_ERROR, modifier.name, '"fn"', '"function"', "\"" + String(modifier.fn) + "\""));
+          }
+
+          break;
+
+        case 'effect':
+          if (typeof modifier.effect !== 'function') {
+            console.error(format(INVALID_MODIFIER_ERROR, modifier.name, '"effect"', '"function"', "\"" + String(modifier.fn) + "\""));
+          }
+
+          break;
+
+        case 'requires':
+          if (!Array.isArray(modifier.requires)) {
+            console.error(format(INVALID_MODIFIER_ERROR, modifier.name, '"requires"', '"array"', "\"" + String(modifier.requires) + "\""));
+          }
+
+          break;
+
+        case 'requiresIfExists':
+          if (!Array.isArray(modifier.requiresIfExists)) {
+            console.error(format(INVALID_MODIFIER_ERROR, modifier.name, '"requiresIfExists"', '"array"', "\"" + String(modifier.requiresIfExists) + "\""));
+          }
+
+          break;
+
+        case 'options':
+        case 'data':
+          break;
+
+        default:
+          console.error("PopperJS: an invalid property has been provided to the \"" + modifier.name + "\" modifier, valid properties are " + VALID_PROPERTIES.map(function (s) {
+            return "\"" + s + "\"";
+          }).join(', ') + "; but \"" + key + "\" was provided.");
+      }
+
+      modifier.requires && modifier.requires.forEach(function (requirement) {
+        if (modifiers.find(function (mod) {
+          return mod.name === requirement;
+        }) == null) {
+          console.error(format(MISSING_DEPENDENCY_ERROR, String(modifier.name), requirement, requirement));
+        }
+      });
+    });
+  });
+}
+
+function uniqueBy(arr, fn) {
+  var identifiers = new Set();
+  return arr.filter(function (item) {
+    var identifier = fn(item);
+
+    if (!identifiers.has(identifier)) {
+      identifiers.add(identifier);
+      return true;
+    }
+  });
+}
+
+function getBasePlacement(placement) {
+  return placement.split('-')[0];
+}
+
+function mergeByName(modifiers) {
+  var merged = modifiers.reduce(function (merged, current) {
+    var existing = merged[current.name];
+    merged[current.name] = existing ? Object.assign(Object.assign(Object.assign({}, existing), current), {}, {
+      options: Object.assign(Object.assign({}, existing.options), current.options),
+      data: Object.assign(Object.assign({}, existing.data), current.data)
+    }) : current;
+    return merged;
+  }, {}); // IE11 does not support Object.values
+
+  return Object.keys(merged).map(function (key) {
+    return merged[key];
+  });
+}
+
+function getViewportRect(element) {
+  var win = getWindow(element);
+  var html = getDocumentElement(element);
+  var visualViewport = win.visualViewport;
+  var width = html.clientWidth;
+  var height = html.clientHeight;
+  var x = 0;
+  var y = 0; // NB: This isn't supported on iOS <= 12. If the keyboard is open, the popper
+  // can be obscured underneath it.
+  // Also, `html.clientHeight` adds the bottom bar height in Safari iOS, even
+  // if it isn't open, so if this isn't available, the popper will be detected
+  // to overflow the bottom of the screen too early.
+
+  if (visualViewport) {
+    width = visualViewport.width;
+    height = visualViewport.height; // Uses Layout Viewport (like Chrome; Safari does not currently)
+    // In Chrome, it returns a value very close to 0 (+/-) but contains rounding
+    // errors due to floating point numbers, so we need to check precision.
+    // Safari returns a number <= 0, usually < -1 when pinch-zoomed
+    // Feature detection fails in mobile emulation mode in Chrome.
+    // Math.abs(win.innerWidth / visualViewport.scale - visualViewport.width) <
+    // 0.001
+    // Fallback here: "Not Safari" userAgent
+
+    if (!/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) {
+      x = visualViewport.offsetLeft;
+      y = visualViewport.offsetTop;
+    }
+  }
+
+  return {
+    width: width,
+    height: height,
+    x: x + getWindowScrollBarX(element),
+    y: y
+  };
+}
+
+// of the `<html>` and `<body>` rect bounds if horizontally scrollable
+
+function getDocumentRect(element) {
+  var html = getDocumentElement(element);
+  var winScroll = getWindowScroll(element);
+  var body = element.ownerDocument.body;
+  var width = Math.max(html.scrollWidth, html.clientWidth, body ? body.scrollWidth : 0, body ? body.clientWidth : 0);
+  var height = Math.max(html.scrollHeight, html.clientHeight, body ? body.scrollHeight : 0, body ? body.clientHeight : 0);
+  var x = -winScroll.scrollLeft + getWindowScrollBarX(element);
+  var y = -winScroll.scrollTop;
+
+  if (getComputedStyle(body || html).direction === 'rtl') {
+    x += Math.max(html.clientWidth, body ? body.clientWidth : 0) - width;
+  }
+
+  return {
+    width: width,
+    height: height,
+    x: x,
+    y: y
+  };
+}
+
+function contains(parent, child) {
+  var rootNode = child.getRootNode && child.getRootNode(); // First, attempt with faster native method
+
+  if (parent.contains(child)) {
+    return true;
+  } // then fallback to custom implementation with Shadow DOM support
+  else if (rootNode && isShadowRoot(rootNode)) {
+      var next = child;
+
+      do {
+        if (next && parent.isSameNode(next)) {
+          return true;
+        } // $FlowFixMe: need a better way to handle this...
+
+
+        next = next.parentNode || next.host;
+      } while (next);
+    } // Give up, the result is false
+
+
+  return false;
+}
+
+function rectToClientRect(rect) {
+  return Object.assign(Object.assign({}, rect), {}, {
+    left: rect.x,
+    top: rect.y,
+    right: rect.x + rect.width,
+    bottom: rect.y + rect.height
+  });
+}
+
+function getInnerBoundingClientRect(element) {
+  var rect = getBoundingClientRect(element);
+  rect.top = rect.top + element.clientTop;
+  rect.left = rect.left + element.clientLeft;
+  rect.bottom = rect.top + element.clientHeight;
+  rect.right = rect.left + element.clientWidth;
+  rect.width = element.clientWidth;
+  rect.height = element.clientHeight;
+  rect.x = rect.left;
+  rect.y = rect.top;
+  return rect;
+}
+
+function getClientRectFromMixedType(element, clippingParent) {
+  return clippingParent === viewport ? rectToClientRect(getViewportRect(element)) : isHTMLElement(clippingParent) ? getInnerBoundingClientRect(clippingParent) : rectToClientRect(getDocumentRect(getDocumentElement(element)));
+} // A "clipping parent" is an overflowable container with the characteristic of
+// clipping (or hiding) overflowing elements with a position different from
+// `initial`
+
+
+function getClippingParents(element) {
+  var clippingParents = listScrollParents(getParentNode(element));
+  var canEscapeClipping = ['absolute', 'fixed'].indexOf(getComputedStyle(element).position) >= 0;
+  var clipperElement = canEscapeClipping && isHTMLElement(element) ? getOffsetParent(element) : element;
+
+  if (!isElement(clipperElement)) {
+    return [];
+  } // $FlowFixMe: https://github.com/facebook/flow/issues/1414
+
+
+  return clippingParents.filter(function (clippingParent) {
+    return isElement(clippingParent) && contains(clippingParent, clipperElement) && getNodeName(clippingParent) !== 'body';
+  });
+} // Gets the maximum area that the element is visible in due to any number of
+// clipping parents
+
+
+function getClippingRect(element, boundary, rootBoundary) {
+  var mainClippingParents = boundary === 'clippingParents' ? getClippingParents(element) : [].concat(boundary);
+  var clippingParents = [].concat(mainClippingParents, [rootBoundary]);
+  var firstClippingParent = clippingParents[0];
+  var clippingRect = clippingParents.reduce(function (accRect, clippingParent) {
+    var rect = getClientRectFromMixedType(element, clippingParent);
+    accRect.top = Math.max(rect.top, accRect.top);
+    accRect.right = Math.min(rect.right, accRect.right);
+    accRect.bottom = Math.min(rect.bottom, accRect.bottom);
+    accRect.left = Math.max(rect.left, accRect.left);
+    return accRect;
+  }, getClientRectFromMixedType(element, firstClippingParent));
+  clippingRect.width = clippingRect.right - clippingRect.left;
+  clippingRect.height = clippingRect.bottom - clippingRect.top;
+  clippingRect.x = clippingRect.left;
+  clippingRect.y = clippingRect.top;
+  return clippingRect;
+}
+
+function getVariation(placement) {
+  return placement.split('-')[1];
+}
+
+function getMainAxisFromPlacement(placement) {
+  return ['top', 'bottom'].indexOf(placement) >= 0 ? 'x' : 'y';
+}
+
+function computeOffsets(_ref) {
+  var reference = _ref.reference,
+      element = _ref.element,
+      placement = _ref.placement;
+  var basePlacement = placement ? getBasePlacement(placement) : null;
+  var variation = placement ? getVariation(placement) : null;
+  var commonX = reference.x + reference.width / 2 - element.width / 2;
+  var commonY = reference.y + reference.height / 2 - element.height / 2;
+  var offsets;
+
+  switch (basePlacement) {
+    case top:
+      offsets = {
+        x: commonX,
+        y: reference.y - element.height
+      };
+      break;
+
+    case bottom:
+      offsets = {
+        x: commonX,
+        y: reference.y + reference.height
+      };
+      break;
+
+    case right:
+      offsets = {
+        x: reference.x + reference.width,
+        y: commonY
+      };
+      break;
+
+    case left:
+      offsets = {
+        x: reference.x - element.width,
+        y: commonY
+      };
+      break;
+
+    default:
+      offsets = {
+        x: reference.x,
+        y: reference.y
+      };
+  }
+
+  var mainAxis = basePlacement ? getMainAxisFromPlacement(basePlacement) : null;
+
+  if (mainAxis != null) {
+    var len = mainAxis === 'y' ? 'height' : 'width';
+
+    switch (variation) {
+      case start:
+        offsets[mainAxis] = Math.floor(offsets[mainAxis]) - Math.floor(reference[len] / 2 - element[len] / 2);
+        break;
+
+      case end:
+        offsets[mainAxis] = Math.floor(offsets[mainAxis]) + Math.ceil(reference[len] / 2 - element[len] / 2);
+        break;
+    }
+  }
+
+  return offsets;
+}
+
+function getFreshSideObject() {
+  return {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0
+  };
+}
+
+function mergePaddingObject(paddingObject) {
+  return Object.assign(Object.assign({}, getFreshSideObject()), paddingObject);
+}
+
+function expandToHashMap(value, keys) {
+  return keys.reduce(function (hashMap, key) {
+    hashMap[key] = value;
+    return hashMap;
+  }, {});
+}
+
+function detectOverflow(state, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _options = options,
+      _options$placement = _options.placement,
+      placement = _options$placement === void 0 ? state.placement : _options$placement,
+      _options$boundary = _options.boundary,
+      boundary = _options$boundary === void 0 ? clippingParents : _options$boundary,
+      _options$rootBoundary = _options.rootBoundary,
+      rootBoundary = _options$rootBoundary === void 0 ? viewport : _options$rootBoundary,
+      _options$elementConte = _options.elementContext,
+      elementContext = _options$elementConte === void 0 ? popper : _options$elementConte,
+      _options$altBoundary = _options.altBoundary,
+      altBoundary = _options$altBoundary === void 0 ? false : _options$altBoundary,
+      _options$padding = _options.padding,
+      padding = _options$padding === void 0 ? 0 : _options$padding;
+  var paddingObject = mergePaddingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements));
+  var altContext = elementContext === popper ? reference : popper;
+  var referenceElement = state.elements.reference;
+  var popperRect = state.rects.popper;
+  var element = state.elements[altBoundary ? altContext : elementContext];
+  var clippingClientRect = getClippingRect(isElement(element) ? element : element.contextElement || getDocumentElement(state.elements.popper), boundary, rootBoundary);
+  var referenceClientRect = getBoundingClientRect(referenceElement);
+  var popperOffsets = computeOffsets({
+    reference: referenceClientRect,
+    element: popperRect,
+    strategy: 'absolute',
+    placement: placement
+  });
+  var popperClientRect = rectToClientRect(Object.assign(Object.assign({}, popperRect), popperOffsets));
+  var elementClientRect = elementContext === popper ? popperClientRect : referenceClientRect; // positive = overflowing the clipping rect
+  // 0 or negative = within the clipping rect
+
+  var overflowOffsets = {
+    top: clippingClientRect.top - elementClientRect.top + paddingObject.top,
+    bottom: elementClientRect.bottom - clippingClientRect.bottom + paddingObject.bottom,
+    left: clippingClientRect.left - elementClientRect.left + paddingObject.left,
+    right: elementClientRect.right - clippingClientRect.right + paddingObject.right
+  };
+  var offsetData = state.modifiersData.offset; // Offsets can be applied only to the popper element
+
+  if (elementContext === popper && offsetData) {
+    var offset = offsetData[placement];
+    Object.keys(overflowOffsets).forEach(function (key) {
+      var multiply = [right, bottom].indexOf(key) >= 0 ? 1 : -1;
+      var axis = [top, bottom].indexOf(key) >= 0 ? 'y' : 'x';
+      overflowOffsets[key] += offset[axis] * multiply;
+    });
+  }
+
+  return overflowOffsets;
+}
+
+var INVALID_ELEMENT_ERROR = 'Popper: Invalid reference or popper argument provided. They must be either a DOM element or virtual element.';
+var INFINITE_LOOP_ERROR = 'Popper: An infinite loop in the modifiers cycle has been detected! The cycle has been interrupted to prevent a browser crash.';
+var DEFAULT_OPTIONS = {
+  placement: 'bottom',
+  modifiers: [],
+  strategy: 'absolute'
+};
+
+function areValidElements() {
+  for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+    args[_key] = arguments[_key];
+  }
+
+  return !args.some(function (element) {
+    return !(element && typeof element.getBoundingClientRect === 'function');
+  });
+}
+
+function popperGenerator(generatorOptions) {
+  if (generatorOptions === void 0) {
+    generatorOptions = {};
+  }
+
+  var _generatorOptions = generatorOptions,
+      _generatorOptions$def = _generatorOptions.defaultModifiers,
+      defaultModifiers = _generatorOptions$def === void 0 ? [] : _generatorOptions$def,
+      _generatorOptions$def2 = _generatorOptions.defaultOptions,
+      defaultOptions = _generatorOptions$def2 === void 0 ? DEFAULT_OPTIONS : _generatorOptions$def2;
+  return function createPopper(reference, popper, options) {
+    if (options === void 0) {
+      options = defaultOptions;
+    }
+
+    var state = {
+      placement: 'bottom',
+      orderedModifiers: [],
+      options: Object.assign(Object.assign({}, DEFAULT_OPTIONS), defaultOptions),
+      modifiersData: {},
+      elements: {
+        reference: reference,
+        popper: popper
+      },
+      attributes: {},
+      styles: {}
+    };
+    var effectCleanupFns = [];
+    var isDestroyed = false;
+    var instance = {
+      state: state,
+      setOptions: function setOptions(options) {
+        cleanupModifierEffects();
+        state.options = Object.assign(Object.assign(Object.assign({}, defaultOptions), state.options), options);
+        state.scrollParents = {
+          reference: isElement(reference) ? listScrollParents(reference) : reference.contextElement ? listScrollParents(reference.contextElement) : [],
+          popper: listScrollParents(popper)
+        }; // Orders the modifiers based on their dependencies and `phase`
+        // properties
+
+        var orderedModifiers = orderModifiers(mergeByName([].concat(defaultModifiers, state.options.modifiers))); // Strip out disabled modifiers
+
+        state.orderedModifiers = orderedModifiers.filter(function (m) {
+          return m.enabled;
+        }); // Validate the provided modifiers so that the consumer will get warned
+        // if one of the modifiers is invalid for any reason
+
+        if (process.env.NODE_ENV !== "production") {
+          var modifiers = uniqueBy([].concat(orderedModifiers, state.options.modifiers), function (_ref) {
+            var name = _ref.name;
+            return name;
+          });
+          validateModifiers(modifiers);
+
+          if (getBasePlacement(state.options.placement) === auto) {
+            var flipModifier = state.orderedModifiers.find(function (_ref2) {
+              var name = _ref2.name;
+              return name === 'flip';
+            });
+
+            if (!flipModifier) {
+              console.error(['Popper: "auto" placements require the "flip" modifier be', 'present and enabled to work.'].join(' '));
+            }
+          }
+
+          var _getComputedStyle = getComputedStyle(popper),
+              marginTop = _getComputedStyle.marginTop,
+              marginRight = _getComputedStyle.marginRight,
+              marginBottom = _getComputedStyle.marginBottom,
+              marginLeft = _getComputedStyle.marginLeft; // We no longer take into account `margins` on the popper, and it can
+          // cause bugs with positioning, so we'll warn the consumer
+
+
+          if ([marginTop, marginRight, marginBottom, marginLeft].some(function (margin) {
+            return parseFloat(margin);
+          })) {
+            console.warn(['Popper: CSS "margin" styles cannot be used to apply padding', 'between the popper and its reference element or boundary.', 'To replicate margin, use the `offset` modifier, as well as', 'the `padding` option in the `preventOverflow` and `flip`', 'modifiers.'].join(' '));
+          }
+        }
+
+        runModifierEffects();
+        return instance.update();
+      },
+      // Sync update – it will always be executed, even if not necessary. This
+      // is useful for low frequency updates where sync behavior simplifies the
+      // logic.
+      // For high frequency updates (e.g. `resize` and `scroll` events), always
+      // prefer the async Popper#update method
+      forceUpdate: function forceUpdate() {
+        if (isDestroyed) {
+          return;
+        }
+
+        var _state$elements = state.elements,
+            reference = _state$elements.reference,
+            popper = _state$elements.popper; // Don't proceed if `reference` or `popper` are not valid elements
+        // anymore
+
+        if (!areValidElements(reference, popper)) {
+          if (process.env.NODE_ENV !== "production") {
+            console.error(INVALID_ELEMENT_ERROR);
+          }
+
+          return;
+        } // Store the reference and popper rects to be read by modifiers
+
+
+        state.rects = {
+          reference: getCompositeRect(reference, getOffsetParent(popper), state.options.strategy === 'fixed'),
+          popper: getLayoutRect(popper)
+        }; // Modifiers have the ability to reset the current update cycle. The
+        // most common use case for this is the `flip` modifier changing the
+        // placement, which then needs to re-run all the modifiers, because the
+        // logic was previously ran for the previous placement and is therefore
+        // stale/incorrect
+
+        state.reset = false;
+        state.placement = state.options.placement; // On each update cycle, the `modifiersData` property for each modifier
+        // is filled with the initial data specified by the modifier. This means
+        // it doesn't persist and is fresh on each update.
+        // To ensure persistent data, use `${name}#persistent`
+
+        state.orderedModifiers.forEach(function (modifier) {
+          return state.modifiersData[modifier.name] = Object.assign({}, modifier.data);
+        });
+        var __debug_loops__ = 0;
+
+        for (var index = 0; index < state.orderedModifiers.length; index++) {
+          if (process.env.NODE_ENV !== "production") {
+            __debug_loops__ += 1;
+
+            if (__debug_loops__ > 100) {
+              console.error(INFINITE_LOOP_ERROR);
+              break;
+            }
+          }
+
+          if (state.reset === true) {
+            state.reset = false;
+            index = -1;
+            continue;
+          }
+
+          var _state$orderedModifie = state.orderedModifiers[index],
+              fn = _state$orderedModifie.fn,
+              _state$orderedModifie2 = _state$orderedModifie.options,
+              _options = _state$orderedModifie2 === void 0 ? {} : _state$orderedModifie2,
+              name = _state$orderedModifie.name;
+
+          if (typeof fn === 'function') {
+            state = fn({
+              state: state,
+              options: _options,
+              name: name,
+              instance: instance
+            }) || state;
+          }
+        }
+      },
+      // Async and optimistically optimized update – it will not be executed if
+      // not necessary (debounced to run at most once-per-tick)
+      update: debounce(function () {
+        return new Promise(function (resolve) {
+          instance.forceUpdate();
+          resolve(state);
+        });
+      }),
+      destroy: function destroy() {
+        cleanupModifierEffects();
+        isDestroyed = true;
+      }
+    };
+
+    if (!areValidElements(reference, popper)) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error(INVALID_ELEMENT_ERROR);
+      }
+
+      return instance;
+    }
+
+    instance.setOptions(options).then(function (state) {
+      if (!isDestroyed && options.onFirstUpdate) {
+        options.onFirstUpdate(state);
+      }
+    }); // Modifiers have the ability to execute arbitrary code before the first
+    // update cycle runs. They will be executed in the same order as the update
+    // cycle. This is useful when a modifier adds some persistent data that
+    // other modifiers need to use, but the modifier is run after the dependent
+    // one.
+
+    function runModifierEffects() {
+      state.orderedModifiers.forEach(function (_ref3) {
+        var name = _ref3.name,
+            _ref3$options = _ref3.options,
+            options = _ref3$options === void 0 ? {} : _ref3$options,
+            effect = _ref3.effect;
+
+        if (typeof effect === 'function') {
+          var cleanupFn = effect({
+            state: state,
+            name: name,
+            instance: instance,
+            options: options
+          });
+
+          var noopFn = function noopFn() {};
+
+          effectCleanupFns.push(cleanupFn || noopFn);
+        }
+      });
+    }
+
+    function cleanupModifierEffects() {
+      effectCleanupFns.forEach(function (fn) {
+        return fn();
+      });
+      effectCleanupFns = [];
+    }
+
+    return instance;
+  };
+}
+
+var passive = {
+  passive: true
+};
+
+function effect(_ref) {
+  var state = _ref.state,
+      instance = _ref.instance,
+      options = _ref.options;
+  var _options$scroll = options.scroll,
+      scroll = _options$scroll === void 0 ? true : _options$scroll,
+      _options$resize = options.resize,
+      resize = _options$resize === void 0 ? true : _options$resize;
+  var window = getWindow(state.elements.popper);
+  var scrollParents = [].concat(state.scrollParents.reference, state.scrollParents.popper);
+
+  if (scroll) {
+    scrollParents.forEach(function (scrollParent) {
+      scrollParent.addEventListener('scroll', instance.update, passive);
+    });
+  }
+
+  if (resize) {
+    window.addEventListener('resize', instance.update, passive);
+  }
+
+  return function () {
+    if (scroll) {
+      scrollParents.forEach(function (scrollParent) {
+        scrollParent.removeEventListener('scroll', instance.update, passive);
+      });
+    }
+
+    if (resize) {
+      window.removeEventListener('resize', instance.update, passive);
+    }
+  };
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var eventListeners = {
+  name: 'eventListeners',
+  enabled: true,
+  phase: 'write',
+  fn: function fn() {},
+  effect: effect,
+  data: {}
+};
+
+function popperOffsets(_ref) {
+  var state = _ref.state,
+      name = _ref.name;
+  // Offsets are the actual position the popper needs to have to be
+  // properly positioned near its reference element
+  // This is the most basic placement, and will be adjusted by
+  // the modifiers in the next step
+  state.modifiersData[name] = computeOffsets({
+    reference: state.rects.reference,
+    element: state.rects.popper,
+    strategy: 'absolute',
+    placement: state.placement
+  });
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var popperOffsets$1 = {
+  name: 'popperOffsets',
+  enabled: true,
+  phase: 'read',
+  fn: popperOffsets,
+  data: {}
+};
+
+var unsetSides = {
+  top: 'auto',
+  right: 'auto',
+  bottom: 'auto',
+  left: 'auto'
+}; // Round the offsets to the nearest suitable subpixel based on the DPR.
+// Zooming can change the DPR, but it seems to report a value that will
+// cleanly divide the values into the appropriate subpixels.
+
+function roundOffsets(_ref) {
+  var x = _ref.x,
+      y = _ref.y;
+  var win = window;
+  var dpr = win.devicePixelRatio || 1;
+  return {
+    x: Math.round(x * dpr) / dpr || 0,
+    y: Math.round(y * dpr) / dpr || 0
+  };
+}
+
+function mapToStyles(_ref2) {
+  var _Object$assign2;
+
+  var popper = _ref2.popper,
+      popperRect = _ref2.popperRect,
+      placement = _ref2.placement,
+      offsets = _ref2.offsets,
+      position = _ref2.position,
+      gpuAcceleration = _ref2.gpuAcceleration,
+      adaptive = _ref2.adaptive;
+
+  var _roundOffsets = roundOffsets(offsets),
+      x = _roundOffsets.x,
+      y = _roundOffsets.y;
+
+  var hasX = offsets.hasOwnProperty('x');
+  var hasY = offsets.hasOwnProperty('y');
+  var sideX = left;
+  var sideY = top;
+  var win = window;
+
+  if (adaptive) {
+    var offsetParent = getOffsetParent(popper);
+
+    if (offsetParent === getWindow(popper)) {
+      offsetParent = getDocumentElement(popper);
+    } // $FlowFixMe: force type refinement, we compare offsetParent with window above, but Flow doesn't detect it
+
+    /*:: offsetParent = (offsetParent: Element); */
+
+
+    if (placement === top) {
+      sideY = bottom;
+      y -= offsetParent.clientHeight - popperRect.height;
+      y *= gpuAcceleration ? 1 : -1;
+    }
+
+    if (placement === left) {
+      sideX = right;
+      x -= offsetParent.clientWidth - popperRect.width;
+      x *= gpuAcceleration ? 1 : -1;
+    }
+  }
+
+  var commonStyles = Object.assign({
+    position: position
+  }, adaptive && unsetSides);
+
+  if (gpuAcceleration) {
+    var _Object$assign;
+
+    return Object.assign(Object.assign({}, commonStyles), {}, (_Object$assign = {}, _Object$assign[sideY] = hasY ? '0' : '', _Object$assign[sideX] = hasX ? '0' : '', _Object$assign.transform = (win.devicePixelRatio || 1) < 2 ? "translate(" + x + "px, " + y + "px)" : "translate3d(" + x + "px, " + y + "px, 0)", _Object$assign));
+  }
+
+  return Object.assign(Object.assign({}, commonStyles), {}, (_Object$assign2 = {}, _Object$assign2[sideY] = hasY ? y + "px" : '', _Object$assign2[sideX] = hasX ? x + "px" : '', _Object$assign2.transform = '', _Object$assign2));
+}
+
+function computeStyles(_ref3) {
+  var state = _ref3.state,
+      options = _ref3.options;
+  var _options$gpuAccelerat = options.gpuAcceleration,
+      gpuAcceleration = _options$gpuAccelerat === void 0 ? true : _options$gpuAccelerat,
+      _options$adaptive = options.adaptive,
+      adaptive = _options$adaptive === void 0 ? true : _options$adaptive;
+
+  if (process.env.NODE_ENV !== "production") {
+    var transitionProperty = getComputedStyle(state.elements.popper).transitionProperty || '';
+
+    if (adaptive && ['transform', 'top', 'right', 'bottom', 'left'].some(function (property) {
+      return transitionProperty.indexOf(property) >= 0;
+    })) {
+      console.warn(['Popper: Detected CSS transitions on at least one of the following', 'CSS properties: "transform", "top", "right", "bottom", "left".', '\n\n', 'Disable the "computeStyles" modifier\'s `adaptive` option to allow', 'for smooth transitions, or remove these properties from the CSS', 'transition declaration on the popper element if only transitioning', 'opacity or background-color for example.', '\n\n', 'We recommend using the popper element as a wrapper around an inner', 'element that can have any CSS property transitioned for animations.'].join(' '));
+    }
+  }
+
+  var commonStyles = {
+    placement: getBasePlacement(state.placement),
+    popper: state.elements.popper,
+    popperRect: state.rects.popper,
+    gpuAcceleration: gpuAcceleration
+  };
+
+  if (state.modifiersData.popperOffsets != null) {
+    state.styles.popper = Object.assign(Object.assign({}, state.styles.popper), mapToStyles(Object.assign(Object.assign({}, commonStyles), {}, {
+      offsets: state.modifiersData.popperOffsets,
+      position: state.options.strategy,
+      adaptive: adaptive
+    })));
+  }
+
+  if (state.modifiersData.arrow != null) {
+    state.styles.arrow = Object.assign(Object.assign({}, state.styles.arrow), mapToStyles(Object.assign(Object.assign({}, commonStyles), {}, {
+      offsets: state.modifiersData.arrow,
+      position: 'absolute',
+      adaptive: false
+    })));
+  }
+
+  state.attributes.popper = Object.assign(Object.assign({}, state.attributes.popper), {}, {
+    'data-popper-placement': state.placement
+  });
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var computeStyles$1 = {
+  name: 'computeStyles',
+  enabled: true,
+  phase: 'beforeWrite',
+  fn: computeStyles,
+  data: {}
+};
+
+// and applies them to the HTMLElements such as popper and arrow
+
+function applyStyles(_ref) {
+  var state = _ref.state;
+  Object.keys(state.elements).forEach(function (name) {
+    var style = state.styles[name] || {};
+    var attributes = state.attributes[name] || {};
+    var element = state.elements[name]; // arrow is optional + virtual elements
+
+    if (!isHTMLElement(element) || !getNodeName(element)) {
+      return;
+    } // Flow doesn't support to extend this property, but it's the most
+    // effective way to apply styles to an HTMLElement
+    // $FlowFixMe
+
+
+    Object.assign(element.style, style);
+    Object.keys(attributes).forEach(function (name) {
+      var value = attributes[name];
+
+      if (value === false) {
+        element.removeAttribute(name);
+      } else {
+        element.setAttribute(name, value === true ? '' : value);
+      }
+    });
+  });
+}
+
+function effect$1(_ref2) {
+  var state = _ref2.state;
+  var initialStyles = {
+    popper: {
+      position: state.options.strategy,
+      left: '0',
+      top: '0',
+      margin: '0'
+    },
+    arrow: {
+      position: 'absolute'
+    },
+    reference: {}
+  };
+  Object.assign(state.elements.popper.style, initialStyles.popper);
+
+  if (state.elements.arrow) {
+    Object.assign(state.elements.arrow.style, initialStyles.arrow);
+  }
+
+  return function () {
+    Object.keys(state.elements).forEach(function (name) {
+      var element = state.elements[name];
+      var attributes = state.attributes[name] || {};
+      var styleProperties = Object.keys(state.styles.hasOwnProperty(name) ? state.styles[name] : initialStyles[name]); // Set all values to an empty string to unset them
+
+      var style = styleProperties.reduce(function (style, property) {
+        style[property] = '';
+        return style;
+      }, {}); // arrow is optional + virtual elements
+
+      if (!isHTMLElement(element) || !getNodeName(element)) {
+        return;
+      } // Flow doesn't support to extend this property, but it's the most
+      // effective way to apply styles to an HTMLElement
+      // $FlowFixMe
+
+
+      Object.assign(element.style, style);
+      Object.keys(attributes).forEach(function (attribute) {
+        element.removeAttribute(attribute);
+      });
+    });
+  };
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var applyStyles$1 = {
+  name: 'applyStyles',
+  enabled: true,
+  phase: 'write',
+  fn: applyStyles,
+  effect: effect$1,
+  requires: ['computeStyles']
+};
+
+function distanceAndSkiddingToXY(placement, rects, offset) {
+  var basePlacement = getBasePlacement(placement);
+  var invertDistance = [left, top].indexOf(basePlacement) >= 0 ? -1 : 1;
+
+  var _ref = typeof offset === 'function' ? offset(Object.assign(Object.assign({}, rects), {}, {
+    placement: placement
+  })) : offset,
+      skidding = _ref[0],
+      distance = _ref[1];
+
+  skidding = skidding || 0;
+  distance = (distance || 0) * invertDistance;
+  return [left, right].indexOf(basePlacement) >= 0 ? {
+    x: distance,
+    y: skidding
+  } : {
+    x: skidding,
+    y: distance
+  };
+}
+
+function offset(_ref2) {
+  var state = _ref2.state,
+      options = _ref2.options,
+      name = _ref2.name;
+  var _options$offset = options.offset,
+      offset = _options$offset === void 0 ? [0, 0] : _options$offset;
+  var data = placements.reduce(function (acc, placement) {
+    acc[placement] = distanceAndSkiddingToXY(placement, state.rects, offset);
+    return acc;
+  }, {});
+  var _data$state$placement = data[state.placement],
+      x = _data$state$placement.x,
+      y = _data$state$placement.y;
+
+  if (state.modifiersData.popperOffsets != null) {
+    state.modifiersData.popperOffsets.x += x;
+    state.modifiersData.popperOffsets.y += y;
+  }
+
+  state.modifiersData[name] = data;
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var offset$1 = {
+  name: 'offset',
+  enabled: true,
+  phase: 'main',
+  requires: ['popperOffsets'],
+  fn: offset
+};
+
+var hash = {
+  left: 'right',
+  right: 'left',
+  bottom: 'top',
+  top: 'bottom'
+};
+function getOppositePlacement(placement) {
+  return placement.replace(/left|right|bottom|top/g, function (matched) {
+    return hash[matched];
+  });
+}
+
+var hash$1 = {
+  start: 'end',
+  end: 'start'
+};
+function getOppositeVariationPlacement(placement) {
+  return placement.replace(/start|end/g, function (matched) {
+    return hash$1[matched];
+  });
+}
+
+/*:: type OverflowsMap = { [ComputedPlacement]: number }; */
+
+/*;; type OverflowsMap = { [key in ComputedPlacement]: number }; */
+function computeAutoPlacement(state, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _options = options,
+      placement = _options.placement,
+      boundary = _options.boundary,
+      rootBoundary = _options.rootBoundary,
+      padding = _options.padding,
+      flipVariations = _options.flipVariations,
+      _options$allowedAutoP = _options.allowedAutoPlacements,
+      allowedAutoPlacements = _options$allowedAutoP === void 0 ? placements : _options$allowedAutoP;
+  var variation = getVariation(placement);
+  var placements$1 = variation ? flipVariations ? variationPlacements : variationPlacements.filter(function (placement) {
+    return getVariation(placement) === variation;
+  }) : basePlacements; // $FlowFixMe
+
+  var allowedPlacements = placements$1.filter(function (placement) {
+    return allowedAutoPlacements.indexOf(placement) >= 0;
+  });
+
+  if (allowedPlacements.length === 0) {
+    allowedPlacements = placements$1;
+
+    if (process.env.NODE_ENV !== "production") {
+      console.error(['Popper: The `allowedAutoPlacements` option did not allow any', 'placements. Ensure the `placement` option matches the variation', 'of the allowed placements.', 'For example, "auto" cannot be used to allow "bottom-start".', 'Use "auto-start" instead.'].join(' '));
+    }
+  } // $FlowFixMe: Flow seems to have problems with two array unions...
+
+
+  var overflows = allowedPlacements.reduce(function (acc, placement) {
+    acc[placement] = detectOverflow(state, {
+      placement: placement,
+      boundary: boundary,
+      rootBoundary: rootBoundary,
+      padding: padding
+    })[getBasePlacement(placement)];
+    return acc;
+  }, {});
+  return Object.keys(overflows).sort(function (a, b) {
+    return overflows[a] - overflows[b];
+  });
+}
+
+function getExpandedFallbackPlacements(placement) {
+  if (getBasePlacement(placement) === auto) {
+    return [];
+  }
+
+  var oppositePlacement = getOppositePlacement(placement);
+  return [getOppositeVariationPlacement(placement), oppositePlacement, getOppositeVariationPlacement(oppositePlacement)];
+}
+
+function flip(_ref) {
+  var state = _ref.state,
+      options = _ref.options,
+      name = _ref.name;
+
+  if (state.modifiersData[name]._skip) {
+    return;
+  }
+
+  var _options$mainAxis = options.mainAxis,
+      checkMainAxis = _options$mainAxis === void 0 ? true : _options$mainAxis,
+      _options$altAxis = options.altAxis,
+      checkAltAxis = _options$altAxis === void 0 ? true : _options$altAxis,
+      specifiedFallbackPlacements = options.fallbackPlacements,
+      padding = options.padding,
+      boundary = options.boundary,
+      rootBoundary = options.rootBoundary,
+      altBoundary = options.altBoundary,
+      _options$flipVariatio = options.flipVariations,
+      flipVariations = _options$flipVariatio === void 0 ? true : _options$flipVariatio,
+      allowedAutoPlacements = options.allowedAutoPlacements;
+  var preferredPlacement = state.options.placement;
+  var basePlacement = getBasePlacement(preferredPlacement);
+  var isBasePlacement = basePlacement === preferredPlacement;
+  var fallbackPlacements = specifiedFallbackPlacements || (isBasePlacement || !flipVariations ? [getOppositePlacement(preferredPlacement)] : getExpandedFallbackPlacements(preferredPlacement));
+  var placements = [preferredPlacement].concat(fallbackPlacements).reduce(function (acc, placement) {
+    return acc.concat(getBasePlacement(placement) === auto ? computeAutoPlacement(state, {
+      placement: placement,
+      boundary: boundary,
+      rootBoundary: rootBoundary,
+      padding: padding,
+      flipVariations: flipVariations,
+      allowedAutoPlacements: allowedAutoPlacements
+    }) : placement);
+  }, []);
+  var referenceRect = state.rects.reference;
+  var popperRect = state.rects.popper;
+  var checksMap = new Map();
+  var makeFallbackChecks = true;
+  var firstFittingPlacement = placements[0];
+
+  for (var i = 0; i < placements.length; i++) {
+    var placement = placements[i];
+
+    var _basePlacement = getBasePlacement(placement);
+
+    var isStartVariation = getVariation(placement) === start;
+    var isVertical = [top, bottom].indexOf(_basePlacement) >= 0;
+    var len = isVertical ? 'width' : 'height';
+    var overflow = detectOverflow(state, {
+      placement: placement,
+      boundary: boundary,
+      rootBoundary: rootBoundary,
+      altBoundary: altBoundary,
+      padding: padding
+    });
+    var mainVariationSide = isVertical ? isStartVariation ? right : left : isStartVariation ? bottom : top;
+
+    if (referenceRect[len] > popperRect[len]) {
+      mainVariationSide = getOppositePlacement(mainVariationSide);
+    }
+
+    var altVariationSide = getOppositePlacement(mainVariationSide);
+    var checks = [];
+
+    if (checkMainAxis) {
+      checks.push(overflow[_basePlacement] <= 0);
+    }
+
+    if (checkAltAxis) {
+      checks.push(overflow[mainVariationSide] <= 0, overflow[altVariationSide] <= 0);
+    }
+
+    if (checks.every(function (check) {
+      return check;
+    })) {
+      firstFittingPlacement = placement;
+      makeFallbackChecks = false;
+      break;
+    }
+
+    checksMap.set(placement, checks);
+  }
+
+  if (makeFallbackChecks) {
+    // `2` may be desired in some cases – research later
+    var numberOfChecks = flipVariations ? 3 : 1;
+
+    var _loop = function _loop(_i) {
+      var fittingPlacement = placements.find(function (placement) {
+        var checks = checksMap.get(placement);
+
+        if (checks) {
+          return checks.slice(0, _i).every(function (check) {
+            return check;
+          });
+        }
+      });
+
+      if (fittingPlacement) {
+        firstFittingPlacement = fittingPlacement;
+        return "break";
+      }
+    };
+
+    for (var _i = numberOfChecks; _i > 0; _i--) {
+      var _ret = _loop(_i);
+
+      if (_ret === "break") break;
+    }
+  }
+
+  if (state.placement !== firstFittingPlacement) {
+    state.modifiersData[name]._skip = true;
+    state.placement = firstFittingPlacement;
+    state.reset = true;
+  }
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var flip$1 = {
+  name: 'flip',
+  enabled: true,
+  phase: 'main',
+  fn: flip,
+  requiresIfExists: ['offset'],
+  data: {
+    _skip: false
+  }
+};
+
+function getAltAxis(axis) {
+  return axis === 'x' ? 'y' : 'x';
+}
+
+function within(min, value, max) {
+  return Math.max(min, Math.min(value, max));
+}
+
+function preventOverflow(_ref) {
+  var state = _ref.state,
+      options = _ref.options,
+      name = _ref.name;
+  var _options$mainAxis = options.mainAxis,
+      checkMainAxis = _options$mainAxis === void 0 ? true : _options$mainAxis,
+      _options$altAxis = options.altAxis,
+      checkAltAxis = _options$altAxis === void 0 ? false : _options$altAxis,
+      boundary = options.boundary,
+      rootBoundary = options.rootBoundary,
+      altBoundary = options.altBoundary,
+      padding = options.padding,
+      _options$tether = options.tether,
+      tether = _options$tether === void 0 ? true : _options$tether,
+      _options$tetherOffset = options.tetherOffset,
+      tetherOffset = _options$tetherOffset === void 0 ? 0 : _options$tetherOffset;
+  var overflow = detectOverflow(state, {
+    boundary: boundary,
+    rootBoundary: rootBoundary,
+    padding: padding,
+    altBoundary: altBoundary
+  });
+  var basePlacement = getBasePlacement(state.placement);
+  var variation = getVariation(state.placement);
+  var isBasePlacement = !variation;
+  var mainAxis = getMainAxisFromPlacement(basePlacement);
+  var altAxis = getAltAxis(mainAxis);
+  var popperOffsets = state.modifiersData.popperOffsets;
+  var referenceRect = state.rects.reference;
+  var popperRect = state.rects.popper;
+  var tetherOffsetValue = typeof tetherOffset === 'function' ? tetherOffset(Object.assign(Object.assign({}, state.rects), {}, {
+    placement: state.placement
+  })) : tetherOffset;
+  var data = {
+    x: 0,
+    y: 0
+  };
+
+  if (!popperOffsets) {
+    return;
+  }
+
+  if (checkMainAxis) {
+    var mainSide = mainAxis === 'y' ? top : left;
+    var altSide = mainAxis === 'y' ? bottom : right;
+    var len = mainAxis === 'y' ? 'height' : 'width';
+    var offset = popperOffsets[mainAxis];
+    var min = popperOffsets[mainAxis] + overflow[mainSide];
+    var max = popperOffsets[mainAxis] - overflow[altSide];
+    var additive = tether ? -popperRect[len] / 2 : 0;
+    var minLen = variation === start ? referenceRect[len] : popperRect[len];
+    var maxLen = variation === start ? -popperRect[len] : -referenceRect[len]; // We need to include the arrow in the calculation so the arrow doesn't go
+    // outside the reference bounds
+
+    var arrowElement = state.elements.arrow;
+    var arrowRect = tether && arrowElement ? getLayoutRect(arrowElement) : {
+      width: 0,
+      height: 0
+    };
+    var arrowPaddingObject = state.modifiersData['arrow#persistent'] ? state.modifiersData['arrow#persistent'].padding : getFreshSideObject();
+    var arrowPaddingMin = arrowPaddingObject[mainSide];
+    var arrowPaddingMax = arrowPaddingObject[altSide]; // If the reference length is smaller than the arrow length, we don't want
+    // to include its full size in the calculation. If the reference is small
+    // and near the edge of a boundary, the popper can overflow even if the
+    // reference is not overflowing as well (e.g. virtual elements with no
+    // width or height)
+
+    var arrowLen = within(0, referenceRect[len], arrowRect[len]);
+    var minOffset = isBasePlacement ? referenceRect[len] / 2 - additive - arrowLen - arrowPaddingMin - tetherOffsetValue : minLen - arrowLen - arrowPaddingMin - tetherOffsetValue;
+    var maxOffset = isBasePlacement ? -referenceRect[len] / 2 + additive + arrowLen + arrowPaddingMax + tetherOffsetValue : maxLen + arrowLen + arrowPaddingMax + tetherOffsetValue;
+    var arrowOffsetParent = state.elements.arrow && getOffsetParent(state.elements.arrow);
+    var clientOffset = arrowOffsetParent ? mainAxis === 'y' ? arrowOffsetParent.clientTop || 0 : arrowOffsetParent.clientLeft || 0 : 0;
+    var offsetModifierValue = state.modifiersData.offset ? state.modifiersData.offset[state.placement][mainAxis] : 0;
+    var tetherMin = popperOffsets[mainAxis] + minOffset - offsetModifierValue - clientOffset;
+    var tetherMax = popperOffsets[mainAxis] + maxOffset - offsetModifierValue;
+    var preventedOffset = within(tether ? Math.min(min, tetherMin) : min, offset, tether ? Math.max(max, tetherMax) : max);
+    popperOffsets[mainAxis] = preventedOffset;
+    data[mainAxis] = preventedOffset - offset;
+  }
+
+  if (checkAltAxis) {
+    var _mainSide = mainAxis === 'x' ? top : left;
+
+    var _altSide = mainAxis === 'x' ? bottom : right;
+
+    var _offset = popperOffsets[altAxis];
+
+    var _min = _offset + overflow[_mainSide];
+
+    var _max = _offset - overflow[_altSide];
+
+    var _preventedOffset = within(_min, _offset, _max);
+
+    popperOffsets[altAxis] = _preventedOffset;
+    data[altAxis] = _preventedOffset - _offset;
+  }
+
+  state.modifiersData[name] = data;
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var preventOverflow$1 = {
+  name: 'preventOverflow',
+  enabled: true,
+  phase: 'main',
+  fn: preventOverflow,
+  requiresIfExists: ['offset']
+};
+
+function arrow(_ref) {
+  var _state$modifiersData$;
+
+  var state = _ref.state,
+      name = _ref.name;
+  var arrowElement = state.elements.arrow;
+  var popperOffsets = state.modifiersData.popperOffsets;
+  var basePlacement = getBasePlacement(state.placement);
+  var axis = getMainAxisFromPlacement(basePlacement);
+  var isVertical = [left, right].indexOf(basePlacement) >= 0;
+  var len = isVertical ? 'height' : 'width';
+
+  if (!arrowElement || !popperOffsets) {
+    return;
+  }
+
+  var paddingObject = state.modifiersData[name + "#persistent"].padding;
+  var arrowRect = getLayoutRect(arrowElement);
+  var minProp = axis === 'y' ? top : left;
+  var maxProp = axis === 'y' ? bottom : right;
+  var endDiff = state.rects.reference[len] + state.rects.reference[axis] - popperOffsets[axis] - state.rects.popper[len];
+  var startDiff = popperOffsets[axis] - state.rects.reference[axis];
+  var arrowOffsetParent = getOffsetParent(arrowElement);
+  var clientSize = arrowOffsetParent ? axis === 'y' ? arrowOffsetParent.clientHeight || 0 : arrowOffsetParent.clientWidth || 0 : 0;
+  var centerToReference = endDiff / 2 - startDiff / 2; // Make sure the arrow doesn't overflow the popper if the center point is
+  // outside of the popper bounds
+
+  var min = paddingObject[minProp];
+  var max = clientSize - arrowRect[len] - paddingObject[maxProp];
+  var center = clientSize / 2 - arrowRect[len] / 2 + centerToReference;
+  var offset = within(min, center, max); // Prevents breaking syntax highlighting...
+
+  var axisProp = axis;
+  state.modifiersData[name] = (_state$modifiersData$ = {}, _state$modifiersData$[axisProp] = offset, _state$modifiersData$.centerOffset = offset - center, _state$modifiersData$);
+}
+
+function effect$2(_ref2) {
+  var state = _ref2.state,
+      options = _ref2.options,
+      name = _ref2.name;
+  var _options$element = options.element,
+      arrowElement = _options$element === void 0 ? '[data-popper-arrow]' : _options$element,
+      _options$padding = options.padding,
+      padding = _options$padding === void 0 ? 0 : _options$padding;
+
+  if (arrowElement == null) {
+    return;
+  } // CSS selector
+
+
+  if (typeof arrowElement === 'string') {
+    arrowElement = state.elements.popper.querySelector(arrowElement);
+
+    if (!arrowElement) {
+      return;
+    }
+  }
+
+  if (process.env.NODE_ENV !== "production") {
+    if (!isHTMLElement(arrowElement)) {
+      console.error(['Popper: "arrow" element must be an HTMLElement (not an SVGElement).', 'To use an SVG arrow, wrap it in an HTMLElement that will be used as', 'the arrow.'].join(' '));
+    }
+  }
+
+  if (!contains(state.elements.popper, arrowElement)) {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(['Popper: "arrow" modifier\'s `element` must be a child of the popper', 'element.'].join(' '));
+    }
+
+    return;
+  }
+
+  state.elements.arrow = arrowElement;
+  state.modifiersData[name + "#persistent"] = {
+    padding: mergePaddingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements))
+  };
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var arrow$1 = {
+  name: 'arrow',
+  enabled: true,
+  phase: 'main',
+  fn: arrow,
+  effect: effect$2,
+  requires: ['popperOffsets'],
+  requiresIfExists: ['preventOverflow']
+};
+
+function getSideOffsets(overflow, rect, preventedOffsets) {
+  if (preventedOffsets === void 0) {
+    preventedOffsets = {
+      x: 0,
+      y: 0
+    };
+  }
+
+  return {
+    top: overflow.top - rect.height - preventedOffsets.y,
+    right: overflow.right - rect.width + preventedOffsets.x,
+    bottom: overflow.bottom - rect.height + preventedOffsets.y,
+    left: overflow.left - rect.width - preventedOffsets.x
+  };
+}
+
+function isAnySideFullyClipped(overflow) {
+  return [top, right, bottom, left].some(function (side) {
+    return overflow[side] >= 0;
+  });
+}
+
+function hide(_ref) {
+  var state = _ref.state,
+      name = _ref.name;
+  var referenceRect = state.rects.reference;
+  var popperRect = state.rects.popper;
+  var preventedOffsets = state.modifiersData.preventOverflow;
+  var referenceOverflow = detectOverflow(state, {
+    elementContext: 'reference'
+  });
+  var popperAltOverflow = detectOverflow(state, {
+    altBoundary: true
+  });
+  var referenceClippingOffsets = getSideOffsets(referenceOverflow, referenceRect);
+  var popperEscapeOffsets = getSideOffsets(popperAltOverflow, popperRect, preventedOffsets);
+  var isReferenceHidden = isAnySideFullyClipped(referenceClippingOffsets);
+  var hasPopperEscaped = isAnySideFullyClipped(popperEscapeOffsets);
+  state.modifiersData[name] = {
+    referenceClippingOffsets: referenceClippingOffsets,
+    popperEscapeOffsets: popperEscapeOffsets,
+    isReferenceHidden: isReferenceHidden,
+    hasPopperEscaped: hasPopperEscaped
+  };
+  state.attributes.popper = Object.assign(Object.assign({}, state.attributes.popper), {}, {
+    'data-popper-reference-hidden': isReferenceHidden,
+    'data-popper-escaped': hasPopperEscaped
+  });
+} // eslint-disable-next-line import/no-unused-modules
+
+
+var hide$1 = {
+  name: 'hide',
+  enabled: true,
+  phase: 'main',
+  requiresIfExists: ['preventOverflow'],
+  fn: hide
+};
+
+var defaultModifiers = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1];
+var createPopper = /*#__PURE__*/popperGenerator({
+  defaultModifiers: defaultModifiers
+}); // eslint-disable-next-line import/no-unused-modules
+
+var defaultModifiers$1 = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1, offset$1, flip$1, preventOverflow$1, arrow$1, hide$1];
+var createPopper$1 = /*#__PURE__*/popperGenerator({
+  defaultModifiers: defaultModifiers$1
+}); // eslint-disable-next-line import/no-unused-modules
+
+exports.applyStyles = applyStyles$1;
+exports.arrow = arrow$1;
+exports.computeStyles = computeStyles$1;
+exports.createPopper = createPopper$1;
+exports.createPopperLite = createPopper;
+exports.defaultModifiers = defaultModifiers$1;
+exports.detectOverflow = detectOverflow;
+exports.eventListeners = eventListeners;
+exports.flip = flip$1;
+exports.hide = hide$1;
+exports.offset = offset$1;
+exports.popperGenerator = popperGenerator;
+exports.popperOffsets = popperOffsets$1;
+exports.preventOverflow = preventOverflow$1;
+
+
+}).call(this)}).call(this,require('_process'))
+},{"_process":187}],2:[function(require,module,exports){
 (function (Buffer){(function (){
 if ('undefined' === typeof Buffer) {
   // implicit global
@@ -100,7 +1970,7 @@ if ('undefined' === typeof Buffer) {
 }());
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],2:[function(require,module,exports){
+},{"buffer":60}],3:[function(require,module,exports){
 const ADDR_RE = /^\[?([^\]]+)\]?:(\d+)$/ // ipv4/ipv6/hostname + port
 
 let cache = {}
@@ -125,7 +1995,7 @@ module.exports.reset = function reset () {
   size = 0
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -279,7 +2149,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 const INTEGER_START = 0x69 // 'i'
@@ -451,7 +2321,7 @@ decode.buffer = function () {
 
 module.exports = decode
 
-},{"safe-buffer":219}],5:[function(require,module,exports){
+},{"safe-buffer":220}],6:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 /**
@@ -568,7 +2438,7 @@ encode.list = function (buffers, data) {
 
 module.exports = encode
 
-},{"safe-buffer":219}],6:[function(require,module,exports){
+},{"safe-buffer":220}],7:[function(require,module,exports){
 var bencode = module.exports
 
 bencode.encode = require('./encode')
@@ -584,7 +2454,7 @@ bencode.byteLength = bencode.encodingLength = function (value) {
   return bencode.encode(value).length
 }
 
-},{"./decode":4,"./encode":5}],7:[function(require,module,exports){
+},{"./decode":5,"./encode":6}],8:[function(require,module,exports){
 module.exports = parseRange
 module.exports.parse = parseRange
 module.exports.compose = composeRange
@@ -611,7 +2481,7 @@ function parseRange (range) {
     }, [])
 }
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 module.exports = function(haystack, needle, comparator, low, high) {
   var mid, cmp;
 
@@ -658,7 +2528,7 @@ module.exports = function(haystack, needle, comparator, low, high) {
   return ~low;
 }
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 function getByteSize (num) {
   let out = num >> 3
   if (num % 8 !== 0) out++
@@ -700,7 +2570,7 @@ class BitField {
 
 if (typeof module !== 'undefined') module.exports = BitField
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! bittorrent-protocol. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const arrayRemove = require('unordered-array-remove')
@@ -1454,7 +3324,7 @@ class Wire extends stream.Duplex {
 module.exports = Wire
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bencode":6,"bitfield":11,"buffer":59,"debug":12,"randombytes":194,"readable-stream":29,"speedometer":262,"unordered-array-remove":296}],11:[function(require,module,exports){
+},{"bencode":7,"bitfield":12,"buffer":60,"debug":13,"randombytes":195,"readable-stream":30,"speedometer":263,"unordered-array-remove":298}],12:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function getByteSize(num) {
@@ -1534,7 +3404,7 @@ var BitField = /** @class */ (function () {
 }());
 exports.default = BitField;
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-env browser */
 
@@ -1797,7 +3667,7 @@ formatters.j = function (v) {
 };
 
 }).call(this)}).call(this,require('_process'))
-},{"./common":13,"_process":186}],13:[function(require,module,exports){
+},{"./common":14,"_process":187}],14:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -2063,7 +3933,7 @@ function setup(env) {
 
 module.exports = setup;
 
-},{"ms":14}],14:[function(require,module,exports){
+},{"ms":15}],15:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -2227,7 +4097,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -2356,7 +4226,7 @@ createErrorType('ERR_UNKNOWN_ENCODING', function (arg) {
 createErrorType('ERR_STREAM_UNSHIFT_AFTER_END_EVENT', 'stream.unshift() after end event');
 module.exports.codes = codes;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -2498,7 +4368,7 @@ Object.defineProperty(Duplex.prototype, 'destroyed', {
   }
 });
 }).call(this)}).call(this,require('_process'))
-},{"./_stream_readable":18,"./_stream_writable":20,"_process":186,"inherits":118}],17:[function(require,module,exports){
+},{"./_stream_readable":19,"./_stream_writable":21,"_process":187,"inherits":119}],18:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -2538,7 +4408,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":19,"inherits":118}],18:[function(require,module,exports){
+},{"./_stream_transform":20,"inherits":119}],19:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -3665,7 +5535,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":15,"./_stream_duplex":16,"./internal/streams/async_iterator":21,"./internal/streams/buffer_list":22,"./internal/streams/destroy":23,"./internal/streams/from":25,"./internal/streams/state":27,"./internal/streams/stream":28,"_process":186,"buffer":59,"events":97,"inherits":118,"string_decoder/":285,"util":54}],19:[function(require,module,exports){
+},{"../errors":16,"./_stream_duplex":17,"./internal/streams/async_iterator":22,"./internal/streams/buffer_list":23,"./internal/streams/destroy":24,"./internal/streams/from":26,"./internal/streams/state":28,"./internal/streams/stream":29,"_process":187,"buffer":60,"events":98,"inherits":119,"string_decoder/":286,"util":55}],20:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -3867,7 +5737,7 @@ function done(stream, er, data) {
   if (stream._transformState.transforming) throw new ERR_TRANSFORM_ALREADY_TRANSFORMING();
   return stream.push(null);
 }
-},{"../errors":15,"./_stream_duplex":16,"inherits":118}],20:[function(require,module,exports){
+},{"../errors":16,"./_stream_duplex":17,"inherits":119}],21:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -4567,7 +6437,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":15,"./_stream_duplex":16,"./internal/streams/destroy":23,"./internal/streams/state":27,"./internal/streams/stream":28,"_process":186,"buffer":59,"inherits":118,"util-deprecate":304}],21:[function(require,module,exports){
+},{"../errors":16,"./_stream_duplex":17,"./internal/streams/destroy":24,"./internal/streams/state":28,"./internal/streams/stream":29,"_process":187,"buffer":60,"inherits":119,"util-deprecate":306}],22:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -4777,7 +6647,7 @@ var createReadableStreamAsyncIterator = function createReadableStreamAsyncIterat
 
 module.exports = createReadableStreamAsyncIterator;
 }).call(this)}).call(this,require('_process'))
-},{"./end-of-stream":24,"_process":186}],22:[function(require,module,exports){
+},{"./end-of-stream":25,"_process":187}],23:[function(require,module,exports){
 'use strict';
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -4988,7 +6858,7 @@ function () {
 
   return BufferList;
 }();
-},{"buffer":59,"util":54}],23:[function(require,module,exports){
+},{"buffer":60,"util":55}],24:[function(require,module,exports){
 (function (process){(function (){
 'use strict'; // undocumented cb() API, needed for core, not for public API
 
@@ -5096,7 +6966,7 @@ module.exports = {
   errorOrDestroy: errorOrDestroy
 };
 }).call(this)}).call(this,require('_process'))
-},{"_process":186}],24:[function(require,module,exports){
+},{"_process":187}],25:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/end-of-stream with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -5201,12 +7071,12 @@ function eos(stream, opts, callback) {
 }
 
 module.exports = eos;
-},{"../../../errors":15}],25:[function(require,module,exports){
+},{"../../../errors":16}],26:[function(require,module,exports){
 module.exports = function () {
   throw new Error('Readable.from is not available in the browser')
 };
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/pump with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -5304,7 +7174,7 @@ function pipeline() {
 }
 
 module.exports = pipeline;
-},{"../../../errors":15,"./end-of-stream":24}],27:[function(require,module,exports){
+},{"../../../errors":16,"./end-of-stream":25}],28:[function(require,module,exports){
 'use strict';
 
 var ERR_INVALID_OPT_VALUE = require('../../../errors').codes.ERR_INVALID_OPT_VALUE;
@@ -5332,10 +7202,10 @@ function getHighWaterMark(state, options, duplexKey, isDuplex) {
 module.exports = {
   getHighWaterMark: getHighWaterMark
 };
-},{"../../../errors":15}],28:[function(require,module,exports){
+},{"../../../errors":16}],29:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":97}],29:[function(require,module,exports){
+},{"events":98}],30:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -5346,7 +7216,7 @@ exports.PassThrough = require('./lib/_stream_passthrough.js');
 exports.finished = require('./lib/internal/streams/end-of-stream.js');
 exports.pipeline = require('./lib/internal/streams/pipeline.js');
 
-},{"./lib/_stream_duplex.js":16,"./lib/_stream_passthrough.js":17,"./lib/_stream_readable.js":18,"./lib/_stream_transform.js":19,"./lib/_stream_writable.js":20,"./lib/internal/streams/end-of-stream.js":24,"./lib/internal/streams/pipeline.js":26}],30:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":17,"./lib/_stream_passthrough.js":18,"./lib/_stream_readable.js":19,"./lib/_stream_transform.js":20,"./lib/_stream_writable.js":21,"./lib/internal/streams/end-of-stream.js":25,"./lib/internal/streams/pipeline.js":27}],31:[function(require,module,exports){
 (function (process,Buffer){(function (){
 const debug = require('debug')('bittorrent-tracker:client')
 const EventEmitter = require('events')
@@ -5641,7 +7511,7 @@ Client.scrape = (opts, cb) => {
 module.exports = Client
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"./lib/client/http-tracker":54,"./lib/client/udp-tracker":54,"./lib/client/websocket-tracker":32,"./lib/common":33,"_process":186,"buffer":59,"debug":34,"events":97,"once":182,"run-parallel":217,"simple-peer":222}],31:[function(require,module,exports){
+},{"./lib/client/http-tracker":55,"./lib/client/udp-tracker":55,"./lib/client/websocket-tracker":33,"./lib/common":34,"_process":187,"buffer":60,"debug":35,"events":98,"once":183,"run-parallel":218,"simple-peer":223}],32:[function(require,module,exports){
 const EventEmitter = require('events')
 
 class Tracker extends EventEmitter {
@@ -5671,7 +7541,7 @@ class Tracker extends EventEmitter {
 
 module.exports = Tracker
 
-},{"events":97}],32:[function(require,module,exports){
+},{"events":98}],33:[function(require,module,exports){
 const debug = require('debug')('bittorrent-tracker:websocket-tracker')
 const Peer = require('simple-peer')
 const randombytes = require('randombytes')
@@ -6105,7 +7975,7 @@ function noop () {}
 
 module.exports = WebSocketTracker
 
-},{"../common":33,"./tracker":31,"debug":34,"randombytes":194,"simple-peer":222,"simple-websocket":243}],33:[function(require,module,exports){
+},{"../common":34,"./tracker":32,"debug":35,"randombytes":195,"simple-peer":223,"simple-websocket":244}],34:[function(require,module,exports){
 (function (Buffer){(function (){
 /**
  * Functions/constants needed by both the client and server.
@@ -6132,13 +8002,13 @@ var config = require('./common-node')
 Object.assign(exports, config)
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./common-node":54,"buffer":59}],34:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"./common":35,"_process":186,"dup":12}],35:[function(require,module,exports){
+},{"./common-node":55,"buffer":60}],35:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13,"ms":36}],36:[function(require,module,exports){
+},{"./common":36,"_process":187,"dup":13}],36:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],37:[function(require,module,exports){
+},{"dup":14,"ms":37}],37:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],38:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! blob-to-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* global Blob, FileReader */
@@ -6164,7 +8034,7 @@ module.exports = function blobToBuffer (blob, cb) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],38:[function(require,module,exports){
+},{"buffer":60}],39:[function(require,module,exports){
 (function (Buffer){(function (){
 const { Transform } = require('readable-stream')
 
@@ -6218,41 +8088,41 @@ class Block extends Transform {
 module.exports = Block
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"readable-stream":53}],39:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],40:[function(require,module,exports){
+},{"buffer":60,"readable-stream":54}],40:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":42,"./_stream_writable":44,"_process":186,"dup":16,"inherits":118}],41:[function(require,module,exports){
+},{"dup":16}],41:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":43,"dup":17,"inherits":118}],42:[function(require,module,exports){
+},{"./_stream_readable":43,"./_stream_writable":45,"_process":187,"dup":17,"inherits":119}],42:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":39,"./_stream_duplex":40,"./internal/streams/async_iterator":45,"./internal/streams/buffer_list":46,"./internal/streams/destroy":47,"./internal/streams/from":49,"./internal/streams/state":51,"./internal/streams/stream":52,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],43:[function(require,module,exports){
+},{"./_stream_transform":44,"dup":18,"inherits":119}],43:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":39,"./_stream_duplex":40,"dup":19,"inherits":118}],44:[function(require,module,exports){
+},{"../errors":40,"./_stream_duplex":41,"./internal/streams/async_iterator":46,"./internal/streams/buffer_list":47,"./internal/streams/destroy":48,"./internal/streams/from":50,"./internal/streams/state":52,"./internal/streams/stream":53,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],44:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":39,"./_stream_duplex":40,"./internal/streams/destroy":47,"./internal/streams/state":51,"./internal/streams/stream":52,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],45:[function(require,module,exports){
+},{"../errors":40,"./_stream_duplex":41,"dup":20,"inherits":119}],45:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":48,"_process":186,"dup":21}],46:[function(require,module,exports){
+},{"../errors":40,"./_stream_duplex":41,"./internal/streams/destroy":48,"./internal/streams/state":52,"./internal/streams/stream":53,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],46:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],47:[function(require,module,exports){
+},{"./end-of-stream":49,"_process":187,"dup":22}],47:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],48:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],48:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":39,"dup":24}],49:[function(require,module,exports){
+},{"_process":187,"dup":24}],49:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],50:[function(require,module,exports){
+},{"../../../errors":40,"dup":25}],50:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":39,"./end-of-stream":48,"dup":26}],51:[function(require,module,exports){
+},{"dup":26}],51:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":39,"dup":27}],52:[function(require,module,exports){
+},{"../../../errors":40,"./end-of-stream":49,"dup":27}],52:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],53:[function(require,module,exports){
+},{"../../../errors":40,"dup":28}],53:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":40,"./lib/_stream_passthrough.js":41,"./lib/_stream_readable.js":42,"./lib/_stream_transform.js":43,"./lib/_stream_writable.js":44,"./lib/internal/streams/end-of-stream.js":48,"./lib/internal/streams/pipeline.js":50,"dup":29}],54:[function(require,module,exports){
+},{"dup":29,"events":98}],54:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":41,"./lib/_stream_passthrough.js":42,"./lib/_stream_readable.js":43,"./lib/_stream_transform.js":44,"./lib/_stream_writable.js":45,"./lib/internal/streams/end-of-stream.js":49,"./lib/internal/streams/pipeline.js":51,"dup":30}],55:[function(require,module,exports){
 
-},{}],55:[function(require,module,exports){
-arguments[4][54][0].apply(exports,arguments)
-},{"dup":54}],56:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
+arguments[4][55][0].apply(exports,arguments)
+},{"dup":55}],57:[function(require,module,exports){
 (function (Buffer){(function (){
 function allocUnsafe (size) {
   if (typeof size !== 'number') {
@@ -6273,7 +8143,7 @@ function allocUnsafe (size) {
 module.exports = allocUnsafe
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],57:[function(require,module,exports){
+},{"buffer":60}],58:[function(require,module,exports){
 (function (Buffer){(function (){
 var bufferFill = require('buffer-fill')
 var allocUnsafe = require('buffer-alloc-unsafe')
@@ -6309,7 +8179,7 @@ module.exports = function alloc (size, fill, encoding) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"buffer-alloc-unsafe":56,"buffer-fill":58}],58:[function(require,module,exports){
+},{"buffer":60,"buffer-alloc-unsafe":57,"buffer-fill":59}],59:[function(require,module,exports){
 (function (Buffer){(function (){
 /* Node.js 6.4.0 and up has full support */
 var hasFullSupport = (function () {
@@ -6426,7 +8296,7 @@ function fill (buffer, val, start, end, encoding) {
 module.exports = fill
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],59:[function(require,module,exports){
+},{"buffer":60}],60:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -8207,7 +10077,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":3,"buffer":59,"ieee754":116}],60:[function(require,module,exports){
+},{"base64-js":4,"buffer":60,"ieee754":117}],61:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -8273,7 +10143,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 /*!
  * bytes
  * Copyright(c) 2012-2014 TJ Holowaychuk
@@ -8437,37 +10307,37 @@ function parse(val) {
   return Math.floor(map[unit] * floatValue);
 }
 
-},{}],62:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],63:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":65,"./_stream_writable":67,"_process":186,"dup":16,"inherits":118}],64:[function(require,module,exports){
+},{"dup":16}],64:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":66,"dup":17,"inherits":118}],65:[function(require,module,exports){
+},{"./_stream_readable":66,"./_stream_writable":68,"_process":187,"dup":17,"inherits":119}],65:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":62,"./_stream_duplex":63,"./internal/streams/async_iterator":68,"./internal/streams/buffer_list":69,"./internal/streams/destroy":70,"./internal/streams/from":72,"./internal/streams/state":74,"./internal/streams/stream":75,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],66:[function(require,module,exports){
+},{"./_stream_transform":67,"dup":18,"inherits":119}],66:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":62,"./_stream_duplex":63,"dup":19,"inherits":118}],67:[function(require,module,exports){
+},{"../errors":63,"./_stream_duplex":64,"./internal/streams/async_iterator":69,"./internal/streams/buffer_list":70,"./internal/streams/destroy":71,"./internal/streams/from":73,"./internal/streams/state":75,"./internal/streams/stream":76,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],67:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":62,"./_stream_duplex":63,"./internal/streams/destroy":70,"./internal/streams/state":74,"./internal/streams/stream":75,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],68:[function(require,module,exports){
+},{"../errors":63,"./_stream_duplex":64,"dup":20,"inherits":119}],68:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":71,"_process":186,"dup":21}],69:[function(require,module,exports){
+},{"../errors":63,"./_stream_duplex":64,"./internal/streams/destroy":71,"./internal/streams/state":75,"./internal/streams/stream":76,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],69:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],70:[function(require,module,exports){
+},{"./end-of-stream":72,"_process":187,"dup":22}],70:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],71:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],71:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":62,"dup":24}],72:[function(require,module,exports){
+},{"_process":187,"dup":24}],72:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],73:[function(require,module,exports){
+},{"../../../errors":63,"dup":25}],73:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":62,"./end-of-stream":71,"dup":26}],74:[function(require,module,exports){
+},{"dup":26}],74:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":62,"dup":27}],75:[function(require,module,exports){
+},{"../../../errors":63,"./end-of-stream":72,"dup":27}],75:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],76:[function(require,module,exports){
+},{"../../../errors":63,"dup":28}],76:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":63,"./lib/_stream_passthrough.js":64,"./lib/_stream_readable.js":65,"./lib/_stream_transform.js":66,"./lib/_stream_writable.js":67,"./lib/internal/streams/end-of-stream.js":71,"./lib/internal/streams/pipeline.js":73,"dup":29}],77:[function(require,module,exports){
+},{"dup":29,"events":98}],77:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":64,"./lib/_stream_passthrough.js":65,"./lib/_stream_readable.js":66,"./lib/_stream_transform.js":67,"./lib/_stream_writable.js":68,"./lib/internal/streams/end-of-stream.js":72,"./lib/internal/streams/pipeline.js":74,"dup":30}],78:[function(require,module,exports){
 const BlockStream = require('block-stream2')
 const stream = require('readable-stream')
 
@@ -8527,7 +10397,7 @@ class ChunkStoreWriteStream extends stream.Writable {
 
 module.exports = ChunkStoreWriteStream
 
-},{"block-stream2":38,"readable-stream":76}],78:[function(require,module,exports){
+},{"block-stream2":39,"readable-stream":77}],79:[function(require,module,exports){
 /*!
  * clipboard.js v2.0.6
  * https://clipboardjs.com/
@@ -9501,7 +11371,7 @@ function getAttributeValue(suffix, element) {
 /***/ })
 /******/ ])["default"];
 });
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 /*! create-torrent. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const bencode = require('bencode')
@@ -9939,37 +11809,37 @@ module.exports.parseInput = parseInput
 module.exports.announceList = announceList
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./get-files":54,"_process":186,"bencode":6,"block-stream2":38,"buffer":59,"filestream/read":113,"is-file":120,"junk":122,"multistream":165,"once":182,"path":184,"piece-length":185,"readable-stream":94,"run-parallel":217,"simple-sha1":241}],80:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],81:[function(require,module,exports){
+},{"./get-files":55,"_process":187,"bencode":7,"block-stream2":39,"buffer":60,"filestream/read":114,"is-file":121,"junk":123,"multistream":166,"once":183,"path":185,"piece-length":186,"readable-stream":95,"run-parallel":218,"simple-sha1":242}],81:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":83,"./_stream_writable":85,"_process":186,"dup":16,"inherits":118}],82:[function(require,module,exports){
+},{"dup":16}],82:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":84,"dup":17,"inherits":118}],83:[function(require,module,exports){
+},{"./_stream_readable":84,"./_stream_writable":86,"_process":187,"dup":17,"inherits":119}],83:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":80,"./_stream_duplex":81,"./internal/streams/async_iterator":86,"./internal/streams/buffer_list":87,"./internal/streams/destroy":88,"./internal/streams/from":90,"./internal/streams/state":92,"./internal/streams/stream":93,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],84:[function(require,module,exports){
+},{"./_stream_transform":85,"dup":18,"inherits":119}],84:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":80,"./_stream_duplex":81,"dup":19,"inherits":118}],85:[function(require,module,exports){
+},{"../errors":81,"./_stream_duplex":82,"./internal/streams/async_iterator":87,"./internal/streams/buffer_list":88,"./internal/streams/destroy":89,"./internal/streams/from":91,"./internal/streams/state":93,"./internal/streams/stream":94,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],85:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":80,"./_stream_duplex":81,"./internal/streams/destroy":88,"./internal/streams/state":92,"./internal/streams/stream":93,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],86:[function(require,module,exports){
+},{"../errors":81,"./_stream_duplex":82,"dup":20,"inherits":119}],86:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":89,"_process":186,"dup":21}],87:[function(require,module,exports){
+},{"../errors":81,"./_stream_duplex":82,"./internal/streams/destroy":89,"./internal/streams/state":93,"./internal/streams/stream":94,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],87:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],88:[function(require,module,exports){
+},{"./end-of-stream":90,"_process":187,"dup":22}],88:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],89:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],89:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":80,"dup":24}],90:[function(require,module,exports){
+},{"_process":187,"dup":24}],90:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],91:[function(require,module,exports){
+},{"../../../errors":81,"dup":25}],91:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":80,"./end-of-stream":89,"dup":26}],92:[function(require,module,exports){
+},{"dup":26}],92:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":80,"dup":27}],93:[function(require,module,exports){
+},{"../../../errors":81,"./end-of-stream":90,"dup":27}],93:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],94:[function(require,module,exports){
+},{"../../../errors":81,"dup":28}],94:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":81,"./lib/_stream_passthrough.js":82,"./lib/_stream_readable.js":83,"./lib/_stream_transform.js":84,"./lib/_stream_writable.js":85,"./lib/internal/streams/end-of-stream.js":89,"./lib/internal/streams/pipeline.js":91,"dup":29}],95:[function(require,module,exports){
+},{"dup":29,"events":98}],95:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":82,"./lib/_stream_passthrough.js":83,"./lib/_stream_readable.js":84,"./lib/_stream_transform.js":85,"./lib/_stream_writable.js":86,"./lib/internal/streams/end-of-stream.js":90,"./lib/internal/streams/pipeline.js":92,"dup":30}],96:[function(require,module,exports){
 var once = require('once');
 
 var noop = function() {};
@@ -10058,7 +11928,7 @@ var eos = function(stream, opts, callback) {
 
 module.exports = eos;
 
-},{"once":182}],96:[function(require,module,exports){
+},{"once":183}],97:[function(require,module,exports){
 'use strict';
 
 function assign(obj, props) {
@@ -10107,7 +11977,7 @@ function createError(err, code, props) {
 
 module.exports = createError;
 
-},{}],97:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -10585,37 +12455,37 @@ function once(emitter, name) {
   });
 }
 
-},{}],98:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],99:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":101,"./_stream_writable":103,"_process":186,"dup":16,"inherits":118}],100:[function(require,module,exports){
+},{"dup":16}],100:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":102,"dup":17,"inherits":118}],101:[function(require,module,exports){
+},{"./_stream_readable":102,"./_stream_writable":104,"_process":187,"dup":17,"inherits":119}],101:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":98,"./_stream_duplex":99,"./internal/streams/async_iterator":104,"./internal/streams/buffer_list":105,"./internal/streams/destroy":106,"./internal/streams/from":108,"./internal/streams/state":110,"./internal/streams/stream":111,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],102:[function(require,module,exports){
+},{"./_stream_transform":103,"dup":18,"inherits":119}],102:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":98,"./_stream_duplex":99,"dup":19,"inherits":118}],103:[function(require,module,exports){
+},{"../errors":99,"./_stream_duplex":100,"./internal/streams/async_iterator":105,"./internal/streams/buffer_list":106,"./internal/streams/destroy":107,"./internal/streams/from":109,"./internal/streams/state":111,"./internal/streams/stream":112,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],103:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":98,"./_stream_duplex":99,"./internal/streams/destroy":106,"./internal/streams/state":110,"./internal/streams/stream":111,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],104:[function(require,module,exports){
+},{"../errors":99,"./_stream_duplex":100,"dup":20,"inherits":119}],104:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":107,"_process":186,"dup":21}],105:[function(require,module,exports){
+},{"../errors":99,"./_stream_duplex":100,"./internal/streams/destroy":107,"./internal/streams/state":111,"./internal/streams/stream":112,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],105:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],106:[function(require,module,exports){
+},{"./end-of-stream":108,"_process":187,"dup":22}],106:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],107:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],107:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":98,"dup":24}],108:[function(require,module,exports){
+},{"_process":187,"dup":24}],108:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],109:[function(require,module,exports){
+},{"../../../errors":99,"dup":25}],109:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":98,"./end-of-stream":107,"dup":26}],110:[function(require,module,exports){
+},{"dup":26}],110:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":98,"dup":27}],111:[function(require,module,exports){
+},{"../../../errors":99,"./end-of-stream":108,"dup":27}],111:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],112:[function(require,module,exports){
+},{"../../../errors":99,"dup":28}],112:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":99,"./lib/_stream_passthrough.js":100,"./lib/_stream_readable.js":101,"./lib/_stream_transform.js":102,"./lib/_stream_writable.js":103,"./lib/internal/streams/end-of-stream.js":107,"./lib/internal/streams/pipeline.js":109,"dup":29}],113:[function(require,module,exports){
+},{"dup":29,"events":98}],113:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":100,"./lib/_stream_passthrough.js":101,"./lib/_stream_readable.js":102,"./lib/_stream_transform.js":103,"./lib/_stream_writable.js":104,"./lib/internal/streams/end-of-stream.js":108,"./lib/internal/streams/pipeline.js":110,"dup":30}],114:[function(require,module,exports){
 /* global FileReader */
 
 const { Readable } = require('readable-stream')
@@ -10701,7 +12571,7 @@ class FileReadStream extends Readable {
 
 module.exports = FileReadStream
 
-},{"readable-stream":112,"typedarray-to-buffer":294}],114:[function(require,module,exports){
+},{"readable-stream":113,"typedarray-to-buffer":296}],115:[function(require,module,exports){
 // originally pulled out of simple-peer
 
 module.exports = function getBrowserRTC () {
@@ -10718,7 +12588,7 @@ module.exports = function getBrowserRTC () {
   return wrtc
 }
 
-},{}],115:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -10751,7 +12621,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":263,"url":297}],116:[function(require,module,exports){
+},{"http":264,"url":299}],117:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -10838,7 +12708,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],117:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 /*! immediate-chunk-store. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 // TODO: remove when window.queueMicrotask() is well supported
 const queueMicrotask = require('queue-microtask')
@@ -10897,7 +12767,7 @@ class ImmediateStore {
 
 module.exports = ImmediateStore
 
-},{"queue-microtask":192}],118:[function(require,module,exports){
+},{"queue-microtask":193}],119:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -10926,7 +12796,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],119:[function(require,module,exports){
+},{}],120:[function(require,module,exports){
 /* (c) 2016 Ari Porad (@ariporad) <http://ariporad.com>. License: ariporad.mit-license.org */
 
 // Partially from http://stackoverflow.com/a/94049/1928484, and from another SO answer, which told me that the highest
@@ -10941,7 +12811,7 @@ module.exports = function isAscii(str) {
   return true;
 };
 
-},{}],120:[function(require,module,exports){
+},{}],121:[function(require,module,exports){
 'use strict';
 
 var fs = require('fs');
@@ -10961,7 +12831,7 @@ function isFileSync(path){
   return fs.existsSync(path) && fs.statSync(path).isFile();
 }
 
-},{"fs":55}],121:[function(require,module,exports){
+},{"fs":56}],122:[function(require,module,exports){
 module.exports      = isTypedArray
 isTypedArray.strict = isStrictTypedArray
 isTypedArray.loose  = isLooseTypedArray
@@ -11004,7 +12874,7 @@ function isLooseTypedArray(arr) {
   return names[toString.call(arr)]
 }
 
-},{}],122:[function(require,module,exports){
+},{}],123:[function(require,module,exports){
 'use strict';
 
 const blacklist = [
@@ -11045,7 +12915,7 @@ exports.not = filename => !exports.is(filename);
 // TODO: Remove this for the next major release
 exports.default = module.exports;
 
-},{}],123:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! magnet-uri. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 module.exports = magnetURIDecode
@@ -11195,7 +13065,7 @@ function magnetURIEncode (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bep53-range":7,"buffer":59,"thirty-two":286}],124:[function(require,module,exports){
+},{"bep53-range":8,"buffer":60,"thirty-two":287}],125:[function(require,module,exports){
 /*! mediasource. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = MediaElementWrapper
 
@@ -11487,37 +13357,37 @@ function downloadBuffers (bufs, name) {
   a.click()
 }
 
-},{"inherits":118,"readable-stream":139,"to-arraybuffer":288}],125:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],126:[function(require,module,exports){
+},{"inherits":119,"readable-stream":140,"to-arraybuffer":290}],126:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":128,"./_stream_writable":130,"_process":186,"dup":16,"inherits":118}],127:[function(require,module,exports){
+},{"dup":16}],127:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":129,"dup":17,"inherits":118}],128:[function(require,module,exports){
+},{"./_stream_readable":129,"./_stream_writable":131,"_process":187,"dup":17,"inherits":119}],128:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":125,"./_stream_duplex":126,"./internal/streams/async_iterator":131,"./internal/streams/buffer_list":132,"./internal/streams/destroy":133,"./internal/streams/from":135,"./internal/streams/state":137,"./internal/streams/stream":138,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],129:[function(require,module,exports){
+},{"./_stream_transform":130,"dup":18,"inherits":119}],129:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":125,"./_stream_duplex":126,"dup":19,"inherits":118}],130:[function(require,module,exports){
+},{"../errors":126,"./_stream_duplex":127,"./internal/streams/async_iterator":132,"./internal/streams/buffer_list":133,"./internal/streams/destroy":134,"./internal/streams/from":136,"./internal/streams/state":138,"./internal/streams/stream":139,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],130:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":125,"./_stream_duplex":126,"./internal/streams/destroy":133,"./internal/streams/state":137,"./internal/streams/stream":138,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],131:[function(require,module,exports){
+},{"../errors":126,"./_stream_duplex":127,"dup":20,"inherits":119}],131:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":134,"_process":186,"dup":21}],132:[function(require,module,exports){
+},{"../errors":126,"./_stream_duplex":127,"./internal/streams/destroy":134,"./internal/streams/state":138,"./internal/streams/stream":139,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],132:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],133:[function(require,module,exports){
+},{"./end-of-stream":135,"_process":187,"dup":22}],133:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],134:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],134:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":125,"dup":24}],135:[function(require,module,exports){
+},{"_process":187,"dup":24}],135:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],136:[function(require,module,exports){
+},{"../../../errors":126,"dup":25}],136:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":125,"./end-of-stream":134,"dup":26}],137:[function(require,module,exports){
+},{"dup":26}],137:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":125,"dup":27}],138:[function(require,module,exports){
+},{"../../../errors":126,"./end-of-stream":135,"dup":27}],138:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],139:[function(require,module,exports){
+},{"../../../errors":126,"dup":28}],139:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":126,"./lib/_stream_passthrough.js":127,"./lib/_stream_readable.js":128,"./lib/_stream_transform.js":129,"./lib/_stream_writable.js":130,"./lib/internal/streams/end-of-stream.js":134,"./lib/internal/streams/pipeline.js":136,"dup":29}],140:[function(require,module,exports){
+},{"dup":29,"events":98}],140:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":127,"./lib/_stream_passthrough.js":128,"./lib/_stream_readable.js":129,"./lib/_stream_transform.js":130,"./lib/_stream_writable.js":131,"./lib/internal/streams/end-of-stream.js":135,"./lib/internal/streams/pipeline.js":137,"dup":30}],141:[function(require,module,exports){
 (function (process){(function (){
 module.exports = Storage
 
@@ -11581,7 +13451,7 @@ function nextTick (cb, err, val) {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":186}],141:[function(require,module,exports){
+},{"_process":187}],142:[function(require,module,exports){
 module.exports={
   "application/1d-interleaved-parityfec": {
     "source": "iana"
@@ -19759,7 +21629,7 @@ module.exports={
   }
 }
 
-},{}],142:[function(require,module,exports){
+},{}],143:[function(require,module,exports){
 /*!
  * mime-db
  * Copyright(c) 2014 Jonathan Ong
@@ -19772,7 +21642,7 @@ module.exports={
 
 module.exports = require('./db.json')
 
-},{"./db.json":141}],143:[function(require,module,exports){
+},{"./db.json":142}],144:[function(require,module,exports){
 /*!
  * mime-types
  * Copyright(c) 2014 Jonathan Ong
@@ -19962,7 +21832,7 @@ function populateMaps (extensions, types) {
   })
 }
 
-},{"mime-db":142,"path":184}],144:[function(require,module,exports){
+},{"mime-db":143,"path":185}],145:[function(require,module,exports){
 (function (Buffer){(function (){
 // This is an intentionally recursive require. I don't like it either.
 var Box = require('./index')
@@ -20974,7 +22844,7 @@ function readString (buf, offset, length) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./descriptor":145,"./index":146,"buffer":59,"uint64be":295}],145:[function(require,module,exports){
+},{"./descriptor":146,"./index":147,"buffer":60,"uint64be":297}],146:[function(require,module,exports){
 (function (Buffer){(function (){
 var tagToName = {
   0x03: 'ESDescriptor',
@@ -21050,7 +22920,7 @@ exports.DecoderConfigDescriptor.decode = function (buf, start, end) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],146:[function(require,module,exports){
+},{"buffer":60}],147:[function(require,module,exports){
 (function (Buffer){(function (){
 // var assert = require('assert')
 var uint64be = require('uint64be')
@@ -21279,7 +23149,7 @@ Box.encodingLength = function (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./boxes":144,"buffer":59,"uint64be":295}],147:[function(require,module,exports){
+},{"./boxes":145,"buffer":60,"uint64be":297}],148:[function(require,module,exports){
 (function (Buffer){(function (){
 var stream = require('readable-stream')
 var nextEvent = require('next-event')
@@ -21466,7 +23336,7 @@ class MediaData extends stream.PassThrough {
 module.exports = Decoder
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"mp4-box-encoding":146,"next-event":181,"readable-stream":164}],148:[function(require,module,exports){
+},{"buffer":60,"mp4-box-encoding":147,"next-event":182,"readable-stream":165}],149:[function(require,module,exports){
 (function (process,Buffer){(function (){
 var stream = require('readable-stream')
 var Box = require('mp4-box-encoding')
@@ -21604,44 +23474,44 @@ class MediaData extends stream.PassThrough {
 module.exports = Encoder
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":186,"buffer":59,"mp4-box-encoding":146,"readable-stream":164}],149:[function(require,module,exports){
+},{"_process":187,"buffer":60,"mp4-box-encoding":147,"readable-stream":165}],150:[function(require,module,exports){
 const Decoder = require('./decode')
 const Encoder = require('./encode')
 
 exports.decode = opts => new Decoder(opts)
 exports.encode = opts => new Encoder(opts)
 
-},{"./decode":147,"./encode":148}],150:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],151:[function(require,module,exports){
+},{"./decode":148,"./encode":149}],151:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":153,"./_stream_writable":155,"_process":186,"dup":16,"inherits":118}],152:[function(require,module,exports){
+},{"dup":16}],152:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":154,"dup":17,"inherits":118}],153:[function(require,module,exports){
+},{"./_stream_readable":154,"./_stream_writable":156,"_process":187,"dup":17,"inherits":119}],153:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":150,"./_stream_duplex":151,"./internal/streams/async_iterator":156,"./internal/streams/buffer_list":157,"./internal/streams/destroy":158,"./internal/streams/from":160,"./internal/streams/state":162,"./internal/streams/stream":163,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],154:[function(require,module,exports){
+},{"./_stream_transform":155,"dup":18,"inherits":119}],154:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":150,"./_stream_duplex":151,"dup":19,"inherits":118}],155:[function(require,module,exports){
+},{"../errors":151,"./_stream_duplex":152,"./internal/streams/async_iterator":157,"./internal/streams/buffer_list":158,"./internal/streams/destroy":159,"./internal/streams/from":161,"./internal/streams/state":163,"./internal/streams/stream":164,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],155:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":150,"./_stream_duplex":151,"./internal/streams/destroy":158,"./internal/streams/state":162,"./internal/streams/stream":163,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],156:[function(require,module,exports){
+},{"../errors":151,"./_stream_duplex":152,"dup":20,"inherits":119}],156:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":159,"_process":186,"dup":21}],157:[function(require,module,exports){
+},{"../errors":151,"./_stream_duplex":152,"./internal/streams/destroy":159,"./internal/streams/state":163,"./internal/streams/stream":164,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],157:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],158:[function(require,module,exports){
+},{"./end-of-stream":160,"_process":187,"dup":22}],158:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],159:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],159:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":150,"dup":24}],160:[function(require,module,exports){
+},{"_process":187,"dup":24}],160:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],161:[function(require,module,exports){
+},{"../../../errors":151,"dup":25}],161:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":150,"./end-of-stream":159,"dup":26}],162:[function(require,module,exports){
+},{"dup":26}],162:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":150,"dup":27}],163:[function(require,module,exports){
+},{"../../../errors":151,"./end-of-stream":160,"dup":27}],163:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],164:[function(require,module,exports){
+},{"../../../errors":151,"dup":28}],164:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":151,"./lib/_stream_passthrough.js":152,"./lib/_stream_readable.js":153,"./lib/_stream_transform.js":154,"./lib/_stream_writable.js":155,"./lib/internal/streams/end-of-stream.js":159,"./lib/internal/streams/pipeline.js":161,"dup":29}],165:[function(require,module,exports){
+},{"dup":29,"events":98}],165:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":152,"./lib/_stream_passthrough.js":153,"./lib/_stream_readable.js":154,"./lib/_stream_transform.js":155,"./lib/_stream_writable.js":156,"./lib/internal/streams/end-of-stream.js":160,"./lib/internal/streams/pipeline.js":162,"dup":30}],166:[function(require,module,exports){
 /*! multistream. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 var stream = require('readable-stream')
 
@@ -21789,37 +23659,37 @@ MultiStream.obj = streams => (
 
 module.exports = MultiStream
 
-},{"readable-stream":180}],166:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],167:[function(require,module,exports){
+},{"readable-stream":181}],167:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":169,"./_stream_writable":171,"_process":186,"dup":16,"inherits":118}],168:[function(require,module,exports){
+},{"dup":16}],168:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":170,"dup":17,"inherits":118}],169:[function(require,module,exports){
+},{"./_stream_readable":170,"./_stream_writable":172,"_process":187,"dup":17,"inherits":119}],169:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":166,"./_stream_duplex":167,"./internal/streams/async_iterator":172,"./internal/streams/buffer_list":173,"./internal/streams/destroy":174,"./internal/streams/from":176,"./internal/streams/state":178,"./internal/streams/stream":179,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],170:[function(require,module,exports){
+},{"./_stream_transform":171,"dup":18,"inherits":119}],170:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":166,"./_stream_duplex":167,"dup":19,"inherits":118}],171:[function(require,module,exports){
+},{"../errors":167,"./_stream_duplex":168,"./internal/streams/async_iterator":173,"./internal/streams/buffer_list":174,"./internal/streams/destroy":175,"./internal/streams/from":177,"./internal/streams/state":179,"./internal/streams/stream":180,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],171:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":166,"./_stream_duplex":167,"./internal/streams/destroy":174,"./internal/streams/state":178,"./internal/streams/stream":179,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],172:[function(require,module,exports){
+},{"../errors":167,"./_stream_duplex":168,"dup":20,"inherits":119}],172:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":175,"_process":186,"dup":21}],173:[function(require,module,exports){
+},{"../errors":167,"./_stream_duplex":168,"./internal/streams/destroy":175,"./internal/streams/state":179,"./internal/streams/stream":180,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],173:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],174:[function(require,module,exports){
+},{"./end-of-stream":176,"_process":187,"dup":22}],174:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],175:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],175:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":166,"dup":24}],176:[function(require,module,exports){
+},{"_process":187,"dup":24}],176:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],177:[function(require,module,exports){
+},{"../../../errors":167,"dup":25}],177:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":166,"./end-of-stream":175,"dup":26}],178:[function(require,module,exports){
+},{"dup":26}],178:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":166,"dup":27}],179:[function(require,module,exports){
+},{"../../../errors":167,"./end-of-stream":176,"dup":27}],179:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],180:[function(require,module,exports){
+},{"../../../errors":167,"dup":28}],180:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":167,"./lib/_stream_passthrough.js":168,"./lib/_stream_readable.js":169,"./lib/_stream_transform.js":170,"./lib/_stream_writable.js":171,"./lib/internal/streams/end-of-stream.js":175,"./lib/internal/streams/pipeline.js":177,"dup":29}],181:[function(require,module,exports){
+},{"dup":29,"events":98}],181:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":168,"./lib/_stream_passthrough.js":169,"./lib/_stream_readable.js":170,"./lib/_stream_transform.js":171,"./lib/_stream_writable.js":172,"./lib/internal/streams/end-of-stream.js":176,"./lib/internal/streams/pipeline.js":178,"dup":30}],182:[function(require,module,exports){
 module.exports = nextEvent
 
 function nextEvent (emitter, name) {
@@ -21836,7 +23706,7 @@ function nextEvent (emitter, name) {
   }
 }
 
-},{}],182:[function(require,module,exports){
+},{}],183:[function(require,module,exports){
 var wrappy = require('wrappy')
 module.exports = wrappy(once)
 module.exports.strict = wrappy(onceStrict)
@@ -21880,7 +23750,7 @@ function onceStrict (fn) {
   return f
 }
 
-},{"wrappy":333}],183:[function(require,module,exports){
+},{"wrappy":335}],184:[function(require,module,exports){
 (function (process,Buffer){(function (){
 /*! parse-torrent. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 /* global Blob */
@@ -22150,7 +24020,7 @@ function ensure (bool, fieldName) {
 ;(() => { Buffer.alloc(0) })()
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":186,"bencode":6,"blob-to-buffer":37,"buffer":59,"fs":55,"magnet-uri":123,"path":184,"simple-get":221,"simple-sha1":241}],184:[function(require,module,exports){
+},{"_process":187,"bencode":7,"blob-to-buffer":38,"buffer":60,"fs":56,"magnet-uri":124,"path":185,"simple-get":222,"simple-sha1":242}],185:[function(require,module,exports){
 (function (process){(function (){
 // 'path' module extracted from Node.js v8.11.1 (only the posix part)
 // transplited with Babel
@@ -22683,14 +24553,14 @@ posix.posix = posix;
 module.exports = posix;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":186}],185:[function(require,module,exports){
+},{"_process":187}],186:[function(require,module,exports){
 module.exports = length
 
 function length (bytes) {
   return Math.max(16384, 1 << Math.log2(bytes < 1024 ? 1 : bytes / 1024) + 0.5 | 0)
 }
 
-},{}],186:[function(require,module,exports){
+},{}],187:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -22876,7 +24746,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],187:[function(require,module,exports){
+},{}],188:[function(require,module,exports){
 (function (process){(function (){
 var once = require('once')
 var eos = require('end-of-stream')
@@ -22962,7 +24832,7 @@ var pump = function () {
 module.exports = pump
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":186,"end-of-stream":95,"fs":54,"once":182}],188:[function(require,module,exports){
+},{"_process":187,"end-of-stream":96,"fs":55,"once":183}],189:[function(require,module,exports){
 (function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -23499,7 +25369,7 @@ module.exports = pump
 }(this));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],189:[function(require,module,exports){
+},{}],190:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23585,7 +25455,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],190:[function(require,module,exports){
+},{}],191:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -23672,13 +25542,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],191:[function(require,module,exports){
+},{}],192:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":189,"./encode":190}],192:[function(require,module,exports){
+},{"./decode":190,"./encode":191}],193:[function(require,module,exports){
 /*! queue-microtask. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 let promise
 
@@ -23689,7 +25559,7 @@ module.exports = typeof queueMicrotask === 'function'
     .then(cb)
     .catch(err => setTimeout(() => { throw err }, 0))
 
-},{}],193:[function(require,module,exports){
+},{}],194:[function(require,module,exports){
 var iterate = function (list) {
   var offset = 0
   return function () {
@@ -23710,7 +25580,7 @@ var iterate = function (list) {
 
 module.exports = iterate
 
-},{}],194:[function(require,module,exports){
+},{}],195:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -23764,7 +25634,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":186,"safe-buffer":219}],195:[function(require,module,exports){
+},{"_process":187,"safe-buffer":220}],196:[function(require,module,exports){
 /*
 Instance of writable stream.
 
@@ -23881,37 +25751,37 @@ class RangeSliceStream extends Writable {
 
 module.exports = RangeSliceStream
 
-},{"readable-stream":210}],196:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],197:[function(require,module,exports){
+},{"readable-stream":211}],197:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":199,"./_stream_writable":201,"_process":186,"dup":16,"inherits":118}],198:[function(require,module,exports){
+},{"dup":16}],198:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":200,"dup":17,"inherits":118}],199:[function(require,module,exports){
+},{"./_stream_readable":200,"./_stream_writable":202,"_process":187,"dup":17,"inherits":119}],199:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":196,"./_stream_duplex":197,"./internal/streams/async_iterator":202,"./internal/streams/buffer_list":203,"./internal/streams/destroy":204,"./internal/streams/from":206,"./internal/streams/state":208,"./internal/streams/stream":209,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],200:[function(require,module,exports){
+},{"./_stream_transform":201,"dup":18,"inherits":119}],200:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":196,"./_stream_duplex":197,"dup":19,"inherits":118}],201:[function(require,module,exports){
+},{"../errors":197,"./_stream_duplex":198,"./internal/streams/async_iterator":203,"./internal/streams/buffer_list":204,"./internal/streams/destroy":205,"./internal/streams/from":207,"./internal/streams/state":209,"./internal/streams/stream":210,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],201:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":196,"./_stream_duplex":197,"./internal/streams/destroy":204,"./internal/streams/state":208,"./internal/streams/stream":209,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],202:[function(require,module,exports){
+},{"../errors":197,"./_stream_duplex":198,"dup":20,"inherits":119}],202:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":205,"_process":186,"dup":21}],203:[function(require,module,exports){
+},{"../errors":197,"./_stream_duplex":198,"./internal/streams/destroy":205,"./internal/streams/state":209,"./internal/streams/stream":210,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],203:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],204:[function(require,module,exports){
+},{"./end-of-stream":206,"_process":187,"dup":22}],204:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],205:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],205:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":196,"dup":24}],206:[function(require,module,exports){
+},{"_process":187,"dup":24}],206:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],207:[function(require,module,exports){
+},{"../../../errors":197,"dup":25}],207:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":196,"./end-of-stream":205,"dup":26}],208:[function(require,module,exports){
+},{"dup":26}],208:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":196,"dup":27}],209:[function(require,module,exports){
+},{"../../../errors":197,"./end-of-stream":206,"dup":27}],209:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],210:[function(require,module,exports){
+},{"../../../errors":197,"dup":28}],210:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":197,"./lib/_stream_passthrough.js":198,"./lib/_stream_readable.js":199,"./lib/_stream_transform.js":200,"./lib/_stream_writable.js":201,"./lib/internal/streams/end-of-stream.js":205,"./lib/internal/streams/pipeline.js":207,"dup":29}],211:[function(require,module,exports){
+},{"dup":29,"events":98}],211:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":198,"./lib/_stream_passthrough.js":199,"./lib/_stream_readable.js":200,"./lib/_stream_transform.js":201,"./lib/_stream_writable.js":202,"./lib/internal/streams/end-of-stream.js":206,"./lib/internal/streams/pipeline.js":208,"dup":30}],212:[function(require,module,exports){
 /*! render-media. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.render = render
 exports.append = append
@@ -24311,7 +26181,7 @@ function setMediaOpts (elem, opts) {
   elem.controls = !!opts.controls
 }
 
-},{"./lib/mime.json":212,"debug":213,"is-ascii":119,"mediasource":124,"path":184,"stream-to-blob-url":282,"videostream":306}],212:[function(require,module,exports){
+},{"./lib/mime.json":213,"debug":214,"is-ascii":120,"mediasource":125,"path":185,"stream-to-blob-url":283,"videostream":308}],213:[function(require,module,exports){
 module.exports={
   ".3gp": "video/3gpp",
   ".aac": "audio/aac",
@@ -24396,13 +26266,13 @@ module.exports={
   ".zip": "application/zip"
 }
 
-},{}],213:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"./common":214,"_process":186,"dup":12}],214:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13,"ms":215}],215:[function(require,module,exports){
+},{"./common":215,"_process":187,"dup":13}],215:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],216:[function(require,module,exports){
+},{"dup":14,"ms":216}],216:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],217:[function(require,module,exports){
 (function (process){(function (){
 /*! run-parallel-limit. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = runParallelLimit
@@ -24471,7 +26341,7 @@ function runParallelLimit (tasks, limit, cb) {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":186}],217:[function(require,module,exports){
+},{"_process":187}],218:[function(require,module,exports){
 (function (process){(function (){
 /*! run-parallel. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = runParallel
@@ -24524,7 +26394,7 @@ function runParallel (tasks, cb) {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":186}],218:[function(require,module,exports){
+},{"_process":187}],219:[function(require,module,exports){
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -25453,7 +27323,7 @@ module.exports = function () {
 /***/ })
 /******/ ]);
 });
-},{}],219:[function(require,module,exports){
+},{}],220:[function(require,module,exports){
 /*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
@@ -25520,7 +27390,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":59}],220:[function(require,module,exports){
+},{"buffer":60}],221:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! simple-concat. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = function (stream, cb) {
@@ -25539,7 +27409,7 @@ module.exports = function (stream, cb) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],221:[function(require,module,exports){
+},{"buffer":60}],222:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! simple-get. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = simpleGet
@@ -25643,7 +27513,7 @@ simpleGet.concat = (opts, cb) => {
 })
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"decompress-response":54,"http":263,"https":115,"once":182,"querystring":191,"simple-concat":220,"url":297}],222:[function(require,module,exports){
+},{"buffer":60,"decompress-response":55,"http":264,"https":116,"once":183,"querystring":192,"simple-concat":221,"url":299}],223:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! simple-peer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 var debug = require('debug')('simple-peer')
@@ -26653,43 +28523,43 @@ Peer.channelConfig = {}
 module.exports = Peer
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"debug":223,"err-code":96,"get-browser-rtc":114,"queue-microtask":192,"randombytes":194,"readable-stream":240}],223:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"./common":224,"_process":186,"dup":12}],224:[function(require,module,exports){
+},{"buffer":60,"debug":224,"err-code":97,"get-browser-rtc":115,"queue-microtask":193,"randombytes":195,"readable-stream":241}],224:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13,"ms":225}],225:[function(require,module,exports){
+},{"./common":225,"_process":187,"dup":13}],225:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],226:[function(require,module,exports){
+},{"dup":14,"ms":226}],226:[function(require,module,exports){
 arguments[4][15][0].apply(exports,arguments)
 },{"dup":15}],227:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":229,"./_stream_writable":231,"_process":186,"dup":16,"inherits":118}],228:[function(require,module,exports){
+},{"dup":16}],228:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":230,"dup":17,"inherits":118}],229:[function(require,module,exports){
+},{"./_stream_readable":230,"./_stream_writable":232,"_process":187,"dup":17,"inherits":119}],229:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":226,"./_stream_duplex":227,"./internal/streams/async_iterator":232,"./internal/streams/buffer_list":233,"./internal/streams/destroy":234,"./internal/streams/from":236,"./internal/streams/state":238,"./internal/streams/stream":239,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],230:[function(require,module,exports){
+},{"./_stream_transform":231,"dup":18,"inherits":119}],230:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":226,"./_stream_duplex":227,"dup":19,"inherits":118}],231:[function(require,module,exports){
+},{"../errors":227,"./_stream_duplex":228,"./internal/streams/async_iterator":233,"./internal/streams/buffer_list":234,"./internal/streams/destroy":235,"./internal/streams/from":237,"./internal/streams/state":239,"./internal/streams/stream":240,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],231:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":226,"./_stream_duplex":227,"./internal/streams/destroy":234,"./internal/streams/state":238,"./internal/streams/stream":239,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],232:[function(require,module,exports){
+},{"../errors":227,"./_stream_duplex":228,"dup":20,"inherits":119}],232:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":235,"_process":186,"dup":21}],233:[function(require,module,exports){
+},{"../errors":227,"./_stream_duplex":228,"./internal/streams/destroy":235,"./internal/streams/state":239,"./internal/streams/stream":240,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],233:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],234:[function(require,module,exports){
+},{"./end-of-stream":236,"_process":187,"dup":22}],234:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],235:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],235:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":226,"dup":24}],236:[function(require,module,exports){
+},{"_process":187,"dup":24}],236:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],237:[function(require,module,exports){
+},{"../../../errors":227,"dup":25}],237:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":226,"./end-of-stream":235,"dup":26}],238:[function(require,module,exports){
+},{"dup":26}],238:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":226,"dup":27}],239:[function(require,module,exports){
+},{"../../../errors":227,"./end-of-stream":236,"dup":27}],239:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],240:[function(require,module,exports){
+},{"../../../errors":227,"dup":28}],240:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":227,"./lib/_stream_passthrough.js":228,"./lib/_stream_readable.js":229,"./lib/_stream_transform.js":230,"./lib/_stream_writable.js":231,"./lib/internal/streams/end-of-stream.js":235,"./lib/internal/streams/pipeline.js":237,"dup":29}],241:[function(require,module,exports){
+},{"dup":29,"events":98}],241:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":228,"./lib/_stream_passthrough.js":229,"./lib/_stream_readable.js":230,"./lib/_stream_transform.js":231,"./lib/_stream_writable.js":232,"./lib/internal/streams/end-of-stream.js":236,"./lib/internal/streams/pipeline.js":238,"dup":30}],242:[function(require,module,exports){
 /* global self */
 
 var Rusha = require('rusha')
@@ -26767,7 +28637,7 @@ function hex (buf) {
 module.exports = sha1
 module.exports.sync = sha1sync
 
-},{"./rusha-worker-sha1":242,"rusha":218}],242:[function(require,module,exports){
+},{"./rusha-worker-sha1":243,"rusha":219}],243:[function(require,module,exports){
 var Rusha = require('rusha')
 
 var worker
@@ -26802,7 +28672,7 @@ function sha1 (buf, cb) {
 
 module.exports = sha1
 
-},{"rusha":218}],243:[function(require,module,exports){
+},{"rusha":219}],244:[function(require,module,exports){
 (function (Buffer){(function (){
 /* global WebSocket, DOMException */
 
@@ -27067,43 +28937,43 @@ Socket.WEBSOCKET_SUPPORT = !!_WebSocket
 module.exports = Socket
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"debug":244,"queue-microtask":192,"randombytes":194,"readable-stream":261,"ws":54}],244:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"./common":245,"_process":186,"dup":12}],245:[function(require,module,exports){
+},{"buffer":60,"debug":245,"queue-microtask":193,"randombytes":195,"readable-stream":262,"ws":55}],245:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13,"ms":246}],246:[function(require,module,exports){
+},{"./common":246,"_process":187,"dup":13}],246:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],247:[function(require,module,exports){
+},{"dup":14,"ms":247}],247:[function(require,module,exports){
 arguments[4][15][0].apply(exports,arguments)
 },{"dup":15}],248:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":250,"./_stream_writable":252,"_process":186,"dup":16,"inherits":118}],249:[function(require,module,exports){
+},{"dup":16}],249:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":251,"dup":17,"inherits":118}],250:[function(require,module,exports){
+},{"./_stream_readable":251,"./_stream_writable":253,"_process":187,"dup":17,"inherits":119}],250:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":247,"./_stream_duplex":248,"./internal/streams/async_iterator":253,"./internal/streams/buffer_list":254,"./internal/streams/destroy":255,"./internal/streams/from":257,"./internal/streams/state":259,"./internal/streams/stream":260,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],251:[function(require,module,exports){
+},{"./_stream_transform":252,"dup":18,"inherits":119}],251:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":247,"./_stream_duplex":248,"dup":19,"inherits":118}],252:[function(require,module,exports){
+},{"../errors":248,"./_stream_duplex":249,"./internal/streams/async_iterator":254,"./internal/streams/buffer_list":255,"./internal/streams/destroy":256,"./internal/streams/from":258,"./internal/streams/state":260,"./internal/streams/stream":261,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],252:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":247,"./_stream_duplex":248,"./internal/streams/destroy":255,"./internal/streams/state":259,"./internal/streams/stream":260,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],253:[function(require,module,exports){
+},{"../errors":248,"./_stream_duplex":249,"dup":20,"inherits":119}],253:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":256,"_process":186,"dup":21}],254:[function(require,module,exports){
+},{"../errors":248,"./_stream_duplex":249,"./internal/streams/destroy":256,"./internal/streams/state":260,"./internal/streams/stream":261,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],254:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],255:[function(require,module,exports){
+},{"./end-of-stream":257,"_process":187,"dup":22}],255:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],256:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],256:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":247,"dup":24}],257:[function(require,module,exports){
+},{"_process":187,"dup":24}],257:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],258:[function(require,module,exports){
+},{"../../../errors":248,"dup":25}],258:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":247,"./end-of-stream":256,"dup":26}],259:[function(require,module,exports){
+},{"dup":26}],259:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":247,"dup":27}],260:[function(require,module,exports){
+},{"../../../errors":248,"./end-of-stream":257,"dup":27}],260:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],261:[function(require,module,exports){
+},{"../../../errors":248,"dup":28}],261:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":248,"./lib/_stream_passthrough.js":249,"./lib/_stream_readable.js":250,"./lib/_stream_transform.js":251,"./lib/_stream_writable.js":252,"./lib/internal/streams/end-of-stream.js":256,"./lib/internal/streams/pipeline.js":258,"dup":29}],262:[function(require,module,exports){
+},{"dup":29,"events":98}],262:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":249,"./lib/_stream_passthrough.js":250,"./lib/_stream_readable.js":251,"./lib/_stream_transform.js":252,"./lib/_stream_writable.js":253,"./lib/internal/streams/end-of-stream.js":257,"./lib/internal/streams/pipeline.js":259,"dup":30}],263:[function(require,module,exports){
 var tick = 1
 var maxTick = 65535
 var resolution = 4
@@ -27144,7 +29014,7 @@ module.exports = function (seconds) {
   }
 }
 
-},{}],263:[function(require,module,exports){
+},{}],264:[function(require,module,exports){
 (function (global){(function (){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -27232,7 +29102,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":265,"./lib/response":266,"builtin-status-codes":60,"url":297,"xtend":334}],264:[function(require,module,exports){
+},{"./lib/request":266,"./lib/response":267,"builtin-status-codes":61,"url":299,"xtend":336}],265:[function(require,module,exports){
 (function (global){(function (){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -27295,7 +29165,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],265:[function(require,module,exports){
+},{}],266:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -27613,7 +29483,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":264,"./response":266,"_process":186,"buffer":59,"inherits":118,"readable-stream":281}],266:[function(require,module,exports){
+},{"./capability":265,"./response":267,"_process":187,"buffer":60,"inherits":119,"readable-stream":282}],267:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -27824,37 +29694,37 @@ IncomingMessage.prototype._onXHRProgress = function () {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":264,"_process":186,"buffer":59,"inherits":118,"readable-stream":281}],267:[function(require,module,exports){
-arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],268:[function(require,module,exports){
+},{"./capability":265,"_process":187,"buffer":60,"inherits":119,"readable-stream":282}],268:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":270,"./_stream_writable":272,"_process":186,"dup":16,"inherits":118}],269:[function(require,module,exports){
+},{"dup":16}],269:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":271,"dup":17,"inherits":118}],270:[function(require,module,exports){
+},{"./_stream_readable":271,"./_stream_writable":273,"_process":187,"dup":17,"inherits":119}],270:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":267,"./_stream_duplex":268,"./internal/streams/async_iterator":273,"./internal/streams/buffer_list":274,"./internal/streams/destroy":275,"./internal/streams/from":277,"./internal/streams/state":279,"./internal/streams/stream":280,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],271:[function(require,module,exports){
+},{"./_stream_transform":272,"dup":18,"inherits":119}],271:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":267,"./_stream_duplex":268,"dup":19,"inherits":118}],272:[function(require,module,exports){
+},{"../errors":268,"./_stream_duplex":269,"./internal/streams/async_iterator":274,"./internal/streams/buffer_list":275,"./internal/streams/destroy":276,"./internal/streams/from":278,"./internal/streams/state":280,"./internal/streams/stream":281,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],272:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":267,"./_stream_duplex":268,"./internal/streams/destroy":275,"./internal/streams/state":279,"./internal/streams/stream":280,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],273:[function(require,module,exports){
+},{"../errors":268,"./_stream_duplex":269,"dup":20,"inherits":119}],273:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":276,"_process":186,"dup":21}],274:[function(require,module,exports){
+},{"../errors":268,"./_stream_duplex":269,"./internal/streams/destroy":276,"./internal/streams/state":280,"./internal/streams/stream":281,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],274:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],275:[function(require,module,exports){
+},{"./end-of-stream":277,"_process":187,"dup":22}],275:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],276:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],276:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":267,"dup":24}],277:[function(require,module,exports){
+},{"_process":187,"dup":24}],277:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],278:[function(require,module,exports){
+},{"../../../errors":268,"dup":25}],278:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":267,"./end-of-stream":276,"dup":26}],279:[function(require,module,exports){
+},{"dup":26}],279:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":267,"dup":27}],280:[function(require,module,exports){
+},{"../../../errors":268,"./end-of-stream":277,"dup":27}],280:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],281:[function(require,module,exports){
+},{"../../../errors":268,"dup":28}],281:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":268,"./lib/_stream_passthrough.js":269,"./lib/_stream_readable.js":270,"./lib/_stream_transform.js":271,"./lib/_stream_writable.js":272,"./lib/internal/streams/end-of-stream.js":276,"./lib/internal/streams/pipeline.js":278,"dup":29}],282:[function(require,module,exports){
+},{"dup":29,"events":98}],282:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":269,"./lib/_stream_passthrough.js":270,"./lib/_stream_readable.js":271,"./lib/_stream_transform.js":272,"./lib/_stream_writable.js":273,"./lib/internal/streams/end-of-stream.js":277,"./lib/internal/streams/pipeline.js":279,"dup":30}],283:[function(require,module,exports){
 /*! stream-to-blob-url. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = getBlobURL
 
@@ -27866,7 +29736,7 @@ async function getBlobURL (stream, mimeType) {
   return url
 }
 
-},{"stream-to-blob":283}],283:[function(require,module,exports){
+},{"stream-to-blob":284}],284:[function(require,module,exports){
 /*! stream-to-blob. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* global Blob */
 
@@ -27890,7 +29760,7 @@ function streamToBlob (stream, mimeType) {
   })
 }
 
-},{}],284:[function(require,module,exports){
+},{}],285:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! stream-with-known-length-to-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 var once = require('once')
@@ -27909,7 +29779,7 @@ module.exports = function getBuffer (stream, length, cb) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"once":182}],285:[function(require,module,exports){
+},{"buffer":60,"once":183}],286:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -28206,7 +30076,7 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":219}],286:[function(require,module,exports){
+},{"safe-buffer":220}],287:[function(require,module,exports){
 /*                                                                              
 Copyright (c) 2011, Chris Umbel
 
@@ -28234,7 +30104,7 @@ var base32 = require('./thirty-two');
 exports.encode = base32.encode;
 exports.decode = base32.decode;
 
-},{"./thirty-two":287}],287:[function(require,module,exports){
+},{"./thirty-two":288}],288:[function(require,module,exports){
 (function (Buffer){(function (){
 /*
 Copyright (c) 2011, Chris Umbel
@@ -28366,7 +30236,2336 @@ exports.decode = function(encoded) {
 };
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],288:[function(require,module,exports){
+},{"buffer":60}],289:[function(require,module,exports){
+(function (process){(function (){
+/**!
+* tippy.js v6.2.7
+* (c) 2017-2020 atomiks
+* MIT License
+*/
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+var core = require('@popperjs/core');
+
+var ROUND_ARROW = '<svg width="16" height="6" xmlns="http://www.w3.org/2000/svg"><path d="M0 6s1.796-.013 4.67-3.615C5.851.9 6.93.006 8 0c1.07-.006 2.148.887 3.343 2.385C14.233 6.005 16 6 16 6H0z"></svg>';
+var BOX_CLASS = "tippy-box";
+var CONTENT_CLASS = "tippy-content";
+var BACKDROP_CLASS = "tippy-backdrop";
+var ARROW_CLASS = "tippy-arrow";
+var SVG_ARROW_CLASS = "tippy-svg-arrow";
+var TOUCH_OPTIONS = {
+  passive: true,
+  capture: true
+};
+
+function hasOwnProperty(obj, key) {
+  return {}.hasOwnProperty.call(obj, key);
+}
+function getValueAtIndexOrReturn(value, index, defaultValue) {
+  if (Array.isArray(value)) {
+    var v = value[index];
+    return v == null ? Array.isArray(defaultValue) ? defaultValue[index] : defaultValue : v;
+  }
+
+  return value;
+}
+function isType(value, type) {
+  var str = {}.toString.call(value);
+  return str.indexOf('[object') === 0 && str.indexOf(type + "]") > -1;
+}
+function invokeWithArgsOrReturn(value, args) {
+  return typeof value === 'function' ? value.apply(void 0, args) : value;
+}
+function debounce(fn, ms) {
+  // Avoid wrapping in `setTimeout` if ms is 0 anyway
+  if (ms === 0) {
+    return fn;
+  }
+
+  var timeout;
+  return function (arg) {
+    clearTimeout(timeout);
+    timeout = setTimeout(function () {
+      fn(arg);
+    }, ms);
+  };
+}
+function removeProperties(obj, keys) {
+  var clone = Object.assign({}, obj);
+  keys.forEach(function (key) {
+    delete clone[key];
+  });
+  return clone;
+}
+function splitBySpaces(value) {
+  return value.split(/\s+/).filter(Boolean);
+}
+function normalizeToArray(value) {
+  return [].concat(value);
+}
+function pushIfUnique(arr, value) {
+  if (arr.indexOf(value) === -1) {
+    arr.push(value);
+  }
+}
+function unique(arr) {
+  return arr.filter(function (item, index) {
+    return arr.indexOf(item) === index;
+  });
+}
+function getBasePlacement(placement) {
+  return placement.split('-')[0];
+}
+function arrayFrom(value) {
+  return [].slice.call(value);
+}
+function removeUndefinedProps(obj) {
+  return Object.keys(obj).reduce(function (acc, key) {
+    if (obj[key] !== undefined) {
+      acc[key] = obj[key];
+    }
+
+    return acc;
+  }, {});
+}
+
+function div() {
+  return document.createElement('div');
+}
+function isElement(value) {
+  return ['Element', 'Fragment'].some(function (type) {
+    return isType(value, type);
+  });
+}
+function isNodeList(value) {
+  return isType(value, 'NodeList');
+}
+function isMouseEvent(value) {
+  return isType(value, 'MouseEvent');
+}
+function isReferenceElement(value) {
+  return !!(value && value._tippy && value._tippy.reference === value);
+}
+function getArrayOfElements(value) {
+  if (isElement(value)) {
+    return [value];
+  }
+
+  if (isNodeList(value)) {
+    return arrayFrom(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return arrayFrom(document.querySelectorAll(value));
+}
+function setTransitionDuration(els, value) {
+  els.forEach(function (el) {
+    if (el) {
+      el.style.transitionDuration = value + "ms";
+    }
+  });
+}
+function setVisibilityState(els, state) {
+  els.forEach(function (el) {
+    if (el) {
+      el.setAttribute('data-state', state);
+    }
+  });
+}
+function getOwnerDocument(elementOrElements) {
+  var _normalizeToArray = normalizeToArray(elementOrElements),
+      element = _normalizeToArray[0];
+
+  return element ? element.ownerDocument || document : document;
+}
+function isCursorOutsideInteractiveBorder(popperTreeData, event) {
+  var clientX = event.clientX,
+      clientY = event.clientY;
+  return popperTreeData.every(function (_ref) {
+    var popperRect = _ref.popperRect,
+        popperState = _ref.popperState,
+        props = _ref.props;
+    var interactiveBorder = props.interactiveBorder;
+    var basePlacement = getBasePlacement(popperState.placement);
+    var offsetData = popperState.modifiersData.offset;
+
+    if (!offsetData) {
+      return true;
+    }
+
+    var topDistance = basePlacement === 'bottom' ? offsetData.top.y : 0;
+    var bottomDistance = basePlacement === 'top' ? offsetData.bottom.y : 0;
+    var leftDistance = basePlacement === 'right' ? offsetData.left.x : 0;
+    var rightDistance = basePlacement === 'left' ? offsetData.right.x : 0;
+    var exceedsTop = popperRect.top - clientY + topDistance > interactiveBorder;
+    var exceedsBottom = clientY - popperRect.bottom - bottomDistance > interactiveBorder;
+    var exceedsLeft = popperRect.left - clientX + leftDistance > interactiveBorder;
+    var exceedsRight = clientX - popperRect.right - rightDistance > interactiveBorder;
+    return exceedsTop || exceedsBottom || exceedsLeft || exceedsRight;
+  });
+}
+function updateTransitionEndListener(box, action, listener) {
+  var method = action + "EventListener"; // some browsers apparently support `transition` (unprefixed) but only fire
+  // `webkitTransitionEnd`...
+
+  ['transitionend', 'webkitTransitionEnd'].forEach(function (event) {
+    box[method](event, listener);
+  });
+}
+
+var currentInput = {
+  isTouch: false
+};
+var lastMouseMoveTime = 0;
+/**
+ * When a `touchstart` event is fired, it's assumed the user is using touch
+ * input. We'll bind a `mousemove` event listener to listen for mouse input in
+ * the future. This way, the `isTouch` property is fully dynamic and will handle
+ * hybrid devices that use a mix of touch + mouse input.
+ */
+
+function onDocumentTouchStart() {
+  if (currentInput.isTouch) {
+    return;
+  }
+
+  currentInput.isTouch = true;
+
+  if (window.performance) {
+    document.addEventListener('mousemove', onDocumentMouseMove);
+  }
+}
+/**
+ * When two `mousemove` event are fired consecutively within 20ms, it's assumed
+ * the user is using mouse input again. `mousemove` can fire on touch devices as
+ * well, but very rarely that quickly.
+ */
+
+function onDocumentMouseMove() {
+  var now = performance.now();
+
+  if (now - lastMouseMoveTime < 20) {
+    currentInput.isTouch = false;
+    document.removeEventListener('mousemove', onDocumentMouseMove);
+  }
+
+  lastMouseMoveTime = now;
+}
+/**
+ * When an element is in focus and has a tippy, leaving the tab/window and
+ * returning causes it to show again. For mouse users this is unexpected, but
+ * for keyboard use it makes sense.
+ * TODO: find a better technique to solve this problem
+ */
+
+function onWindowBlur() {
+  var activeElement = document.activeElement;
+
+  if (isReferenceElement(activeElement)) {
+    var instance = activeElement._tippy;
+
+    if (activeElement.blur && !instance.state.isVisible) {
+      activeElement.blur();
+    }
+  }
+}
+function bindGlobalEventListeners() {
+  document.addEventListener('touchstart', onDocumentTouchStart, TOUCH_OPTIONS);
+  window.addEventListener('blur', onWindowBlur);
+}
+
+var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+var ua = isBrowser ? navigator.userAgent : '';
+var isIE = /MSIE |Trident\//.test(ua);
+
+function createMemoryLeakWarning(method) {
+  var txt = method === 'destroy' ? 'n already-' : ' ';
+  return [method + "() was called on a" + txt + "destroyed instance. This is a no-op but", 'indicates a potential memory leak.'].join(' ');
+}
+function clean(value) {
+  var spacesAndTabs = /[ \t]{2,}/g;
+  var lineStartWithSpaces = /^[ \t]*/gm;
+  return value.replace(spacesAndTabs, ' ').replace(lineStartWithSpaces, '').trim();
+}
+
+function getDevMessage(message) {
+  return clean("\n  %ctippy.js\n\n  %c" + clean(message) + "\n\n  %c\uD83D\uDC77\u200D This is a development-only message. It will be removed in production.\n  ");
+}
+
+function getFormattedMessage(message) {
+  return [getDevMessage(message), // title
+  'color: #00C584; font-size: 1.3em; font-weight: bold;', // message
+  'line-height: 1.5', // footer
+  'color: #a6a095;'];
+} // Assume warnings and errors never have the same message
+
+var visitedMessages;
+
+if (process.env.NODE_ENV !== "production") {
+  resetVisitedMessages();
+}
+
+function resetVisitedMessages() {
+  visitedMessages = new Set();
+}
+function warnWhen(condition, message) {
+  if (condition && !visitedMessages.has(message)) {
+    var _console;
+
+    visitedMessages.add(message);
+
+    (_console = console).warn.apply(_console, getFormattedMessage(message));
+  }
+}
+function errorWhen(condition, message) {
+  if (condition && !visitedMessages.has(message)) {
+    var _console2;
+
+    visitedMessages.add(message);
+
+    (_console2 = console).error.apply(_console2, getFormattedMessage(message));
+  }
+}
+function validateTargets(targets) {
+  var didPassFalsyValue = !targets;
+  var didPassPlainObject = Object.prototype.toString.call(targets) === '[object Object]' && !targets.addEventListener;
+  errorWhen(didPassFalsyValue, ['tippy() was passed', '`' + String(targets) + '`', 'as its targets (first) argument. Valid types are: String, Element,', 'Element[], or NodeList.'].join(' '));
+  errorWhen(didPassPlainObject, ['tippy() was passed a plain object which is not supported as an argument', 'for virtual positioning. Use props.getReferenceClientRect instead.'].join(' '));
+}
+
+var pluginProps = {
+  animateFill: false,
+  followCursor: false,
+  inlinePositioning: false,
+  sticky: false
+};
+var renderProps = {
+  allowHTML: false,
+  animation: 'fade',
+  arrow: true,
+  content: '',
+  inertia: false,
+  maxWidth: 350,
+  role: 'tooltip',
+  theme: '',
+  zIndex: 9999
+};
+var defaultProps = Object.assign({
+  appendTo: function appendTo() {
+    return document.body;
+  },
+  aria: {
+    content: 'auto',
+    expanded: 'auto'
+  },
+  delay: 0,
+  duration: [300, 250],
+  getReferenceClientRect: null,
+  hideOnClick: true,
+  ignoreAttributes: false,
+  interactive: false,
+  interactiveBorder: 2,
+  interactiveDebounce: 0,
+  moveTransition: '',
+  offset: [0, 10],
+  onAfterUpdate: function onAfterUpdate() {},
+  onBeforeUpdate: function onBeforeUpdate() {},
+  onCreate: function onCreate() {},
+  onDestroy: function onDestroy() {},
+  onHidden: function onHidden() {},
+  onHide: function onHide() {},
+  onMount: function onMount() {},
+  onShow: function onShow() {},
+  onShown: function onShown() {},
+  onTrigger: function onTrigger() {},
+  onUntrigger: function onUntrigger() {},
+  onClickOutside: function onClickOutside() {},
+  placement: 'top',
+  plugins: [],
+  popperOptions: {},
+  render: null,
+  showOnCreate: false,
+  touch: true,
+  trigger: 'mouseenter focus',
+  triggerTarget: null
+}, pluginProps, {}, renderProps);
+var defaultKeys = Object.keys(defaultProps);
+var setDefaultProps = function setDefaultProps(partialProps) {
+  /* istanbul ignore else */
+  if (process.env.NODE_ENV !== "production") {
+    validateProps(partialProps, []);
+  }
+
+  var keys = Object.keys(partialProps);
+  keys.forEach(function (key) {
+    defaultProps[key] = partialProps[key];
+  });
+};
+function getExtendedPassedProps(passedProps) {
+  var plugins = passedProps.plugins || [];
+  var pluginProps = plugins.reduce(function (acc, plugin) {
+    var name = plugin.name,
+        defaultValue = plugin.defaultValue;
+
+    if (name) {
+      acc[name] = passedProps[name] !== undefined ? passedProps[name] : defaultValue;
+    }
+
+    return acc;
+  }, {});
+  return Object.assign({}, passedProps, {}, pluginProps);
+}
+function getDataAttributeProps(reference, plugins) {
+  var propKeys = plugins ? Object.keys(getExtendedPassedProps(Object.assign({}, defaultProps, {
+    plugins: plugins
+  }))) : defaultKeys;
+  var props = propKeys.reduce(function (acc, key) {
+    var valueAsString = (reference.getAttribute("data-tippy-" + key) || '').trim();
+
+    if (!valueAsString) {
+      return acc;
+    }
+
+    if (key === 'content') {
+      acc[key] = valueAsString;
+    } else {
+      try {
+        acc[key] = JSON.parse(valueAsString);
+      } catch (e) {
+        acc[key] = valueAsString;
+      }
+    }
+
+    return acc;
+  }, {});
+  return props;
+}
+function evaluateProps(reference, props) {
+  var out = Object.assign({}, props, {
+    content: invokeWithArgsOrReturn(props.content, [reference])
+  }, props.ignoreAttributes ? {} : getDataAttributeProps(reference, props.plugins));
+  out.aria = Object.assign({}, defaultProps.aria, {}, out.aria);
+  out.aria = {
+    expanded: out.aria.expanded === 'auto' ? props.interactive : out.aria.expanded,
+    content: out.aria.content === 'auto' ? props.interactive ? null : 'describedby' : out.aria.content
+  };
+  return out;
+}
+function validateProps(partialProps, plugins) {
+  if (partialProps === void 0) {
+    partialProps = {};
+  }
+
+  if (plugins === void 0) {
+    plugins = [];
+  }
+
+  var keys = Object.keys(partialProps);
+  keys.forEach(function (prop) {
+    var nonPluginProps = removeProperties(defaultProps, Object.keys(pluginProps));
+    var didPassUnknownProp = !hasOwnProperty(nonPluginProps, prop); // Check if the prop exists in `plugins`
+
+    if (didPassUnknownProp) {
+      didPassUnknownProp = plugins.filter(function (plugin) {
+        return plugin.name === prop;
+      }).length === 0;
+    }
+
+    warnWhen(didPassUnknownProp, ["`" + prop + "`", "is not a valid prop. You may have spelled it incorrectly, or if it's", 'a plugin, forgot to pass it in an array as props.plugins.', '\n\n', 'All props: https://atomiks.github.io/tippyjs/v6/all-props/\n', 'Plugins: https://atomiks.github.io/tippyjs/v6/plugins/'].join(' '));
+  });
+}
+
+var innerHTML = function innerHTML() {
+  return 'innerHTML';
+};
+
+function dangerouslySetInnerHTML(element, html) {
+  element[innerHTML()] = html;
+}
+
+function createArrowElement(value) {
+  var arrow = div();
+
+  if (value === true) {
+    arrow.className = ARROW_CLASS;
+  } else {
+    arrow.className = SVG_ARROW_CLASS;
+
+    if (isElement(value)) {
+      arrow.appendChild(value);
+    } else {
+      dangerouslySetInnerHTML(arrow, value);
+    }
+  }
+
+  return arrow;
+}
+
+function setContent(content, props) {
+  if (isElement(props.content)) {
+    dangerouslySetInnerHTML(content, '');
+    content.appendChild(props.content);
+  } else if (typeof props.content !== 'function') {
+    if (props.allowHTML) {
+      dangerouslySetInnerHTML(content, props.content);
+    } else {
+      content.textContent = props.content;
+    }
+  }
+}
+function getChildren(popper) {
+  var box = popper.firstElementChild;
+  var boxChildren = arrayFrom(box.children);
+  return {
+    box: box,
+    content: boxChildren.find(function (node) {
+      return node.classList.contains(CONTENT_CLASS);
+    }),
+    arrow: boxChildren.find(function (node) {
+      return node.classList.contains(ARROW_CLASS) || node.classList.contains(SVG_ARROW_CLASS);
+    }),
+    backdrop: boxChildren.find(function (node) {
+      return node.classList.contains(BACKDROP_CLASS);
+    })
+  };
+}
+function render(instance) {
+  var popper = div();
+  var box = div();
+  box.className = BOX_CLASS;
+  box.setAttribute('data-state', 'hidden');
+  box.setAttribute('tabindex', '-1');
+  var content = div();
+  content.className = CONTENT_CLASS;
+  content.setAttribute('data-state', 'hidden');
+  setContent(content, instance.props);
+  popper.appendChild(box);
+  box.appendChild(content);
+  onUpdate(instance.props, instance.props);
+
+  function onUpdate(prevProps, nextProps) {
+    var _getChildren = getChildren(popper),
+        box = _getChildren.box,
+        content = _getChildren.content,
+        arrow = _getChildren.arrow;
+
+    if (nextProps.theme) {
+      box.setAttribute('data-theme', nextProps.theme);
+    } else {
+      box.removeAttribute('data-theme');
+    }
+
+    if (typeof nextProps.animation === 'string') {
+      box.setAttribute('data-animation', nextProps.animation);
+    } else {
+      box.removeAttribute('data-animation');
+    }
+
+    if (nextProps.inertia) {
+      box.setAttribute('data-inertia', '');
+    } else {
+      box.removeAttribute('data-inertia');
+    }
+
+    box.style.maxWidth = typeof nextProps.maxWidth === 'number' ? nextProps.maxWidth + "px" : nextProps.maxWidth;
+
+    if (nextProps.role) {
+      box.setAttribute('role', nextProps.role);
+    } else {
+      box.removeAttribute('role');
+    }
+
+    if (prevProps.content !== nextProps.content || prevProps.allowHTML !== nextProps.allowHTML) {
+      setContent(content, instance.props);
+    }
+
+    if (nextProps.arrow) {
+      if (!arrow) {
+        box.appendChild(createArrowElement(nextProps.arrow));
+      } else if (prevProps.arrow !== nextProps.arrow) {
+        box.removeChild(arrow);
+        box.appendChild(createArrowElement(nextProps.arrow));
+      }
+    } else if (arrow) {
+      box.removeChild(arrow);
+    }
+  }
+
+  return {
+    popper: popper,
+    onUpdate: onUpdate
+  };
+} // Runtime check to identify if the render function is the default one; this
+// way we can apply default CSS transitions logic and it can be tree-shaken away
+
+render.$$tippy = true;
+
+var idCounter = 1;
+var mouseMoveListeners = []; // Used by `hideAll()`
+
+var mountedInstances = [];
+function createTippy(reference, passedProps) {
+  var props = evaluateProps(reference, Object.assign({}, defaultProps, {}, getExtendedPassedProps(removeUndefinedProps(passedProps)))); // ===========================================================================
+  // 🔒 Private members
+  // ===========================================================================
+
+  var showTimeout;
+  var hideTimeout;
+  var scheduleHideAnimationFrame;
+  var isVisibleFromClick = false;
+  var didHideDueToDocumentMouseDown = false;
+  var didTouchMove = false;
+  var ignoreOnFirstUpdate = false;
+  var lastTriggerEvent;
+  var currentTransitionEndListener;
+  var onFirstUpdate;
+  var listeners = [];
+  var debouncedOnMouseMove = debounce(onMouseMove, props.interactiveDebounce);
+  var currentTarget; // ===========================================================================
+  // 🔑 Public members
+  // ===========================================================================
+
+  var id = idCounter++;
+  var popperInstance = null;
+  var plugins = unique(props.plugins);
+  var state = {
+    // Is the instance currently enabled?
+    isEnabled: true,
+    // Is the tippy currently showing and not transitioning out?
+    isVisible: false,
+    // Has the instance been destroyed?
+    isDestroyed: false,
+    // Is the tippy currently mounted to the DOM?
+    isMounted: false,
+    // Has the tippy finished transitioning in?
+    isShown: false
+  };
+  var instance = {
+    // properties
+    id: id,
+    reference: reference,
+    popper: div(),
+    popperInstance: popperInstance,
+    props: props,
+    state: state,
+    plugins: plugins,
+    // methods
+    clearDelayTimeouts: clearDelayTimeouts,
+    setProps: setProps,
+    setContent: setContent,
+    show: show,
+    hide: hide,
+    hideWithInteractivity: hideWithInteractivity,
+    enable: enable,
+    disable: disable,
+    unmount: unmount,
+    destroy: destroy
+  }; // TODO: Investigate why this early return causes a TDZ error in the tests —
+  // it doesn't seem to happen in the browser
+
+  /* istanbul ignore if */
+
+  if (!props.render) {
+    if (process.env.NODE_ENV !== "production") {
+      errorWhen(true, 'render() function has not been supplied.');
+    }
+
+    return instance;
+  } // ===========================================================================
+  // Initial mutations
+  // ===========================================================================
+
+
+  var _props$render = props.render(instance),
+      popper = _props$render.popper,
+      onUpdate = _props$render.onUpdate;
+
+  popper.setAttribute('data-tippy-root', '');
+  popper.id = "tippy-" + instance.id;
+  instance.popper = popper;
+  reference._tippy = instance;
+  popper._tippy = instance;
+  var pluginsHooks = plugins.map(function (plugin) {
+    return plugin.fn(instance);
+  });
+  var hasAriaExpanded = reference.hasAttribute('aria-expanded');
+  addListeners();
+  handleAriaExpandedAttribute();
+  handleStyles();
+  invokeHook('onCreate', [instance]);
+
+  if (props.showOnCreate) {
+    scheduleShow();
+  } // Prevent a tippy with a delay from hiding if the cursor left then returned
+  // before it started hiding
+
+
+  popper.addEventListener('mouseenter', function () {
+    if (instance.props.interactive && instance.state.isVisible) {
+      instance.clearDelayTimeouts();
+    }
+  });
+  popper.addEventListener('mouseleave', function (event) {
+    if (instance.props.interactive && instance.props.trigger.indexOf('mouseenter') >= 0) {
+      getDocument().addEventListener('mousemove', debouncedOnMouseMove);
+      debouncedOnMouseMove(event);
+    }
+  });
+  return instance; // ===========================================================================
+  // 🔒 Private methods
+  // ===========================================================================
+
+  function getNormalizedTouchSettings() {
+    var touch = instance.props.touch;
+    return Array.isArray(touch) ? touch : [touch, 0];
+  }
+
+  function getIsCustomTouchBehavior() {
+    return getNormalizedTouchSettings()[0] === 'hold';
+  }
+
+  function getIsDefaultRenderFn() {
+    var _instance$props$rende;
+
+    // @ts-ignore
+    return !!((_instance$props$rende = instance.props.render) == null ? void 0 : _instance$props$rende.$$tippy);
+  }
+
+  function getCurrentTarget() {
+    return currentTarget || reference;
+  }
+
+  function getDocument() {
+    var parent = getCurrentTarget().parentNode;
+    return parent ? getOwnerDocument(parent) : document;
+  }
+
+  function getDefaultTemplateChildren() {
+    return getChildren(popper);
+  }
+
+  function getDelay(isShow) {
+    // For touch or keyboard input, force `0` delay for UX reasons
+    // Also if the instance is mounted but not visible (transitioning out),
+    // ignore delay
+    if (instance.state.isMounted && !instance.state.isVisible || currentInput.isTouch || lastTriggerEvent && lastTriggerEvent.type === 'focus') {
+      return 0;
+    }
+
+    return getValueAtIndexOrReturn(instance.props.delay, isShow ? 0 : 1, defaultProps.delay);
+  }
+
+  function handleStyles() {
+    popper.style.pointerEvents = instance.props.interactive && instance.state.isVisible ? '' : 'none';
+    popper.style.zIndex = "" + instance.props.zIndex;
+  }
+
+  function invokeHook(hook, args, shouldInvokePropsHook) {
+    if (shouldInvokePropsHook === void 0) {
+      shouldInvokePropsHook = true;
+    }
+
+    pluginsHooks.forEach(function (pluginHooks) {
+      if (pluginHooks[hook]) {
+        pluginHooks[hook].apply(void 0, args);
+      }
+    });
+
+    if (shouldInvokePropsHook) {
+      var _instance$props;
+
+      (_instance$props = instance.props)[hook].apply(_instance$props, args);
+    }
+  }
+
+  function handleAriaContentAttribute() {
+    var aria = instance.props.aria;
+
+    if (!aria.content) {
+      return;
+    }
+
+    var attr = "aria-" + aria.content;
+    var id = popper.id;
+    var nodes = normalizeToArray(instance.props.triggerTarget || reference);
+    nodes.forEach(function (node) {
+      var currentValue = node.getAttribute(attr);
+
+      if (instance.state.isVisible) {
+        node.setAttribute(attr, currentValue ? currentValue + " " + id : id);
+      } else {
+        var nextValue = currentValue && currentValue.replace(id, '').trim();
+
+        if (nextValue) {
+          node.setAttribute(attr, nextValue);
+        } else {
+          node.removeAttribute(attr);
+        }
+      }
+    });
+  }
+
+  function handleAriaExpandedAttribute() {
+    if (hasAriaExpanded || !instance.props.aria.expanded) {
+      return;
+    }
+
+    var nodes = normalizeToArray(instance.props.triggerTarget || reference);
+    nodes.forEach(function (node) {
+      if (instance.props.interactive) {
+        node.setAttribute('aria-expanded', instance.state.isVisible && node === getCurrentTarget() ? 'true' : 'false');
+      } else {
+        node.removeAttribute('aria-expanded');
+      }
+    });
+  }
+
+  function cleanupInteractiveMouseListeners() {
+    getDocument().removeEventListener('mousemove', debouncedOnMouseMove);
+    mouseMoveListeners = mouseMoveListeners.filter(function (listener) {
+      return listener !== debouncedOnMouseMove;
+    });
+  }
+
+  function onDocumentPress(event) {
+    // Moved finger to scroll instead of an intentional tap outside
+    if (currentInput.isTouch) {
+      if (didTouchMove || event.type === 'mousedown') {
+        return;
+      }
+    } // Clicked on interactive popper
+
+
+    if (instance.props.interactive && popper.contains(event.target)) {
+      return;
+    } // Clicked on the event listeners target
+
+
+    if (getCurrentTarget().contains(event.target)) {
+      if (currentInput.isTouch) {
+        return;
+      }
+
+      if (instance.state.isVisible && instance.props.trigger.indexOf('click') >= 0) {
+        return;
+      }
+    } else {
+      invokeHook('onClickOutside', [instance, event]);
+    }
+
+    if (instance.props.hideOnClick === true) {
+      instance.clearDelayTimeouts();
+      instance.hide(); // `mousedown` event is fired right before `focus` if pressing the
+      // currentTarget. This lets a tippy with `focus` trigger know that it
+      // should not show
+
+      didHideDueToDocumentMouseDown = true;
+      setTimeout(function () {
+        didHideDueToDocumentMouseDown = false;
+      }); // The listener gets added in `scheduleShow()`, but this may be hiding it
+      // before it shows, and hide()'s early bail-out behavior can prevent it
+      // from being cleaned up
+
+      if (!instance.state.isMounted) {
+        removeDocumentPress();
+      }
+    }
+  }
+
+  function onTouchMove() {
+    didTouchMove = true;
+  }
+
+  function onTouchStart() {
+    didTouchMove = false;
+  }
+
+  function addDocumentPress() {
+    var doc = getDocument();
+    doc.addEventListener('mousedown', onDocumentPress, true);
+    doc.addEventListener('touchend', onDocumentPress, TOUCH_OPTIONS);
+    doc.addEventListener('touchstart', onTouchStart, TOUCH_OPTIONS);
+    doc.addEventListener('touchmove', onTouchMove, TOUCH_OPTIONS);
+  }
+
+  function removeDocumentPress() {
+    var doc = getDocument();
+    doc.removeEventListener('mousedown', onDocumentPress, true);
+    doc.removeEventListener('touchend', onDocumentPress, TOUCH_OPTIONS);
+    doc.removeEventListener('touchstart', onTouchStart, TOUCH_OPTIONS);
+    doc.removeEventListener('touchmove', onTouchMove, TOUCH_OPTIONS);
+  }
+
+  function onTransitionedOut(duration, callback) {
+    onTransitionEnd(duration, function () {
+      if (!instance.state.isVisible && popper.parentNode && popper.parentNode.contains(popper)) {
+        callback();
+      }
+    });
+  }
+
+  function onTransitionedIn(duration, callback) {
+    onTransitionEnd(duration, callback);
+  }
+
+  function onTransitionEnd(duration, callback) {
+    var box = getDefaultTemplateChildren().box;
+
+    function listener(event) {
+      if (event.target === box) {
+        updateTransitionEndListener(box, 'remove', listener);
+        callback();
+      }
+    } // Make callback synchronous if duration is 0
+    // `transitionend` won't fire otherwise
+
+
+    if (duration === 0) {
+      return callback();
+    }
+
+    updateTransitionEndListener(box, 'remove', currentTransitionEndListener);
+    updateTransitionEndListener(box, 'add', listener);
+    currentTransitionEndListener = listener;
+  }
+
+  function on(eventType, handler, options) {
+    if (options === void 0) {
+      options = false;
+    }
+
+    var nodes = normalizeToArray(instance.props.triggerTarget || reference);
+    nodes.forEach(function (node) {
+      node.addEventListener(eventType, handler, options);
+      listeners.push({
+        node: node,
+        eventType: eventType,
+        handler: handler,
+        options: options
+      });
+    });
+  }
+
+  function addListeners() {
+    if (getIsCustomTouchBehavior()) {
+      on('touchstart', onTrigger, {
+        passive: true
+      });
+      on('touchend', onMouseLeave, {
+        passive: true
+      });
+    }
+
+    splitBySpaces(instance.props.trigger).forEach(function (eventType) {
+      if (eventType === 'manual') {
+        return;
+      }
+
+      on(eventType, onTrigger);
+
+      switch (eventType) {
+        case 'mouseenter':
+          on('mouseleave', onMouseLeave);
+          break;
+
+        case 'focus':
+          on(isIE ? 'focusout' : 'blur', onBlurOrFocusOut);
+          break;
+
+        case 'focusin':
+          on('focusout', onBlurOrFocusOut);
+          break;
+      }
+    });
+  }
+
+  function removeListeners() {
+    listeners.forEach(function (_ref) {
+      var node = _ref.node,
+          eventType = _ref.eventType,
+          handler = _ref.handler,
+          options = _ref.options;
+      node.removeEventListener(eventType, handler, options);
+    });
+    listeners = [];
+  }
+
+  function onTrigger(event) {
+    var _lastTriggerEvent;
+
+    var shouldScheduleClickHide = false;
+
+    if (!instance.state.isEnabled || isEventListenerStopped(event) || didHideDueToDocumentMouseDown) {
+      return;
+    }
+
+    var wasFocused = ((_lastTriggerEvent = lastTriggerEvent) == null ? void 0 : _lastTriggerEvent.type) === 'focus';
+    lastTriggerEvent = event;
+    currentTarget = event.currentTarget;
+    handleAriaExpandedAttribute();
+
+    if (!instance.state.isVisible && isMouseEvent(event)) {
+      // If scrolling, `mouseenter` events can be fired if the cursor lands
+      // over a new target, but `mousemove` events don't get fired. This
+      // causes interactive tooltips to get stuck open until the cursor is
+      // moved
+      mouseMoveListeners.forEach(function (listener) {
+        return listener(event);
+      });
+    } // Toggle show/hide when clicking click-triggered tooltips
+
+
+    if (event.type === 'click' && (instance.props.trigger.indexOf('mouseenter') < 0 || isVisibleFromClick) && instance.props.hideOnClick !== false && instance.state.isVisible) {
+      shouldScheduleClickHide = true;
+    } else {
+      scheduleShow(event);
+    }
+
+    if (event.type === 'click') {
+      isVisibleFromClick = !shouldScheduleClickHide;
+    }
+
+    if (shouldScheduleClickHide && !wasFocused) {
+      scheduleHide(event);
+    }
+  }
+
+  function onMouseMove(event) {
+    var target = event.target;
+    var isCursorOverReferenceOrPopper = getCurrentTarget().contains(target) || popper.contains(target);
+
+    if (event.type === 'mousemove' && isCursorOverReferenceOrPopper) {
+      return;
+    }
+
+    var popperTreeData = getNestedPopperTree().concat(popper).map(function (popper) {
+      var _instance$popperInsta;
+
+      var instance = popper._tippy;
+      var state = (_instance$popperInsta = instance.popperInstance) == null ? void 0 : _instance$popperInsta.state;
+
+      if (state) {
+        return {
+          popperRect: popper.getBoundingClientRect(),
+          popperState: state,
+          props: props
+        };
+      }
+
+      return null;
+    }).filter(Boolean);
+
+    if (isCursorOutsideInteractiveBorder(popperTreeData, event)) {
+      cleanupInteractiveMouseListeners();
+      scheduleHide(event);
+    }
+  }
+
+  function onMouseLeave(event) {
+    var shouldBail = isEventListenerStopped(event) || instance.props.trigger.indexOf('click') >= 0 && isVisibleFromClick;
+
+    if (shouldBail) {
+      return;
+    }
+
+    if (instance.props.interactive) {
+      instance.hideWithInteractivity(event);
+      return;
+    }
+
+    scheduleHide(event);
+  }
+
+  function onBlurOrFocusOut(event) {
+    if (instance.props.trigger.indexOf('focusin') < 0 && event.target !== getCurrentTarget()) {
+      return;
+    } // If focus was moved to within the popper
+
+
+    if (instance.props.interactive && event.relatedTarget && popper.contains(event.relatedTarget)) {
+      return;
+    }
+
+    scheduleHide(event);
+  }
+
+  function isEventListenerStopped(event) {
+    return currentInput.isTouch ? getIsCustomTouchBehavior() !== event.type.indexOf('touch') >= 0 : false;
+  }
+
+  function createPopperInstance() {
+    destroyPopperInstance();
+    var _instance$props2 = instance.props,
+        popperOptions = _instance$props2.popperOptions,
+        placement = _instance$props2.placement,
+        offset = _instance$props2.offset,
+        getReferenceClientRect = _instance$props2.getReferenceClientRect,
+        moveTransition = _instance$props2.moveTransition;
+    var arrow = getIsDefaultRenderFn() ? getChildren(popper).arrow : null;
+    var computedReference = getReferenceClientRect ? {
+      getBoundingClientRect: getReferenceClientRect,
+      contextElement: getReferenceClientRect.contextElement || getCurrentTarget()
+    } : reference;
+    var tippyModifier = {
+      name: '$$tippy',
+      enabled: true,
+      phase: 'beforeWrite',
+      requires: ['computeStyles'],
+      fn: function fn(_ref2) {
+        var state = _ref2.state;
+
+        if (getIsDefaultRenderFn()) {
+          var _getDefaultTemplateCh = getDefaultTemplateChildren(),
+              box = _getDefaultTemplateCh.box;
+
+          ['placement', 'reference-hidden', 'escaped'].forEach(function (attr) {
+            if (attr === 'placement') {
+              box.setAttribute('data-placement', state.placement);
+            } else {
+              if (state.attributes.popper["data-popper-" + attr]) {
+                box.setAttribute("data-" + attr, '');
+              } else {
+                box.removeAttribute("data-" + attr);
+              }
+            }
+          });
+          state.attributes.popper = {};
+        }
+      }
+    };
+    var modifiers = [{
+      name: 'offset',
+      options: {
+        offset: offset
+      }
+    }, {
+      name: 'preventOverflow',
+      options: {
+        padding: {
+          top: 2,
+          bottom: 2,
+          left: 5,
+          right: 5
+        }
+      }
+    }, {
+      name: 'flip',
+      options: {
+        padding: 5
+      }
+    }, {
+      name: 'computeStyles',
+      options: {
+        adaptive: !moveTransition
+      }
+    }, tippyModifier];
+
+    if (getIsDefaultRenderFn() && arrow) {
+      modifiers.push({
+        name: 'arrow',
+        options: {
+          element: arrow,
+          padding: 3
+        }
+      });
+    }
+
+    modifiers.push.apply(modifiers, (popperOptions == null ? void 0 : popperOptions.modifiers) || []);
+    instance.popperInstance = core.createPopper(computedReference, popper, Object.assign({}, popperOptions, {
+      placement: placement,
+      onFirstUpdate: onFirstUpdate,
+      modifiers: modifiers
+    }));
+  }
+
+  function destroyPopperInstance() {
+    if (instance.popperInstance) {
+      instance.popperInstance.destroy();
+      instance.popperInstance = null;
+    }
+  }
+
+  function mount() {
+    var appendTo = instance.props.appendTo;
+    var parentNode; // By default, we'll append the popper to the triggerTargets's parentNode so
+    // it's directly after the reference element so the elements inside the
+    // tippy can be tabbed to
+    // If there are clipping issues, the user can specify a different appendTo
+    // and ensure focus management is handled correctly manually
+
+    var node = getCurrentTarget();
+
+    if (instance.props.interactive && appendTo === defaultProps.appendTo || appendTo === 'parent') {
+      parentNode = node.parentNode;
+    } else {
+      parentNode = invokeWithArgsOrReturn(appendTo, [node]);
+    } // The popper element needs to exist on the DOM before its position can be
+    // updated as Popper needs to read its dimensions
+
+
+    if (!parentNode.contains(popper)) {
+      parentNode.appendChild(popper);
+    }
+
+    createPopperInstance();
+    /* istanbul ignore else */
+
+    if (process.env.NODE_ENV !== "production") {
+      // Accessibility check
+      warnWhen(instance.props.interactive && appendTo === defaultProps.appendTo && node.nextElementSibling !== popper, ['Interactive tippy element may not be accessible via keyboard', 'navigation because it is not directly after the reference element', 'in the DOM source order.', '\n\n', 'Using a wrapper <div> or <span> tag around the reference element', 'solves this by creating a new parentNode context.', '\n\n', 'Specifying `appendTo: document.body` silences this warning, but it', 'assumes you are using a focus management solution to handle', 'keyboard navigation.', '\n\n', 'See: https://atomiks.github.io/tippyjs/v6/accessibility/#interactivity'].join(' '));
+    }
+  }
+
+  function getNestedPopperTree() {
+    return arrayFrom(popper.querySelectorAll('[data-tippy-root]'));
+  }
+
+  function scheduleShow(event) {
+    instance.clearDelayTimeouts();
+
+    if (event) {
+      invokeHook('onTrigger', [instance, event]);
+    }
+
+    addDocumentPress();
+    var delay = getDelay(true);
+
+    var _getNormalizedTouchSe = getNormalizedTouchSettings(),
+        touchValue = _getNormalizedTouchSe[0],
+        touchDelay = _getNormalizedTouchSe[1];
+
+    if (currentInput.isTouch && touchValue === 'hold' && touchDelay) {
+      delay = touchDelay;
+    }
+
+    if (delay) {
+      showTimeout = setTimeout(function () {
+        instance.show();
+      }, delay);
+    } else {
+      instance.show();
+    }
+  }
+
+  function scheduleHide(event) {
+    instance.clearDelayTimeouts();
+    invokeHook('onUntrigger', [instance, event]);
+
+    if (!instance.state.isVisible) {
+      removeDocumentPress();
+      return;
+    } // For interactive tippies, scheduleHide is added to a document.body handler
+    // from onMouseLeave so must intercept scheduled hides from mousemove/leave
+    // events when trigger contains mouseenter and click, and the tip is
+    // currently shown as a result of a click.
+
+
+    if (instance.props.trigger.indexOf('mouseenter') >= 0 && instance.props.trigger.indexOf('click') >= 0 && ['mouseleave', 'mousemove'].indexOf(event.type) >= 0 && isVisibleFromClick) {
+      return;
+    }
+
+    var delay = getDelay(false);
+
+    if (delay) {
+      hideTimeout = setTimeout(function () {
+        if (instance.state.isVisible) {
+          instance.hide();
+        }
+      }, delay);
+    } else {
+      // Fixes a `transitionend` problem when it fires 1 frame too
+      // late sometimes, we don't want hide() to be called.
+      scheduleHideAnimationFrame = requestAnimationFrame(function () {
+        instance.hide();
+      });
+    }
+  } // ===========================================================================
+  // 🔑 Public methods
+  // ===========================================================================
+
+
+  function enable() {
+    instance.state.isEnabled = true;
+  }
+
+  function disable() {
+    // Disabling the instance should also hide it
+    // https://github.com/atomiks/tippy.js-react/issues/106
+    instance.hide();
+    instance.state.isEnabled = false;
+  }
+
+  function clearDelayTimeouts() {
+    clearTimeout(showTimeout);
+    clearTimeout(hideTimeout);
+    cancelAnimationFrame(scheduleHideAnimationFrame);
+  }
+
+  function setProps(partialProps) {
+    /* istanbul ignore else */
+    if (process.env.NODE_ENV !== "production") {
+      warnWhen(instance.state.isDestroyed, createMemoryLeakWarning('setProps'));
+    }
+
+    if (instance.state.isDestroyed) {
+      return;
+    }
+
+    invokeHook('onBeforeUpdate', [instance, partialProps]);
+    removeListeners();
+    var prevProps = instance.props;
+    var nextProps = evaluateProps(reference, Object.assign({}, instance.props, {}, partialProps, {
+      ignoreAttributes: true
+    }));
+    instance.props = nextProps;
+    addListeners();
+
+    if (prevProps.interactiveDebounce !== nextProps.interactiveDebounce) {
+      cleanupInteractiveMouseListeners();
+      debouncedOnMouseMove = debounce(onMouseMove, nextProps.interactiveDebounce);
+    } // Ensure stale aria-expanded attributes are removed
+
+
+    if (prevProps.triggerTarget && !nextProps.triggerTarget) {
+      normalizeToArray(prevProps.triggerTarget).forEach(function (node) {
+        node.removeAttribute('aria-expanded');
+      });
+    } else if (nextProps.triggerTarget) {
+      reference.removeAttribute('aria-expanded');
+    }
+
+    handleAriaExpandedAttribute();
+    handleStyles();
+
+    if (onUpdate) {
+      onUpdate(prevProps, nextProps);
+    }
+
+    if (instance.popperInstance) {
+      createPopperInstance(); // Fixes an issue with nested tippies if they are all getting re-rendered,
+      // and the nested ones get re-rendered first.
+      // https://github.com/atomiks/tippyjs-react/issues/177
+      // TODO: find a cleaner / more efficient solution(!)
+
+      getNestedPopperTree().forEach(function (nestedPopper) {
+        // React (and other UI libs likely) requires a rAF wrapper as it flushes
+        // its work in one
+        requestAnimationFrame(nestedPopper._tippy.popperInstance.forceUpdate);
+      });
+    }
+
+    invokeHook('onAfterUpdate', [instance, partialProps]);
+  }
+
+  function setContent(content) {
+    instance.setProps({
+      content: content
+    });
+  }
+
+  function show() {
+    /* istanbul ignore else */
+    if (process.env.NODE_ENV !== "production") {
+      warnWhen(instance.state.isDestroyed, createMemoryLeakWarning('show'));
+    } // Early bail-out
+
+
+    var isAlreadyVisible = instance.state.isVisible;
+    var isDestroyed = instance.state.isDestroyed;
+    var isDisabled = !instance.state.isEnabled;
+    var isTouchAndTouchDisabled = currentInput.isTouch && !instance.props.touch;
+    var duration = getValueAtIndexOrReturn(instance.props.duration, 0, defaultProps.duration);
+
+    if (isAlreadyVisible || isDestroyed || isDisabled || isTouchAndTouchDisabled) {
+      return;
+    } // Normalize `disabled` behavior across browsers.
+    // Firefox allows events on disabled elements, but Chrome doesn't.
+    // Using a wrapper element (i.e. <span>) is recommended.
+
+
+    if (getCurrentTarget().hasAttribute('disabled')) {
+      return;
+    }
+
+    invokeHook('onShow', [instance], false);
+
+    if (instance.props.onShow(instance) === false) {
+      return;
+    }
+
+    instance.state.isVisible = true;
+
+    if (getIsDefaultRenderFn()) {
+      popper.style.visibility = 'visible';
+    }
+
+    handleStyles();
+    addDocumentPress();
+
+    if (!instance.state.isMounted) {
+      popper.style.transition = 'none';
+    } // If flipping to the opposite side after hiding at least once, the
+    // animation will use the wrong placement without resetting the duration
+
+
+    if (getIsDefaultRenderFn()) {
+      var _getDefaultTemplateCh2 = getDefaultTemplateChildren(),
+          box = _getDefaultTemplateCh2.box,
+          content = _getDefaultTemplateCh2.content;
+
+      setTransitionDuration([box, content], 0);
+    }
+
+    onFirstUpdate = function onFirstUpdate() {
+      if (!instance.state.isVisible || ignoreOnFirstUpdate) {
+        return;
+      }
+
+      ignoreOnFirstUpdate = true; // reflow
+
+      void popper.offsetHeight;
+      popper.style.transition = instance.props.moveTransition;
+
+      if (getIsDefaultRenderFn() && instance.props.animation) {
+        var _getDefaultTemplateCh3 = getDefaultTemplateChildren(),
+            _box = _getDefaultTemplateCh3.box,
+            _content = _getDefaultTemplateCh3.content;
+
+        setTransitionDuration([_box, _content], duration);
+        setVisibilityState([_box, _content], 'visible');
+      }
+
+      handleAriaContentAttribute();
+      handleAriaExpandedAttribute();
+      pushIfUnique(mountedInstances, instance);
+      instance.state.isMounted = true;
+      invokeHook('onMount', [instance]);
+
+      if (instance.props.animation && getIsDefaultRenderFn()) {
+        onTransitionedIn(duration, function () {
+          instance.state.isShown = true;
+          invokeHook('onShown', [instance]);
+        });
+      }
+    };
+
+    mount();
+  }
+
+  function hide() {
+    /* istanbul ignore else */
+    if (process.env.NODE_ENV !== "production") {
+      warnWhen(instance.state.isDestroyed, createMemoryLeakWarning('hide'));
+    } // Early bail-out
+
+
+    var isAlreadyHidden = !instance.state.isVisible;
+    var isDestroyed = instance.state.isDestroyed;
+    var isDisabled = !instance.state.isEnabled;
+    var duration = getValueAtIndexOrReturn(instance.props.duration, 1, defaultProps.duration);
+
+    if (isAlreadyHidden || isDestroyed || isDisabled) {
+      return;
+    }
+
+    invokeHook('onHide', [instance], false);
+
+    if (instance.props.onHide(instance) === false) {
+      return;
+    }
+
+    instance.state.isVisible = false;
+    instance.state.isShown = false;
+    ignoreOnFirstUpdate = false;
+    isVisibleFromClick = false;
+
+    if (getIsDefaultRenderFn()) {
+      popper.style.visibility = 'hidden';
+    }
+
+    cleanupInteractiveMouseListeners();
+    removeDocumentPress();
+    handleStyles();
+
+    if (getIsDefaultRenderFn()) {
+      var _getDefaultTemplateCh4 = getDefaultTemplateChildren(),
+          box = _getDefaultTemplateCh4.box,
+          content = _getDefaultTemplateCh4.content;
+
+      if (instance.props.animation) {
+        setTransitionDuration([box, content], duration);
+        setVisibilityState([box, content], 'hidden');
+      }
+    }
+
+    handleAriaContentAttribute();
+    handleAriaExpandedAttribute();
+
+    if (instance.props.animation) {
+      if (getIsDefaultRenderFn()) {
+        onTransitionedOut(duration, instance.unmount);
+      }
+    } else {
+      instance.unmount();
+    }
+  }
+
+  function hideWithInteractivity(event) {
+    /* istanbul ignore else */
+    if (process.env.NODE_ENV !== "production") {
+      warnWhen(instance.state.isDestroyed, createMemoryLeakWarning('hideWithInteractivity'));
+    }
+
+    getDocument().addEventListener('mousemove', debouncedOnMouseMove);
+    pushIfUnique(mouseMoveListeners, debouncedOnMouseMove);
+    debouncedOnMouseMove(event);
+  }
+
+  function unmount() {
+    /* istanbul ignore else */
+    if (process.env.NODE_ENV !== "production") {
+      warnWhen(instance.state.isDestroyed, createMemoryLeakWarning('unmount'));
+    }
+
+    if (instance.state.isVisible) {
+      instance.hide();
+    }
+
+    if (!instance.state.isMounted) {
+      return;
+    }
+
+    destroyPopperInstance(); // If a popper is not interactive, it will be appended outside the popper
+    // tree by default. This seems mainly for interactive tippies, but we should
+    // find a workaround if possible
+
+    getNestedPopperTree().forEach(function (nestedPopper) {
+      nestedPopper._tippy.unmount();
+    });
+
+    if (popper.parentNode) {
+      popper.parentNode.removeChild(popper);
+    }
+
+    mountedInstances = mountedInstances.filter(function (i) {
+      return i !== instance;
+    });
+    instance.state.isMounted = false;
+    invokeHook('onHidden', [instance]);
+  }
+
+  function destroy() {
+    /* istanbul ignore else */
+    if (process.env.NODE_ENV !== "production") {
+      warnWhen(instance.state.isDestroyed, createMemoryLeakWarning('destroy'));
+    }
+
+    if (instance.state.isDestroyed) {
+      return;
+    }
+
+    instance.clearDelayTimeouts();
+    instance.unmount();
+    removeListeners();
+    delete reference._tippy;
+    instance.state.isDestroyed = true;
+    invokeHook('onDestroy', [instance]);
+  }
+}
+
+function tippy(targets, optionalProps) {
+  if (optionalProps === void 0) {
+    optionalProps = {};
+  }
+
+  var plugins = defaultProps.plugins.concat(optionalProps.plugins || []);
+  /* istanbul ignore else */
+
+  if (process.env.NODE_ENV !== "production") {
+    validateTargets(targets);
+    validateProps(optionalProps, plugins);
+  }
+
+  bindGlobalEventListeners();
+  var passedProps = Object.assign({}, optionalProps, {
+    plugins: plugins
+  });
+  var elements = getArrayOfElements(targets);
+  /* istanbul ignore else */
+
+  if (process.env.NODE_ENV !== "production") {
+    var isSingleContentElement = isElement(passedProps.content);
+    var isMoreThanOneReferenceElement = elements.length > 1;
+    warnWhen(isSingleContentElement && isMoreThanOneReferenceElement, ['tippy() was passed an Element as the `content` prop, but more than', 'one tippy instance was created by this invocation. This means the', 'content element will only be appended to the last tippy instance.', '\n\n', 'Instead, pass the .innerHTML of the element, or use a function that', 'returns a cloned version of the element instead.', '\n\n', '1) content: element.innerHTML\n', '2) content: () => element.cloneNode(true)'].join(' '));
+  }
+
+  var instances = elements.reduce(function (acc, reference) {
+    var instance = reference && createTippy(reference, passedProps);
+
+    if (instance) {
+      acc.push(instance);
+    }
+
+    return acc;
+  }, []);
+  return isElement(targets) ? instances[0] : instances;
+}
+
+tippy.defaultProps = defaultProps;
+tippy.setDefaultProps = setDefaultProps;
+tippy.currentInput = currentInput;
+var hideAll = function hideAll(_temp) {
+  var _ref = _temp === void 0 ? {} : _temp,
+      excludedReferenceOrInstance = _ref.exclude,
+      duration = _ref.duration;
+
+  mountedInstances.forEach(function (instance) {
+    var isExcluded = false;
+
+    if (excludedReferenceOrInstance) {
+      isExcluded = isReferenceElement(excludedReferenceOrInstance) ? instance.reference === excludedReferenceOrInstance : instance.popper === excludedReferenceOrInstance.popper;
+    }
+
+    if (!isExcluded) {
+      var originalDuration = instance.props.duration;
+      instance.setProps({
+        duration: duration
+      });
+      instance.hide();
+
+      if (!instance.state.isDestroyed) {
+        instance.setProps({
+          duration: originalDuration
+        });
+      }
+    }
+  });
+};
+
+var createSingleton = function createSingleton(tippyInstances, optionalProps) {
+  if (optionalProps === void 0) {
+    optionalProps = {};
+  }
+
+  /* istanbul ignore else */
+  if (process.env.NODE_ENV !== "production") {
+    errorWhen(!Array.isArray(tippyInstances), ['The first argument passed to createSingleton() must be an array of', 'tippy instances. The passed value was', String(tippyInstances)].join(' '));
+  }
+
+  var individualInstances = tippyInstances;
+  var references = [];
+  var currentTarget;
+  var overrides = optionalProps.overrides;
+  var interceptSetPropsCleanups = [];
+
+  function setReferences() {
+    references = individualInstances.map(function (instance) {
+      return instance.reference;
+    });
+  }
+
+  function enableInstances(isEnabled) {
+    individualInstances.forEach(function (instance) {
+      if (isEnabled) {
+        instance.enable();
+      } else {
+        instance.disable();
+      }
+    });
+  }
+
+  function interceptSetProps(singleton) {
+    return individualInstances.map(function (instance) {
+      var originalSetProps = instance.setProps;
+
+      instance.setProps = function (props) {
+        originalSetProps(props);
+
+        if (instance.reference === currentTarget) {
+          singleton.setProps(props);
+        }
+      };
+
+      return function () {
+        instance.setProps = originalSetProps;
+      };
+    });
+  }
+
+  enableInstances(false);
+  setReferences();
+  var plugin = {
+    fn: function fn() {
+      return {
+        onDestroy: function onDestroy() {
+          enableInstances(true);
+        },
+        onTrigger: function onTrigger(instance, event) {
+          var target = event.currentTarget;
+          var index = references.indexOf(target); // bail-out
+
+          if (target === currentTarget) {
+            return;
+          }
+
+          currentTarget = target;
+          var overrideProps = (overrides || []).concat('content').reduce(function (acc, prop) {
+            acc[prop] = individualInstances[index].props[prop];
+            return acc;
+          }, {});
+          instance.setProps(Object.assign({}, overrideProps, {
+            getReferenceClientRect: typeof overrideProps.getReferenceClientRect === 'function' ? overrideProps.getReferenceClientRect : function () {
+              return target.getBoundingClientRect();
+            }
+          }));
+        }
+      };
+    }
+  };
+  var singleton = tippy(div(), Object.assign({}, removeProperties(optionalProps, ['overrides']), {
+    plugins: [plugin].concat(optionalProps.plugins || []),
+    triggerTarget: references
+  }));
+  var originalSetProps = singleton.setProps;
+
+  singleton.setProps = function (props) {
+    overrides = props.overrides || overrides;
+    originalSetProps(props);
+  };
+
+  singleton.setInstances = function (nextInstances) {
+    enableInstances(true);
+    interceptSetPropsCleanups.forEach(function (fn) {
+      return fn();
+    });
+    individualInstances = nextInstances;
+    enableInstances(false);
+    setReferences();
+    interceptSetProps(singleton);
+    singleton.setProps({
+      triggerTarget: references
+    });
+  };
+
+  interceptSetPropsCleanups = interceptSetProps(singleton);
+  return singleton;
+};
+
+var BUBBLING_EVENTS_MAP = {
+  mouseover: 'mouseenter',
+  focusin: 'focus',
+  click: 'click'
+};
+/**
+ * Creates a delegate instance that controls the creation of tippy instances
+ * for child elements (`target` CSS selector).
+ */
+
+function delegate(targets, props) {
+  /* istanbul ignore else */
+  if (process.env.NODE_ENV !== "production") {
+    errorWhen(!(props && props.target), ['You must specity a `target` prop indicating a CSS selector string matching', 'the target elements that should receive a tippy.'].join(' '));
+  }
+
+  var listeners = [];
+  var childTippyInstances = [];
+  var disabled = false;
+  var target = props.target;
+  var nativeProps = removeProperties(props, ['target']);
+  var parentProps = Object.assign({}, nativeProps, {
+    trigger: 'manual',
+    touch: false
+  });
+  var childProps = Object.assign({}, nativeProps, {
+    showOnCreate: true
+  });
+  var returnValue = tippy(targets, parentProps);
+  var normalizedReturnValue = normalizeToArray(returnValue);
+
+  function onTrigger(event) {
+    if (!event.target || disabled) {
+      return;
+    }
+
+    var targetNode = event.target.closest(target);
+
+    if (!targetNode) {
+      return;
+    } // Get relevant trigger with fallbacks:
+    // 1. Check `data-tippy-trigger` attribute on target node
+    // 2. Fallback to `trigger` passed to `delegate()`
+    // 3. Fallback to `defaultProps.trigger`
+
+
+    var trigger = targetNode.getAttribute('data-tippy-trigger') || props.trigger || defaultProps.trigger; // @ts-ignore
+
+    if (targetNode._tippy) {
+      return;
+    }
+
+    if (event.type === 'touchstart' && typeof childProps.touch === 'boolean') {
+      return;
+    }
+
+    if (event.type !== 'touchstart' && trigger.indexOf(BUBBLING_EVENTS_MAP[event.type]) < 0) {
+      return;
+    }
+
+    var instance = tippy(targetNode, childProps);
+
+    if (instance) {
+      childTippyInstances = childTippyInstances.concat(instance);
+    }
+  }
+
+  function on(node, eventType, handler, options) {
+    if (options === void 0) {
+      options = false;
+    }
+
+    node.addEventListener(eventType, handler, options);
+    listeners.push({
+      node: node,
+      eventType: eventType,
+      handler: handler,
+      options: options
+    });
+  }
+
+  function addEventListeners(instance) {
+    var reference = instance.reference;
+    on(reference, 'touchstart', onTrigger);
+    on(reference, 'mouseover', onTrigger);
+    on(reference, 'focusin', onTrigger);
+    on(reference, 'click', onTrigger);
+  }
+
+  function removeEventListeners() {
+    listeners.forEach(function (_ref) {
+      var node = _ref.node,
+          eventType = _ref.eventType,
+          handler = _ref.handler,
+          options = _ref.options;
+      node.removeEventListener(eventType, handler, options);
+    });
+    listeners = [];
+  }
+
+  function applyMutations(instance) {
+    var originalDestroy = instance.destroy;
+    var originalEnable = instance.enable;
+    var originalDisable = instance.disable;
+
+    instance.destroy = function (shouldDestroyChildInstances) {
+      if (shouldDestroyChildInstances === void 0) {
+        shouldDestroyChildInstances = true;
+      }
+
+      if (shouldDestroyChildInstances) {
+        childTippyInstances.forEach(function (instance) {
+          instance.destroy();
+        });
+      }
+
+      childTippyInstances = [];
+      removeEventListeners();
+      originalDestroy();
+    };
+
+    instance.enable = function () {
+      originalEnable();
+      childTippyInstances.forEach(function (instance) {
+        return instance.enable();
+      });
+      disabled = false;
+    };
+
+    instance.disable = function () {
+      originalDisable();
+      childTippyInstances.forEach(function (instance) {
+        return instance.disable();
+      });
+      disabled = true;
+    };
+
+    addEventListeners(instance);
+  }
+
+  normalizedReturnValue.forEach(applyMutations);
+  return returnValue;
+}
+
+var animateFill = {
+  name: 'animateFill',
+  defaultValue: false,
+  fn: function fn(instance) {
+    var _instance$props$rende;
+
+    // @ts-ignore
+    if (!((_instance$props$rende = instance.props.render) == null ? void 0 : _instance$props$rende.$$tippy)) {
+      if (process.env.NODE_ENV !== "production") {
+        errorWhen(instance.props.animateFill, 'The `animateFill` plugin requires the default render function.');
+      }
+
+      return {};
+    }
+
+    var _getChildren = getChildren(instance.popper),
+        box = _getChildren.box,
+        content = _getChildren.content;
+
+    var backdrop = instance.props.animateFill ? createBackdropElement() : null;
+    return {
+      onCreate: function onCreate() {
+        if (backdrop) {
+          box.insertBefore(backdrop, box.firstElementChild);
+          box.setAttribute('data-animatefill', '');
+          box.style.overflow = 'hidden';
+          instance.setProps({
+            arrow: false,
+            animation: 'shift-away'
+          });
+        }
+      },
+      onMount: function onMount() {
+        if (backdrop) {
+          var transitionDuration = box.style.transitionDuration;
+          var duration = Number(transitionDuration.replace('ms', '')); // The content should fade in after the backdrop has mostly filled the
+          // tooltip element. `clip-path` is the other alternative but is not
+          // well-supported and is buggy on some devices.
+
+          content.style.transitionDelay = Math.round(duration / 10) + "ms";
+          backdrop.style.transitionDuration = transitionDuration;
+          setVisibilityState([backdrop], 'visible');
+        }
+      },
+      onShow: function onShow() {
+        if (backdrop) {
+          backdrop.style.transitionDuration = '0ms';
+        }
+      },
+      onHide: function onHide() {
+        if (backdrop) {
+          setVisibilityState([backdrop], 'hidden');
+        }
+      }
+    };
+  }
+};
+
+function createBackdropElement() {
+  var backdrop = div();
+  backdrop.className = BACKDROP_CLASS;
+  setVisibilityState([backdrop], 'hidden');
+  return backdrop;
+}
+
+var mouseCoords = {
+  clientX: 0,
+  clientY: 0
+};
+var activeInstances = [];
+
+function storeMouseCoords(_ref) {
+  var clientX = _ref.clientX,
+      clientY = _ref.clientY;
+  mouseCoords = {
+    clientX: clientX,
+    clientY: clientY
+  };
+}
+
+function addMouseCoordsListener(doc) {
+  doc.addEventListener('mousemove', storeMouseCoords);
+}
+
+function removeMouseCoordsListener(doc) {
+  doc.removeEventListener('mousemove', storeMouseCoords);
+}
+
+var followCursor = {
+  name: 'followCursor',
+  defaultValue: false,
+  fn: function fn(instance) {
+    var reference = instance.reference;
+    var doc = getOwnerDocument(instance.props.triggerTarget || reference);
+    var isInternalUpdate = false;
+    var wasFocusEvent = false;
+    var isUnmounted = true;
+    var prevProps = instance.props;
+
+    function getIsInitialBehavior() {
+      return instance.props.followCursor === 'initial' && instance.state.isVisible;
+    }
+
+    function addListener() {
+      doc.addEventListener('mousemove', onMouseMove);
+    }
+
+    function removeListener() {
+      doc.removeEventListener('mousemove', onMouseMove);
+    }
+
+    function unsetGetReferenceClientRect() {
+      isInternalUpdate = true;
+      instance.setProps({
+        getReferenceClientRect: null
+      });
+      isInternalUpdate = false;
+    }
+
+    function onMouseMove(event) {
+      // If the instance is interactive, avoid updating the position unless it's
+      // over the reference element
+      var isCursorOverReference = event.target ? reference.contains(event.target) : true;
+      var followCursor = instance.props.followCursor;
+      var clientX = event.clientX,
+          clientY = event.clientY;
+      var rect = reference.getBoundingClientRect();
+      var relativeX = clientX - rect.left;
+      var relativeY = clientY - rect.top;
+
+      if (isCursorOverReference || !instance.props.interactive) {
+        instance.setProps({
+          getReferenceClientRect: function getReferenceClientRect() {
+            var rect = reference.getBoundingClientRect();
+            var x = clientX;
+            var y = clientY;
+
+            if (followCursor === 'initial') {
+              x = rect.left + relativeX;
+              y = rect.top + relativeY;
+            }
+
+            var top = followCursor === 'horizontal' ? rect.top : y;
+            var right = followCursor === 'vertical' ? rect.right : x;
+            var bottom = followCursor === 'horizontal' ? rect.bottom : y;
+            var left = followCursor === 'vertical' ? rect.left : x;
+            return {
+              width: right - left,
+              height: bottom - top,
+              top: top,
+              right: right,
+              bottom: bottom,
+              left: left
+            };
+          }
+        });
+      }
+    }
+
+    function create() {
+      if (instance.props.followCursor) {
+        activeInstances.push({
+          instance: instance,
+          doc: doc
+        });
+        addMouseCoordsListener(doc);
+      }
+    }
+
+    function destroy() {
+      activeInstances = activeInstances.filter(function (data) {
+        return data.instance !== instance;
+      });
+
+      if (activeInstances.filter(function (data) {
+        return data.doc === doc;
+      }).length === 0) {
+        removeMouseCoordsListener(doc);
+      }
+    }
+
+    return {
+      onCreate: create,
+      onDestroy: destroy,
+      onBeforeUpdate: function onBeforeUpdate() {
+        prevProps = instance.props;
+      },
+      onAfterUpdate: function onAfterUpdate(_, _ref2) {
+        var followCursor = _ref2.followCursor;
+
+        if (isInternalUpdate) {
+          return;
+        }
+
+        if (followCursor !== undefined && prevProps.followCursor !== followCursor) {
+          destroy();
+
+          if (followCursor) {
+            create();
+
+            if (instance.state.isMounted && !wasFocusEvent && !getIsInitialBehavior()) {
+              addListener();
+            }
+          } else {
+            removeListener();
+            unsetGetReferenceClientRect();
+          }
+        }
+      },
+      onMount: function onMount() {
+        if (instance.props.followCursor && !wasFocusEvent) {
+          if (isUnmounted) {
+            onMouseMove(mouseCoords);
+            isUnmounted = false;
+          }
+
+          if (!getIsInitialBehavior()) {
+            addListener();
+          }
+        }
+      },
+      onTrigger: function onTrigger(_, event) {
+        if (isMouseEvent(event)) {
+          mouseCoords = {
+            clientX: event.clientX,
+            clientY: event.clientY
+          };
+        }
+
+        wasFocusEvent = event.type === 'focus';
+      },
+      onHidden: function onHidden() {
+        if (instance.props.followCursor) {
+          unsetGetReferenceClientRect();
+          removeListener();
+          isUnmounted = true;
+        }
+      }
+    };
+  }
+};
+
+function getProps(props, modifier) {
+  var _props$popperOptions;
+
+  return {
+    popperOptions: Object.assign({}, props.popperOptions, {
+      modifiers: [].concat((((_props$popperOptions = props.popperOptions) == null ? void 0 : _props$popperOptions.modifiers) || []).filter(function (_ref) {
+        var name = _ref.name;
+        return name !== modifier.name;
+      }), [modifier])
+    })
+  };
+}
+
+var inlinePositioning = {
+  name: 'inlinePositioning',
+  defaultValue: false,
+  fn: function fn(instance) {
+    var reference = instance.reference;
+
+    function isEnabled() {
+      return !!instance.props.inlinePositioning;
+    }
+
+    var placement;
+    var cursorRectIndex = -1;
+    var isInternalUpdate = false;
+    var modifier = {
+      name: 'tippyInlinePositioning',
+      enabled: true,
+      phase: 'afterWrite',
+      fn: function fn(_ref2) {
+        var state = _ref2.state;
+
+        if (isEnabled()) {
+          if (placement !== state.placement) {
+            instance.setProps({
+              getReferenceClientRect: function getReferenceClientRect() {
+                return _getReferenceClientRect(state.placement);
+              }
+            });
+          }
+
+          placement = state.placement;
+        }
+      }
+    };
+
+    function _getReferenceClientRect(placement) {
+      return getInlineBoundingClientRect(getBasePlacement(placement), reference.getBoundingClientRect(), arrayFrom(reference.getClientRects()), cursorRectIndex);
+    }
+
+    function setInternalProps(partialProps) {
+      isInternalUpdate = true;
+      instance.setProps(partialProps);
+      isInternalUpdate = false;
+    }
+
+    function addModifier() {
+      if (!isInternalUpdate) {
+        setInternalProps(getProps(instance.props, modifier));
+      }
+    }
+
+    return {
+      onCreate: addModifier,
+      onAfterUpdate: addModifier,
+      onTrigger: function onTrigger(_, event) {
+        if (isMouseEvent(event)) {
+          var rects = arrayFrom(instance.reference.getClientRects());
+          var cursorRect = rects.find(function (rect) {
+            return rect.left - 2 <= event.clientX && rect.right + 2 >= event.clientX && rect.top - 2 <= event.clientY && rect.bottom + 2 >= event.clientY;
+          });
+          cursorRectIndex = rects.indexOf(cursorRect);
+        }
+      },
+      onUntrigger: function onUntrigger() {
+        cursorRectIndex = -1;
+      }
+    };
+  }
+};
+function getInlineBoundingClientRect(currentBasePlacement, boundingRect, clientRects, cursorRectIndex) {
+  // Not an inline element, or placement is not yet known
+  if (clientRects.length < 2 || currentBasePlacement === null) {
+    return boundingRect;
+  } // There are two rects and they are disjoined
+
+
+  if (clientRects.length === 2 && cursorRectIndex >= 0 && clientRects[0].left > clientRects[1].right) {
+    return clientRects[cursorRectIndex] || boundingRect;
+  }
+
+  switch (currentBasePlacement) {
+    case 'top':
+    case 'bottom':
+      {
+        var firstRect = clientRects[0];
+        var lastRect = clientRects[clientRects.length - 1];
+        var isTop = currentBasePlacement === 'top';
+        var top = firstRect.top;
+        var bottom = lastRect.bottom;
+        var left = isTop ? firstRect.left : lastRect.left;
+        var right = isTop ? firstRect.right : lastRect.right;
+        var width = right - left;
+        var height = bottom - top;
+        return {
+          top: top,
+          bottom: bottom,
+          left: left,
+          right: right,
+          width: width,
+          height: height
+        };
+      }
+
+    case 'left':
+    case 'right':
+      {
+        var minLeft = Math.min.apply(Math, clientRects.map(function (rects) {
+          return rects.left;
+        }));
+        var maxRight = Math.max.apply(Math, clientRects.map(function (rects) {
+          return rects.right;
+        }));
+        var measureRects = clientRects.filter(function (rect) {
+          return currentBasePlacement === 'left' ? rect.left === minLeft : rect.right === maxRight;
+        });
+        var _top = measureRects[0].top;
+        var _bottom = measureRects[measureRects.length - 1].bottom;
+        var _left = minLeft;
+        var _right = maxRight;
+
+        var _width = _right - _left;
+
+        var _height = _bottom - _top;
+
+        return {
+          top: _top,
+          bottom: _bottom,
+          left: _left,
+          right: _right,
+          width: _width,
+          height: _height
+        };
+      }
+
+    default:
+      {
+        return boundingRect;
+      }
+  }
+}
+
+var sticky = {
+  name: 'sticky',
+  defaultValue: false,
+  fn: function fn(instance) {
+    var reference = instance.reference,
+        popper = instance.popper;
+
+    function getReference() {
+      return instance.popperInstance ? instance.popperInstance.state.elements.reference : reference;
+    }
+
+    function shouldCheck(value) {
+      return instance.props.sticky === true || instance.props.sticky === value;
+    }
+
+    var prevRefRect = null;
+    var prevPopRect = null;
+
+    function updatePosition() {
+      var currentRefRect = shouldCheck('reference') ? getReference().getBoundingClientRect() : null;
+      var currentPopRect = shouldCheck('popper') ? popper.getBoundingClientRect() : null;
+
+      if (currentRefRect && areRectsDifferent(prevRefRect, currentRefRect) || currentPopRect && areRectsDifferent(prevPopRect, currentPopRect)) {
+        if (instance.popperInstance) {
+          instance.popperInstance.update();
+        }
+      }
+
+      prevRefRect = currentRefRect;
+      prevPopRect = currentPopRect;
+
+      if (instance.state.isMounted) {
+        requestAnimationFrame(updatePosition);
+      }
+    }
+
+    return {
+      onMount: function onMount() {
+        if (instance.props.sticky) {
+          updatePosition();
+        }
+      }
+    };
+  }
+};
+
+function areRectsDifferent(rectA, rectB) {
+  if (rectA && rectB) {
+    return rectA.top !== rectB.top || rectA.right !== rectB.right || rectA.bottom !== rectB.bottom || rectA.left !== rectB.left;
+  }
+
+  return true;
+}
+
+tippy.setDefaultProps({
+  render: render
+});
+
+exports.animateFill = animateFill;
+exports.createSingleton = createSingleton;
+exports.default = tippy;
+exports.delegate = delegate;
+exports.followCursor = followCursor;
+exports.hideAll = hideAll;
+exports.inlinePositioning = inlinePositioning;
+exports.roundArrow = ROUND_ARROW;
+exports.sticky = sticky;
+
+
+}).call(this)}).call(this,require('_process'))
+},{"@popperjs/core":1,"_process":187}],290:[function(require,module,exports){
 var Buffer = require('buffer').Buffer
 
 module.exports = function (buf) {
@@ -28395,7 +32594,7 @@ module.exports = function (buf) {
 	}
 }
 
-},{"buffer":59}],289:[function(require,module,exports){
+},{"buffer":60}],291:[function(require,module,exports){
 (function (process){(function (){
 /*! torrent-discovery. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const debug = require('debug')('torrent-discovery')
@@ -28621,13 +32820,13 @@ class Discovery extends EventEmitter {
 module.exports = Discovery
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":186,"bittorrent-dht/client":54,"bittorrent-lsd":54,"bittorrent-tracker/client":30,"debug":290,"events":97,"run-parallel":217}],290:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"./common":291,"_process":186,"dup":12}],291:[function(require,module,exports){
+},{"_process":187,"bittorrent-dht/client":55,"bittorrent-lsd":55,"bittorrent-tracker/client":31,"debug":292,"events":98,"run-parallel":218}],292:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13,"ms":292}],292:[function(require,module,exports){
+},{"./common":293,"_process":187,"dup":13}],293:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],293:[function(require,module,exports){
+},{"dup":14,"ms":294}],294:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],295:[function(require,module,exports){
 (function (Buffer){(function (){
 const BLOCK_LENGTH = 1 << 14
 
@@ -28734,7 +32933,7 @@ Object.defineProperty(Piece, 'BLOCK_LENGTH', { value: BLOCK_LENGTH })
 module.exports = Piece
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59}],294:[function(require,module,exports){
+},{"buffer":60}],296:[function(require,module,exports){
 (function (Buffer){(function (){
 /**
  * Convert a typed array to a Buffer without a copy
@@ -28763,7 +32962,7 @@ module.exports = function typedarrayToBuffer (arr) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":59,"is-typedarray":121}],295:[function(require,module,exports){
+},{"buffer":60,"is-typedarray":122}],297:[function(require,module,exports){
 var bufferAlloc = require('buffer-alloc')
 
 var UINT_32_MAX = Math.pow(2, 32)
@@ -28796,7 +32995,7 @@ exports.decode = function (buf, offset) {
 exports.encode.bytes = 8
 exports.decode.bytes = 8
 
-},{"buffer-alloc":57}],296:[function(require,module,exports){
+},{"buffer-alloc":58}],298:[function(require,module,exports){
 module.exports = remove
 
 function remove (arr, i) {
@@ -28810,7 +33009,7 @@ function remove (arr, i) {
   return last
 }
 
-},{}],297:[function(require,module,exports){
+},{}],299:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -29544,7 +33743,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":298,"punycode":188,"querystring":191}],298:[function(require,module,exports){
+},{"./util":300,"punycode":189,"querystring":192}],300:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -29562,7 +33761,7 @@ module.exports = {
   }
 };
 
-},{}],299:[function(require,module,exports){
+},{}],301:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! ut_metadata. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const { EventEmitter } = require('events')
@@ -29810,15 +34009,15 @@ module.exports = metadata => {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bencode":6,"bitfield":300,"buffer":59,"debug":301,"events":97,"simple-sha1":241}],300:[function(require,module,exports){
-arguments[4][11][0].apply(exports,arguments)
-},{"dup":11}],301:[function(require,module,exports){
+},{"bencode":7,"bitfield":302,"buffer":60,"debug":303,"events":98,"simple-sha1":242}],302:[function(require,module,exports){
 arguments[4][12][0].apply(exports,arguments)
-},{"./common":302,"_process":186,"dup":12}],302:[function(require,module,exports){
+},{"dup":12}],303:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13,"ms":303}],303:[function(require,module,exports){
+},{"./common":304,"_process":187,"dup":13}],304:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],304:[function(require,module,exports){
+},{"dup":14,"ms":305}],305:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],306:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -29889,7 +34088,7 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],305:[function(require,module,exports){
+},{}],307:[function(require,module,exports){
 (function (Buffer){(function (){
 const bs = require('binary-search')
 const EventEmitter = require('events')
@@ -30369,7 +34568,7 @@ const MIN_FRAGMENT_DURATION = 1 // second
 module.exports = MP4Remuxer
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"binary-search":8,"buffer":59,"events":97,"mp4-box-encoding":146,"mp4-stream":149,"range-slice-stream":195}],306:[function(require,module,exports){
+},{"binary-search":9,"buffer":60,"events":98,"mp4-box-encoding":147,"mp4-stream":150,"range-slice-stream":196}],308:[function(require,module,exports){
 const MediaElementWrapper = require('mediasource')
 const pump = require('pump')
 
@@ -30497,7 +34696,7 @@ VideoStream.prototype = {
 
 module.exports = VideoStream
 
-},{"./mp4-remuxer":305,"mediasource":124,"pump":187}],307:[function(require,module,exports){
+},{"./mp4-remuxer":307,"mediasource":125,"pump":188}],309:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 /*! webtorrent. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 /* global FileList */
@@ -30944,7 +35143,7 @@ function isFileList (obj) {
 module.exports = WebTorrent
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./lib/conn-pool":54,"./lib/torrent":312,"./package.json":332,"_process":186,"bittorrent-dht/client":54,"buffer":59,"create-torrent":79,"debug":314,"events":97,"load-ip-set":54,"parse-torrent":183,"path":184,"randombytes":194,"run-parallel":217,"simple-concat":220,"simple-peer":222,"speedometer":262}],308:[function(require,module,exports){
+},{"./lib/conn-pool":55,"./lib/torrent":314,"./package.json":334,"_process":187,"bittorrent-dht/client":55,"buffer":60,"create-torrent":80,"debug":316,"events":98,"load-ip-set":55,"parse-torrent":184,"path":185,"randombytes":195,"run-parallel":218,"simple-concat":221,"simple-peer":223,"speedometer":263}],310:[function(require,module,exports){
 const debug = require('debug')('webtorrent:file-stream')
 const stream = require('readable-stream')
 
@@ -31046,7 +35245,7 @@ class FileStream extends stream.Readable {
 
 module.exports = FileStream
 
-},{"debug":314,"readable-stream":331}],309:[function(require,module,exports){
+},{"debug":316,"readable-stream":333}],311:[function(require,module,exports){
 (function (process){(function (){
 const { EventEmitter } = require('events')
 const { PassThrough } = require('readable-stream')
@@ -31195,7 +35394,7 @@ class File extends EventEmitter {
 module.exports = File
 
 }).call(this)}).call(this,require('_process'))
-},{"./file-stream":308,"_process":186,"end-of-stream":95,"events":97,"path":184,"readable-stream":331,"render-media":211,"stream-to-blob":283,"stream-to-blob-url":282,"stream-with-known-length-to-buffer":284}],310:[function(require,module,exports){
+},{"./file-stream":310,"_process":187,"end-of-stream":96,"events":98,"path":185,"readable-stream":333,"render-media":212,"stream-to-blob":284,"stream-to-blob-url":283,"stream-with-known-length-to-buffer":285}],312:[function(require,module,exports){
 const arrayRemove = require('unordered-array-remove')
 const debug = require('debug')('webtorrent:peer')
 const Wire = require('bittorrent-protocol')
@@ -31468,7 +35667,7 @@ class Peer {
   }
 }
 
-},{"./webconn":313,"bittorrent-protocol":10,"debug":314,"unordered-array-remove":296}],311:[function(require,module,exports){
+},{"./webconn":315,"bittorrent-protocol":11,"debug":316,"unordered-array-remove":298}],313:[function(require,module,exports){
 
 /**
  * Mapping of torrent pieces to their respective availability in the torrent swarm. Used
@@ -31578,7 +35777,7 @@ class RarityMap {
 
 module.exports = RarityMap
 
-},{}],312:[function(require,module,exports){
+},{}],314:[function(require,module,exports){
 (function (process,global){(function (){
 /* global Blob */
 
@@ -33367,7 +37566,7 @@ function noop () {}
 module.exports = Torrent
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../package.json":332,"./file":309,"./peer":310,"./rarity-map":311,"./server":54,"_process":186,"addr-to-ip-port":2,"bitfield":9,"chunk-store-stream/write":77,"debug":314,"events":97,"fs":55,"fs-chunk-store":140,"immediate-chunk-store":117,"multistream":165,"net":54,"os":54,"parse-torrent":183,"path":184,"pump":187,"random-iterate":193,"run-parallel":217,"run-parallel-limit":216,"simple-get":221,"simple-sha1":241,"speedometer":262,"torrent-discovery":289,"torrent-piece":293,"ut_metadata":299,"ut_pex":54,"utp-native":54}],313:[function(require,module,exports){
+},{"../package.json":334,"./file":311,"./peer":312,"./rarity-map":313,"./server":55,"_process":187,"addr-to-ip-port":3,"bitfield":10,"chunk-store-stream/write":78,"debug":316,"events":98,"fs":56,"fs-chunk-store":141,"immediate-chunk-store":118,"multistream":166,"net":55,"os":55,"parse-torrent":184,"path":185,"pump":188,"random-iterate":194,"run-parallel":218,"run-parallel-limit":217,"simple-get":222,"simple-sha1":242,"speedometer":263,"torrent-discovery":291,"torrent-piece":295,"ut_metadata":301,"ut_pex":55,"utp-native":55}],315:[function(require,module,exports){
 (function (Buffer){(function (){
 const BitField = require('bitfield')
 const debug = require('debug')('webtorrent:webconn')
@@ -33564,47 +37763,47 @@ class WebConn extends Wire {
 module.exports = WebConn
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../package.json":332,"bitfield":9,"bittorrent-protocol":10,"buffer":59,"debug":314,"simple-get":221,"simple-sha1":241}],314:[function(require,module,exports){
-arguments[4][12][0].apply(exports,arguments)
-},{"./common":315,"_process":186,"dup":12}],315:[function(require,module,exports){
+},{"../package.json":334,"bitfield":10,"bittorrent-protocol":11,"buffer":60,"debug":316,"simple-get":222,"simple-sha1":242}],316:[function(require,module,exports){
 arguments[4][13][0].apply(exports,arguments)
-},{"dup":13,"ms":316}],316:[function(require,module,exports){
+},{"./common":317,"_process":187,"dup":13}],317:[function(require,module,exports){
 arguments[4][14][0].apply(exports,arguments)
-},{"dup":14}],317:[function(require,module,exports){
+},{"dup":14,"ms":318}],318:[function(require,module,exports){
 arguments[4][15][0].apply(exports,arguments)
-},{"dup":15}],318:[function(require,module,exports){
+},{"dup":15}],319:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
-},{"./_stream_readable":320,"./_stream_writable":322,"_process":186,"dup":16,"inherits":118}],319:[function(require,module,exports){
+},{"dup":16}],320:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
-},{"./_stream_transform":321,"dup":17,"inherits":118}],320:[function(require,module,exports){
+},{"./_stream_readable":322,"./_stream_writable":324,"_process":187,"dup":17,"inherits":119}],321:[function(require,module,exports){
 arguments[4][18][0].apply(exports,arguments)
-},{"../errors":317,"./_stream_duplex":318,"./internal/streams/async_iterator":323,"./internal/streams/buffer_list":324,"./internal/streams/destroy":325,"./internal/streams/from":327,"./internal/streams/state":329,"./internal/streams/stream":330,"_process":186,"buffer":59,"dup":18,"events":97,"inherits":118,"string_decoder/":285,"util":54}],321:[function(require,module,exports){
+},{"./_stream_transform":323,"dup":18,"inherits":119}],322:[function(require,module,exports){
 arguments[4][19][0].apply(exports,arguments)
-},{"../errors":317,"./_stream_duplex":318,"dup":19,"inherits":118}],322:[function(require,module,exports){
+},{"../errors":319,"./_stream_duplex":320,"./internal/streams/async_iterator":325,"./internal/streams/buffer_list":326,"./internal/streams/destroy":327,"./internal/streams/from":329,"./internal/streams/state":331,"./internal/streams/stream":332,"_process":187,"buffer":60,"dup":19,"events":98,"inherits":119,"string_decoder/":286,"util":55}],323:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"../errors":317,"./_stream_duplex":318,"./internal/streams/destroy":325,"./internal/streams/state":329,"./internal/streams/stream":330,"_process":186,"buffer":59,"dup":20,"inherits":118,"util-deprecate":304}],323:[function(require,module,exports){
+},{"../errors":319,"./_stream_duplex":320,"dup":20,"inherits":119}],324:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"./end-of-stream":326,"_process":186,"dup":21}],324:[function(require,module,exports){
+},{"../errors":319,"./_stream_duplex":320,"./internal/streams/destroy":327,"./internal/streams/state":331,"./internal/streams/stream":332,"_process":187,"buffer":60,"dup":21,"inherits":119,"util-deprecate":306}],325:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"buffer":59,"dup":22,"util":54}],325:[function(require,module,exports){
+},{"./end-of-stream":328,"_process":187,"dup":22}],326:[function(require,module,exports){
 arguments[4][23][0].apply(exports,arguments)
-},{"_process":186,"dup":23}],326:[function(require,module,exports){
+},{"buffer":60,"dup":23,"util":55}],327:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"../../../errors":317,"dup":24}],327:[function(require,module,exports){
+},{"_process":187,"dup":24}],328:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"dup":25}],328:[function(require,module,exports){
+},{"../../../errors":319,"dup":25}],329:[function(require,module,exports){
 arguments[4][26][0].apply(exports,arguments)
-},{"../../../errors":317,"./end-of-stream":326,"dup":26}],329:[function(require,module,exports){
+},{"dup":26}],330:[function(require,module,exports){
 arguments[4][27][0].apply(exports,arguments)
-},{"../../../errors":317,"dup":27}],330:[function(require,module,exports){
+},{"../../../errors":319,"./end-of-stream":328,"dup":27}],331:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
-},{"dup":28,"events":97}],331:[function(require,module,exports){
+},{"../../../errors":319,"dup":28}],332:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":318,"./lib/_stream_passthrough.js":319,"./lib/_stream_readable.js":320,"./lib/_stream_transform.js":321,"./lib/_stream_writable.js":322,"./lib/internal/streams/end-of-stream.js":326,"./lib/internal/streams/pipeline.js":328,"dup":29}],332:[function(require,module,exports){
+},{"dup":29,"events":98}],333:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"./lib/_stream_duplex.js":320,"./lib/_stream_passthrough.js":321,"./lib/_stream_readable.js":322,"./lib/_stream_transform.js":323,"./lib/_stream_writable.js":324,"./lib/internal/streams/end-of-stream.js":328,"./lib/internal/streams/pipeline.js":330,"dup":30}],334:[function(require,module,exports){
 module.exports={
   "version": "0.110.1"
 }
-},{}],333:[function(require,module,exports){
+},{}],335:[function(require,module,exports){
 // Returns a wrapper function that returns a wrapped callback
 // The wrapper function should do some stuff, and return a
 // presumably different callback function.
@@ -33639,7 +37838,7 @@ function wrappy (fn, cb) {
   }
 }
 
-},{}],334:[function(require,module,exports){
+},{}],336:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -33660,16 +37859,18 @@ function extend() {
     return target
 }
 
-},{}],335:[function(require,module,exports){
+},{}],337:[function(require,module,exports){
 const clipboard = require('clipboard');
 const parser = require('parse-torrent');
 const Buffer = require('Buffer');
 const bytes = require('bytes');
 const mime = require('mime-types');
 const WebTorrent = require('webtorrent');
+const tippy = require('tippy.js').default;
 
 var properties = document.getElementById('properties');
 var originalSourceIcon = document.getElementById('originalSourceIcon');
+var source = tippy(originalSourceIcon, {"theme": "torrent-parts", "animation": "shift-away-subtle"});
 var name = document.getElementById('name');
 var reset = document.getElementById('reset');
 var created = document.getElementById('created');
@@ -33688,8 +37889,26 @@ var getFiles = document.getElementById('getFiles');
 var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
 var downloadTorrent = document.getElementById('downloadTorrent');
+var copyURLTooltip = tippy(copyURL, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy torrent.parts link to clipboard"});
+var copyMagnetTooltip = tippy(copyMagnet, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy Magnet link to clipboard"});
+var downloadTorrentTooltip = tippy(downloadTorrent, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Download Torrent file"});
 var parsed;
 var client = new WebTorrent();
+
+function placeDownloadTooltips(e) {
+  if (window.innerWidth > 1080) {
+    copyURLTooltip.setProps({"placement": "right"});
+    copyMagnetTooltip.setProps({"placement": "right"});
+    downloadTorrentTooltip.setProps({"placement": "right"});
+  } else {
+    copyURLTooltip.setProps({"placement": "top"});
+    copyMagnetTooltip.setProps({"placement": "top"});
+    downloadTorrentTooltip.setProps({"placement": "top"});
+  }
+}
+
+window.addEventListener('resize', placeDownloadTooltips);
+placeDownloadTooltips();
 
 document.addEventListener('DOMContentLoaded', start);
 
@@ -33699,7 +37918,7 @@ function start() {
     event.preventDefault();
     if (event.key === "Enter") {
       originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
-      originalSourceIcon.title = 'Currently loaded information sourced from Magnet URL';
+      source.setContent("Currently loaded information sourced from Magnet URL");
       parse(magnet.value);
     }
   });
@@ -33708,8 +37927,8 @@ function start() {
     event.preventDefault();
     try {
       event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
-        originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
-        originalSourceIcon.title = 'Currently loaded information sourced from Torrent file';
+        originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+        source.setContent("Currently loaded information sourced from Torrent file");
         parse(Buffer.from(arrayBuffer));
       });
     }
@@ -33750,9 +37969,11 @@ function start() {
   removeWebseeds.addEventListener('click', () => removeAllRows('urlList'));
   getFiles.addEventListener('click', getFilesFromPeers);
 
+  tippy('[data-tippy-content]', {"theme": "torrent-parts", "animation": "shift-away-subtle"}); // all element-defined tooltips
+
   if (window.location.hash) {
     originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
-    originalSourceIcon.title = 'Currently loaded information sourced from shared torrent.parts link';
+    source.setContent("Currently loaded information sourced from shared torrent.parts link");
     parse(window.location.hash.split('#')[1]);
   }
 
@@ -33783,8 +38004,8 @@ function parseRemote(toLoad) {
       resetProperties();
       return;
     }
-    originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
-    originalSourceIcon.title = 'Currently loaded information sourced from remotely fetched Torrent file';
+    originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+    source.setContent("Currently loaded information sourced from remotely fetched Torrent file");
     parsed = result;
     display();
   });
@@ -33870,7 +38091,7 @@ function display() {
   } else {
     if (client.torrents.length > 0) {
       getFiles.style.display = "none";
-      files.innerHTML = '<input type="text" placeholder="Attempting fetching files from Webtorrent..." aria-label="Attempting fetching files from Webtorrent..." disabled>';
+      files.innerHTML = '<input type="text" placeholder="Attempting fetching of files from Webtorrent..." aria-label="Attempting fetching of files from Webtorrent..." disabled>';
     } else {
       getFiles.style.display = "block";
       files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" aria-label="Files information not included in the URL/File provided" disabled>';
@@ -33891,6 +38112,8 @@ function display() {
   } else {
     document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
   }
+
+  source.enable();
 
 }
 
@@ -33961,8 +38184,6 @@ function propertyChange(e) {
 function resetProperties() {
   document.getElementById('magnet').value = "";
   document.getElementById('torrent').value = "";
-  originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
-  originalSourceIcon.title = '';
   properties.style.display = 'none';
   name.value = "";
   created.value = "";
@@ -33978,6 +38199,7 @@ function resetProperties() {
   copyURL.setAttribute('data-clipboard-text', "");
   copyMagnet.setAttribute('data-clipboard-text', "");
   document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
+  source.disable();
 }
 
 async function addCurrentTrackers() {
@@ -34064,4 +38286,4 @@ function saveTorrent() {
   window.URL.revokeObjectURL(url);
   a.remove();
 }
-},{"Buffer":1,"bytes":61,"clipboard":78,"mime-types":143,"parse-torrent":183,"webtorrent":307}]},{},[335]);
+},{"Buffer":2,"bytes":62,"clipboard":79,"mime-types":144,"parse-torrent":184,"tippy.js":289,"webtorrent":309}]},{},[337]);

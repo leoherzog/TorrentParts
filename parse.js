@@ -4,9 +4,11 @@ const Buffer = require('Buffer');
 const bytes = require('bytes');
 const mime = require('mime-types');
 const WebTorrent = require('webtorrent');
+const tippy = require('tippy.js').default;
 
 var properties = document.getElementById('properties');
 var originalSourceIcon = document.getElementById('originalSourceIcon');
+var source = tippy(originalSourceIcon, {"theme": "torrent-parts", "animation": "shift-away-subtle"});
 var name = document.getElementById('name');
 var reset = document.getElementById('reset');
 var created = document.getElementById('created');
@@ -25,8 +27,26 @@ var getFiles = document.getElementById('getFiles');
 var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
 var downloadTorrent = document.getElementById('downloadTorrent');
+var copyURLTooltip = tippy(copyURL, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy torrent.parts link to clipboard"});
+var copyMagnetTooltip = tippy(copyMagnet, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy Magnet link to clipboard"});
+var downloadTorrentTooltip = tippy(downloadTorrent, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Download Torrent file"});
 var parsed;
 var client = new WebTorrent();
+
+function placeDownloadTooltips(e) {
+  if (window.innerWidth > 1080) {
+    copyURLTooltip.setProps({"placement": "right"});
+    copyMagnetTooltip.setProps({"placement": "right"});
+    downloadTorrentTooltip.setProps({"placement": "right"});
+  } else {
+    copyURLTooltip.setProps({"placement": "top"});
+    copyMagnetTooltip.setProps({"placement": "top"});
+    downloadTorrentTooltip.setProps({"placement": "top"});
+  }
+}
+
+window.addEventListener('resize', placeDownloadTooltips);
+placeDownloadTooltips();
 
 document.addEventListener('DOMContentLoaded', start);
 
@@ -36,7 +56,7 @@ function start() {
     event.preventDefault();
     if (event.key === "Enter") {
       originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
-      originalSourceIcon.title = 'Currently loaded information sourced from Magnet URL';
+      source.setContent("Currently loaded information sourced from Magnet URL");
       parse(magnet.value);
     }
   });
@@ -45,8 +65,8 @@ function start() {
     event.preventDefault();
     try {
       event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
-        originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
-        originalSourceIcon.title = 'Currently loaded information sourced from Torrent file';
+        originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+        source.setContent("Currently loaded information sourced from Torrent file");
         parse(Buffer.from(arrayBuffer));
       });
     }
@@ -87,9 +107,11 @@ function start() {
   removeWebseeds.addEventListener('click', () => removeAllRows('urlList'));
   getFiles.addEventListener('click', getFilesFromPeers);
 
+  tippy('[data-tippy-content]', {"theme": "torrent-parts", "animation": "shift-away-subtle"}); // all element-defined tooltips
+
   if (window.location.hash) {
     originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
-    originalSourceIcon.title = 'Currently loaded information sourced from shared torrent.parts link';
+    source.setContent("Currently loaded information sourced from shared torrent.parts link");
     parse(window.location.hash.split('#')[1]);
   }
 
@@ -120,8 +142,8 @@ function parseRemote(toLoad) {
       resetProperties();
       return;
     }
-    originalSourceIcon.innerHTML = '<span class="fad fa-file fa-fw"></span>';
-    originalSourceIcon.title = 'Currently loaded information sourced from remotely fetched Torrent file';
+    originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+    source.setContent("Currently loaded information sourced from remotely fetched Torrent file");
     parsed = result;
     display();
   });
@@ -207,7 +229,7 @@ function display() {
   } else {
     if (client.torrents.length > 0) {
       getFiles.style.display = "none";
-      files.innerHTML = '<input type="text" placeholder="Attempting fetching files from Webtorrent..." aria-label="Attempting fetching files from Webtorrent..." disabled>';
+      files.innerHTML = '<input type="text" placeholder="Attempting fetching of files from Webtorrent..." aria-label="Attempting fetching of files from Webtorrent..." disabled>';
     } else {
       getFiles.style.display = "block";
       files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" aria-label="Files information not included in the URL/File provided" disabled>';
@@ -228,6 +250,8 @@ function display() {
   } else {
     document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
   }
+
+  source.enable();
 
 }
 
@@ -298,8 +322,6 @@ function propertyChange(e) {
 function resetProperties() {
   document.getElementById('magnet').value = "";
   document.getElementById('torrent').value = "";
-  originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
-  originalSourceIcon.title = '';
   properties.style.display = 'none';
   name.value = "";
   created.value = "";
@@ -315,6 +337,7 @@ function resetProperties() {
   copyURL.setAttribute('data-clipboard-text', "");
   copyMagnet.setAttribute('data-clipboard-text', "");
   document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
+  source.disable();
 }
 
 async function addCurrentTrackers() {

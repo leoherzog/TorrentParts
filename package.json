@@ -11,6 +11,7 @@
     "dropzone": "latest",
     "mime-types": "latest",
     "parse-torrent": "latest",
+    "tippy.js": "latest",
     "webtorrent": "latest"
   },
   "devDependencies": {

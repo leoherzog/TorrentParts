@@ -2,6 +2,7 @@
   "name": "Torrent Parts",
   "short_name": "Torrent Parts",
   "description": "Inspect and edit what's in your Torrent file or Magnet link",
+  "lang": "en-US",
   "theme_color": "#102030",
   "background_color": "#102030",
   "scope": "/",
