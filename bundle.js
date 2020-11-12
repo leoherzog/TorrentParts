@@ -37884,7 +37884,8 @@ const tippy = require('tippy.js').default;
 
 var properties = document.getElementById('properties');
 var originalSourceIcon = document.getElementById('originalSourceIcon');
-var source = tippy(originalSourceIcon, {"theme": "torrent-parts", "animation": "shift-away-subtle"});
+var source;
+var sourceTooltip = tippy(originalSourceIcon, {"theme": "torrent-parts", "animation": "shift-away-subtle"});
 var name = document.getElementById('name');
 var reset = document.getElementById('reset');
 var created = document.getElementById('created');
@@ -37931,8 +37932,9 @@ function start() {
   document.getElementById('magnet').addEventListener('keyup', function(event) {
     event.preventDefault();
     if (event.key === "Enter") {
+      source = "magnet";
       originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
-      source.setContent("Currently loaded information sourced from Magnet URL");
+      sourceTooltip.setContent("Currently loaded information sourced from Magnet URL");
       parse(magnet.value);
     }
   });
@@ -37941,8 +37943,9 @@ function start() {
     event.preventDefault();
     try {
       event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
+        source = "torrent-file";
         originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
-        source.setContent("Currently loaded information sourced from Torrent file");
+        sourceTooltip.setContent("Currently loaded information sourced from Torrent file");
         parse(Buffer.from(arrayBuffer));
       });
     }
@@ -37954,6 +37957,10 @@ function start() {
   let copyurl = new clipboard('#copyURL');
   copyurl.on('success', function(e) {
     console.info(e); // TODO: Alert user to success
+    gtag('event', 'share', {
+      "method": "Copy URL",
+      "content_id": e.text,
+    });
   });
   copyurl.on('failure', function(e) {
     console.error(e); // TODO: Alert user to error
@@ -37962,6 +37969,10 @@ function start() {
   let copymagnet = new clipboard('#copyMagnet');
   copymagnet.on('success', function(e) {
     console.info(e); // TODO: Alert user to success
+    gtag('event', 'share', {
+      "method": "Copy Magnet",
+      "content_id": e.text,
+    });
   });
   copymagnet.on('failure', function(e) {
     console.error(e); // TODO: Alert user to error
@@ -37984,11 +37995,12 @@ function start() {
   getFiles.addEventListener('click', getFilesFromPeers);
 
   tippy('[data-tippy-content]', {"theme": "torrent-parts", "animation": "shift-away-subtle"}); // all element-defined tooltips
-  source.disable();
-  
+  sourceTooltip.disable();
+
   if (window.location.hash) {
+    source = "shared-url";
     originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
-    source.setContent("Currently loaded information sourced from shared torrent.parts link");
+    sourceTooltip.setContent("Currently loaded information sourced from shared torrent.parts link");
     parse(window.location.hash.split('#')[1]);
   }
 
@@ -38019,8 +38031,9 @@ function parseRemote(toLoad) {
       resetProperties();
       return;
     }
+    source = "remote-torrent-file";
     originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
-    source.setContent("Currently loaded information sourced from remotely fetched Torrent file");
+    sourceTooltip.setContent("Currently loaded information sourced from remotely fetched Torrent file");
     parsed = result;
     display();
   });
@@ -38128,7 +38141,15 @@ function display() {
     document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
   }
 
-  source.enable();
+  sourceTooltip.enable();
+
+  gtag('event', 'view_item', {
+    items: [{
+      "item_id": parsed.infoHash,
+      "item_name": parsed.name,
+      "item_category": source
+    }]
+  });
 
 }
 
@@ -38214,7 +38235,8 @@ function resetProperties() {
   copyURL.setAttribute('data-clipboard-text', "");
   copyMagnet.setAttribute('data-clipboard-text', "");
   document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
-  source.disable();
+  sourceTooltip.disable();
+  gtag('event', 'reset');
 }
 
 async function addCurrentTrackers() {
@@ -38232,9 +38254,10 @@ async function addCurrentTrackers() {
   catch(e) {
     console.error(e); // TODO: Alert user to error
   }
-  addTrackers.innerHTML = 'Add Known Working Trackers';
   addTrackers.className = '';
+  addTrackers.innerHTML = 'Add Known Working Trackers';
   display();
+  gtag('event', 'add_trackers');
 }
 
 function addRow() {
@@ -38284,6 +38307,7 @@ function getFilesFromPeers() {
     torrent.destroy();
   });
   display();
+  gtag('event', 'attempt_webtorrent_fetch');
 }
 
 // https://stackoverflow.com/a/36899900/2700296
@@ -38300,5 +38324,9 @@ function saveTorrent() {
   a.click();
   window.URL.revokeObjectURL(url);
   a.remove();
+  gtag('event', 'share', {
+    "method": "Torrent Download",
+    "content_id": parsed.name
+  });
 }
 },{"Buffer":2,"bytes":62,"clipboard":79,"mime-types":144,"parse-torrent":184,"tippy.js":289,"webtorrent":309}]},{},[337]);
