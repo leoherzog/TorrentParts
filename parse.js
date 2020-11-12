@@ -108,6 +108,7 @@ function start() {
   getFiles.addEventListener('click', getFilesFromPeers);
 
   tippy('[data-tippy-content]', {"theme": "torrent-parts", "animation": "shift-away-subtle"}); // all element-defined tooltips
+  source.disable();
 
   if (window.location.hash) {
     originalSourceIcon.innerHTML = '<span class="fad fa-link fa-fw"></span>';
