@@ -37905,10 +37905,11 @@ var files = document.getElementById('filesBody');
 var getFiles = document.getElementById('getFiles');
 var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
+var downloadTorrentWrapper = document.getElementById('downloadTorrentWrapper');
 var downloadTorrent = document.getElementById('downloadTorrent');
 var copyURLTooltip = tippy(copyURL, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy torrent.parts link to clipboard"});
 var copyMagnetTooltip = tippy(copyMagnet, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy Magnet link to clipboard"});
-var downloadTorrentTooltip = tippy(downloadTorrent, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Download Torrent file"});
+var downloadTorrentTooltip = tippy(downloadTorrentWrapper, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Download Torrent file"});
 var parsed;
 var client = new WebTorrent();
 var notyf = new Notyf({
@@ -38141,6 +38142,7 @@ function display() {
       files.appendChild(createFileRow(icon, file.name, file.length));
     }
     files.appendChild(createFileRow('folder-tree', '', parsed.length));
+    downloadTorrentTooltip.setContent('Download Torrent file');
     downloadTorrent.addEventListener('click', saveTorrent);
     downloadTorrent.disabled = false;
   } else {
@@ -38151,6 +38153,7 @@ function display() {
       getFiles.style.display = "block";
       files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" aria-label="Files information not included in the URL/File provided" disabled>';
     }
+    downloadTorrentTooltip.setContent('Files metadata is required to generate Torrent file. Try fetching files list from WebTorrent.');
     downloadTorrent.removeEventListener('click', saveTorrent);
     downloadTorrent.disabled = true;
   }

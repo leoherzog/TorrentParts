@@ -77,15 +77,21 @@
     </button>
     
     <div id="share">
+      <div>
       <button id="copyURL" aria-label="Copy this torrent.parts link to the clipboard">
         <span class="fas fa-share-alt fa-2x" data-fa-transform="left-1"></span>
       </button>
-      <button id="copyMagnet" aria-label="Copy this Magnet URL to the clipboard">
-        <span class="fas fa-magnet fa-2x" data-fa-transform="down-1"></span>
-      </button>
-      <button id="downloadTorrent" aria-label="Download this as a Torrent file">
-        <span class="fas fa-file-download fa-2x"></span>
-      </button>
+      </div>
+      <div>
+        <button id="copyMagnet" aria-label="Copy this Magnet URL to the clipboard">
+          <span class="fas fa-magnet fa-2x" data-fa-transform="down-1"></span>
+        </button>
+      </div>
+      <div id="downloadTorrentWrapper">
+        <button id="downloadTorrent" aria-label="Download this as a Torrent file">
+          <span class="fas fa-file-download fa-2x"></span>
+        </button>
+      </div>
     </div>
 
     <div class="property">
