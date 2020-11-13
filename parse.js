@@ -299,7 +299,7 @@ function display() {
       getFiles.style.display = "block";
       files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" aria-label="Files information not included in the URL/File provided" disabled>';
     }
-    downloadTorrentTooltip.setContent('Files metadata is required to generate Torrent file. Try fetching files list from WebTorrent.');
+    downloadTorrentTooltip.setContent('Files metadata is required to generate a Torrent file. Try fetching files list from WebTorrent.');
     downloadTorrent.removeEventListener('click', saveTorrent);
     downloadTorrent.disabled = true;
   }
