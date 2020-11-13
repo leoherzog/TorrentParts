@@ -34,7 +34,7 @@ var downloadTorrentTooltip = tippy(downloadTorrent, {"theme": "torrent-parts", "
 var parsed;
 var client = new WebTorrent();
 var notyf = new Notyf({
-  "duration": 12000,
+  "duration": 8000,
   "dismissible": true,
   "ripple": false,
   "position": {
