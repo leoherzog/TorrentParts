@@ -33,6 +33,27 @@ var copyMagnetTooltip = tippy(copyMagnet, {"theme": "torrent-parts", "animation"
 var downloadTorrentTooltip = tippy(downloadTorrent, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Download Torrent file"});
 var parsed;
 var client = new WebTorrent();
+var notyf = new Notyf({
+  "duration": 12000,
+  "dismissible": true,
+  "ripple": false,
+  "position": {
+    "x": "right",
+    "y": "top",
+  },
+  "types": [
+    {
+      "type": "success",
+      "background": "#46835C",
+      "icon": false
+    },
+    {
+      "type": "error",
+      "background": "#A60A0A",
+      "icon": false
+    }
+  ]
+});
 
 function placeDownloadTooltips(e) {
   if (window.innerWidth > 1080) {
@@ -65,41 +86,38 @@ function start() {
 
   document.getElementById('torrent').addEventListener('change', function(event) {
     event.preventDefault();
-    try {
-      event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
-        source = "torrent-file";
-        originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
-        sourceTooltip.setContent("Currently loaded information sourced from Torrent file");
-        parse(Buffer.from(arrayBuffer));
-      });
-    }
-    catch(e) {
-      console.error(e); // TODO: Alert user to error
-    }
+    event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
+      source = "torrent-file";
+      originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+      sourceTooltip.setContent("Currently loaded information sourced from Torrent file");
+      parse(Buffer.from(arrayBuffer));
+    });
   });
 
   let copyurl = new clipboard('#copyURL');
   copyurl.on('success', function(e) {
-    console.info(e); // TODO: Alert user to success
+    notyf.success('Copied site URL to clipboard!');
+    console.info(e);
     gtag('event', 'share', {
       "method": "Copy URL",
       "content_id": e.text,
     });
   });
   copyurl.on('failure', function(e) {
-    console.error(e); // TODO: Alert user to error
+    notyf.error('Problem copying to clipboard');
   });
 
   let copymagnet = new clipboard('#copyMagnet');
   copymagnet.on('success', function(e) {
-    console.info(e); // TODO: Alert user to success
+    notyf.success('Copied Magnet URL to clipboard!');
     gtag('event', 'share', {
       "method": "Copy Magnet",
       "content_id": e.text,
     });
   });
   copymagnet.on('failure', function(e) {
-    console.error(e); // TODO: Alert user to error
+    notyf.error('Problem copying to clipboard');
+    console.warn(e);
   });
 
   name.addEventListener('input', propertyChange);
@@ -141,17 +159,23 @@ function parse(toLoad) {
       parseRemote(parsed.xs);
     }
   }
-  catch(e) {
+  catch(e) { // maybe they put a URL to a torrent file in the magnet box?
     console.warn(e);
-    console.info("Attempting remote parse");
-    parseRemote(toLoad);
+    if (source == "magnet") {
+      console.info("Attempting remote parse");
+      parseRemote(toLoad);
+    } else { // probably not. Just a bad file.
+      notyf.error('Problem parsing input. Is this a .torrent file?');
+      console.error('Problem parsing input');
+    }
   }
 }
 
 function parseRemote(toLoad) {
   parser.remote(toLoad, function(err, result) {
-    if (err) { // TODO: Display error to user
-      console.error(err);
+    if (err) {
+      notyf.error('Problem remotely fetching or parsing Torrent file');
+      console.warn(err);
       resetProperties();
       return;
     }
@@ -373,10 +397,11 @@ async function addCurrentTrackers() {
     parsed.announce.push("http://bt1.archive.org:6969/announce");
     parsed.announce.push("http://bt2.archive.org:6969/announce");
     parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
+    notyf.success('Added known working trackers from newTrackon');
     updateModified();
   }
   catch(e) {
-    console.error(e); // TODO: Alert user to error
+    console.warn(e); // TODO: Alert user to error
   }
   addTrackers.className = '';
   addTrackers.innerHTML = 'Add Known Working Trackers';
@@ -428,6 +453,7 @@ function getFilesFromPeers() {
     parsed.lastPieceLength = torrent.lastPieceLength;
     updateModified();
     display();
+    notyf.success('Fetched file details from Webtorrent peers');
     torrent.destroy();
   });
   display();

@@ -15,6 +15,7 @@
     "webtorrent": "latest"
   },
   "devDependencies": {
+    "notyf": "latest",
     "terser": "latest",
     "watchify": "latest"
   },
