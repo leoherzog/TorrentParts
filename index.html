@@ -59,15 +59,24 @@
   </header>
 
   <div id="startButtons">
-    <input id="magnet" type="text" placeholder="Enter Magnet URL" aria-label="Enter Magnet URL and press enter" />
+
+    <input id="magnet" type="text" placeholder="Enter URL" aria-label="Enter URL and press enter" />
     <label for="magnet" class="sr-only">
-      Enter Magnet link and press enter
+      Enter URL and press enter
     </label>
+
     <input id="torrent" type="file" aria-label="Select Torrent file" />
     <label for="torrent">
       <span class="fas fa-cloud-upload" aria-hidden="true"></span> Select Torrent File
     </label>
-    
+
+  </div>
+
+  <div id="examples">
+    <div>...or, try some examples!</div>
+    <button id="example1" aria-label="Load Magnet Example"><span class="fal fa-magnet" aria-hidden="true"></span> Magnet URL</button>
+    <button id="example2" aria-label="Load URL to Torrent File Example"><span class="fal fa-link" aria-hidden="true"></span> URL to Torrent File</button>
+    <button id="example3" aria-label="Load Torrent File Example"><span class="fal fa-file-alt" aria-hidden="true"></span> Torrent File</button>
   </div>
 
   <div id="properties" style="display:none">

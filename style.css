@@ -140,7 +140,7 @@ footer > a {
   justify-content: space-evenly;
 }
 
-#startButtons > * {
+#startButtons > *, #examples > button {
   width: 440px;
   height: 40px;
   line-height: 22px;
@@ -164,6 +164,23 @@ label[for="torrent"] {
   text-align: center;
   text-transform: none;
   cursor: pointer;
+}
+
+#examples {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#examples > button {
+  background: var(--light-blue);
+  width: 440px;
+  height: 40px;
+  line-height: 22px;
+  text-align: center;
 }
 
 #properties {
@@ -338,7 +355,7 @@ input {
     text-align: center;
   }
 
-  #announce > * > *, #urlList > * > *, #addTracker, #addWebseed {
+  #announce > * > *, #urlList > * > *, #addTracker, #addWebseed, #examples > button {
     width: 80vw;
   }
 

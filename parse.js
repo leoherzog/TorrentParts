@@ -6,6 +6,10 @@ const mime = require('mime-types');
 const WebTorrent = require('webtorrent');
 const tippy = require('tippy.js').default;
 
+var examples = document.getElementById('examples');
+var example1 = document.getElementById('example1');
+var example2 = document.getElementById('example2');
+var example3 = document.getElementById('example3');
 var properties = document.getElementById('properties');
 var originalSourceIcon = document.getElementById('originalSourceIcon');
 var source;
@@ -95,6 +99,26 @@ function start() {
     });
   });
 
+  example1.addEventListener('click', function(event) {
+    event.preventDefault();
+    notyf.success("Parsing Ubuntu 20.04 Magnet URL");
+    parse("magnet:?xt=urn:btih:9fc20b9e98ea98b4a35e6223041a5ef94ea27809&dn=ubuntu-20.04-desktop-amd64.iso&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce&tr=https%3A%2F%2Fipv6.torrent.ubuntu.com%2Fannounce");
+  });
+
+  example2.addEventListener('click', async function(event) {
+    event.preventDefault();
+    notyf.success("Fetching and Parsing &ldquo;The WIRED CD&rdquo; Torrent File...");
+    parseRemote("https://webtorrent.io/torrents/wired-cd.torrent");
+  });
+
+  example3.addEventListener('click', async function(event) {
+    event.preventDefault();
+    notyf.success("Parsing Jack Johnson Archive.org Torrent File");
+    let response = await fetch("jj2008-06-14.mk4_archive.torrent");
+    let arrayBuffer = await response.arrayBuffer();
+    parse(Buffer.from(arrayBuffer));
+  });
+
   let copyurl = new clipboard('#copyURL');
   copyurl.on('success', function(e) {
     notyf.success('Copied site URL to clipboard!');
@@ -176,7 +200,7 @@ function parse(toLoad) {
 function parseRemote(toLoad) {
   parser.remote(toLoad, function(err, result) {
     if (err) {
-      notyf.error('Problem remotely fetching file or parsing result');
+      notyf.error('Problem remotely fetching that file or parsing result');
       console.warn(err);
       resetProperties();
       return;
@@ -283,6 +307,7 @@ function display() {
   copyURL.setAttribute('data-clipboard-text', window.location.origin + "#" + parser.toMagnetURI(parsed));
   copyMagnet.setAttribute('data-clipboard-text', parser.toMagnetURI(parsed));
 
+  examples.style.display = 'none';
   properties.style.display = 'flex';
 
   window.location.hash = parser.toMagnetURI(parsed);
@@ -372,6 +397,7 @@ function propertyChange(e) {
 function resetProperties() {
   document.getElementById('magnet').value = "";
   document.getElementById('torrent').value = "";
+  examples.style.display = 'flex';
   properties.style.display = 'none';
   name.value = "";
   created.value = "";
