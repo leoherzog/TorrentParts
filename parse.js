@@ -105,6 +105,7 @@ function start() {
   });
   copyurl.on('failure', function(e) {
     notyf.error('Problem copying to clipboard');
+    console.warn(e);
   });
 
   let copymagnet = new clipboard('#copyMagnet');
@@ -174,7 +175,7 @@ function parse(toLoad) {
 function parseRemote(toLoad) {
   parser.remote(toLoad, function(err, result) {
     if (err) {
-      notyf.error('Problem remotely fetching or parsing Torrent file');
+      notyf.error('Problem remotely fetching file or parsing result');
       console.warn(err);
       resetProperties();
       return;
@@ -401,7 +402,8 @@ async function addCurrentTrackers() {
     updateModified();
   }
   catch(e) {
-    console.warn(e); // TODO: Alert user to error
+    notyf.error('Problem fetching trackers from newTrackon');
+    console.warn(e);
   }
   addTrackers.className = '';
   addTrackers.innerHTML = 'Add Known Working Trackers';
