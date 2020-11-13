@@ -117,6 +117,20 @@ header > * {
   margin: 0 24px;
 }
 
+footer {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+}
+
+footer > a {
+  color: var(--grey);
+  opacity: 0.6;
+  font-size: 10px;
+  text-transform: none;
+  text-decoration: none;
+}
+
 #startButtons {
   height: 80px;
   max-width: 960px;
