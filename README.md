@@ -2,18 +2,20 @@
 
 ## What is this?
 
-[BitTorrent](https://bittorrent.com/) is a ubiquitus and powerful way to transfer files peer-to-peer. To specify what file(s) to download with your client, you need to input either a Torrent file or Magnet link. [Torrent Parts](https://torrent.parts/) is a client-side static web app to read and edit the metadata of a Torrent file or Magnet link so you know what you're downloading, before you add it to your Torrent client.
+[BitTorrent](https://bittorrent.com/) is a ubiquitus and powerful way to transfer files peer-to-peer. To specify what file(s) to download with your client, you need to input either a Torrent file or Magnet URL. [Torrent Parts](https://torrent.parts/) is a client-side static web app to read and edit the metadata of a Torrent file or Magnet URL so you know what you're downloading, before you add it to your Torrent client.
 
 ### Features
 
-- 📑 Display metadata of a Torrent file, Magnet link, or URL to a Torrent file ([CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) required)
+- 📑 Display metadata of a Torrent file, Magnet URL, or URL to a Torrent file ([CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) required)
 - 📝 Edit title, comment, Tracker URLs, and Webseeds
-- ↔️ Save and convert between Torrent file and Magnet link
-- 🔗 Generate link directly to [Torrent Parts](https://torrent.parts/) with prefilled info
+- ↔️ Save and convert between Torrent file and Magnet URL
+- 🔗 Generate a link directly to [Torrent Parts](https://torrent.parts/) with prefilled info<sup>[1]</sup>
 - 🌐 Add currently known working trackers from [newTrackon](https://newtrackon.com/)
-- 👥 Fetch files metadata for a Magnet link via [WebTorrent](https://webtorrent.io/)
+- 👥 Fetch files metadata for a Magnet URL via [WebTorrent](https://webtorrent.io/)
 - ℹ️ Learn the basic parts of Torrent metadata and what they mean
 - 🔒 Fully client-side, no files leave your computer
+
+<sup>1. Just include the Magnet URL after `https://torrent.parts/#`, [like so](https://torrent.parts#magnet:?xt=urn:btih:9fc20b9e98ea98b4a35e6223041a5ef94ea27809&dn=ubuntu-20.04-desktop-amd64.iso&tr=https://torrent.ubuntu.com/announce&tr=https://ipv6.torrent.ubuntu.com/announce).</sup>
 
 ## Special Thanks
 
