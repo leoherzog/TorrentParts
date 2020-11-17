@@ -206,6 +206,12 @@
 
   <script src="bin/bundle.min.js"></script>
 
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('src/sw.js'));
+    }
+  </script>
+
 </body>
 
 </html>
