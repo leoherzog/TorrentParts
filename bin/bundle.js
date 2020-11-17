@@ -37992,7 +37992,7 @@ function start() {
   example3.addEventListener('click', async function(event) {
     event.preventDefault();
     notyf.success("Parsing Jack Johnson Archive.org Torrent File");
-    let response = await fetch("jj2008-06-14.mk4_archive.torrent");
+    let response = await fetch("/ext/jj2008-06-14.mk4_archive.torrent");
     let arrayBuffer = await response.arrayBuffer();
     parse(Buffer.from(arrayBuffer));
   });
