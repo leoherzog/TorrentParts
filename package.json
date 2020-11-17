@@ -1,8 +1,8 @@
 {
   "name": "torrentparts",
-  "version": "0.0.1",
+  "version": "1.1",
   "description": "📑 A website to inspect and edit Torrent files and Magnet URLs",
-  "main": "bundle.js",
+  "main": "bin/bundle.js",
   "dependencies": {
     "browserify": "latest",
     "Buffer": "latest",
@@ -20,9 +20,9 @@
     "watchify": "latest"
   },
   "scripts": {
-    "watch": "watchify parse.js -o bundle.js",
-    "compile": "browserify parse.js -o bundle.js",
-    "minify": "terser bundle.js -c -m -o bundle.min.js",
+    "watch": "watchify src/parse.js -o bin/bundle.js",
+    "compile": "browserify src/parse.js -o bin/bundle.js",
+    "minify": "terser bin/bundle.js -c -m -o bin/bundle.min.js",
     "build": "npm run compile && npm run minify"
   },
   "repository": {
