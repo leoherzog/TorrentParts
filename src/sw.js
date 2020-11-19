@@ -7,7 +7,7 @@ const assets = [
   '/ext/alata-latin-400.woff',
   '/ext/fa.min.js',
   '/ext/notyf.min.js',
-  '/jj2008-06-14.mk4_archive.torrent'
+  '/ext/jj2008-06-14.mk4_archive.torrent'
 ];
 
 self.addEventListener('install', function(event) {
