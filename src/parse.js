@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', start);
 
 function start() {
 
+  // magnet input
   document.getElementById('magnet').addEventListener('keyup', function(event) {
     event.preventDefault();
     if (event.key === "Enter") {
@@ -89,6 +90,7 @@ function start() {
     }
   });
 
+  // torrent select button
   document.getElementById('torrent').addEventListener('change', function(event) {
     event.preventDefault();
     event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
@@ -99,6 +101,22 @@ function start() {
     });
   });
 
+  // body drag-and-drop torrent file support
+  document.addEventListener('dragover', function(event) {
+    event.preventDefault();
+  });
+
+  document.addEventListener('drop', function(event) {
+    event.preventDefault();
+    event.dataTransfer.items[0].getAsFile().arrayBuffer().then(function(arrayBuffer) {
+      source = "torrent-file";
+      originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+      sourceTooltip.setContent("Currently loaded information sourced from Torrent file");
+      parse(Buffer.from(arrayBuffer));
+    });
+  });
+
+  // example buttons
   example1.addEventListener('click', function(event) {
     event.preventDefault();
     notyf.success("Parsing Ubuntu 20.04 Magnet URL");
@@ -119,6 +137,7 @@ function start() {
     parse(Buffer.from(arrayBuffer));
   });
 
+  // share buttons
   let copyurl = new clipboard('#copyURL');
   copyurl.on('success', function(e) {
     notyf.success('Copied site URL to clipboard!');
@@ -146,6 +165,7 @@ function start() {
     console.warn(e);
   });
 
+  // details field listeners
   name.addEventListener('input', propertyChange);
   name.addEventListener('change', propertyChange);
   name.addEventListener('reset', propertyChange);
