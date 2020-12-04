@@ -303,9 +303,17 @@ function display() {
   files.innerHTML = "";
   if (parsed.files && parsed.files.length) {
     getFiles.style.display = "none";
-    for (let file of parsed.files) {
-      let icon = getFontAwesomeIconForMimetype(mime.lookup(file.name));
-      files.appendChild(createFileRow(icon, file.name, file.length));
+    if (parsed.files.length < 100) {
+      for (let file of parsed.files) {
+        let icon = getFontAwesomeIconForMimetype(mime.lookup(file.name));
+        files.appendChild(createFileRow(icon, file.name, file.length));
+      }
+    } else {
+      for (let i = 0; i < 100; i++) {
+        let icon = getFontAwesomeIconForMimetype(mime.lookup(parsed.files[i].name));
+        files.appendChild(createFileRow(icon, parsed.files[i].name, parsed.files[i].length));
+      }
+      files.appendChild(createFileRow('', '...and another ' + (parsed.files.length - 100) + ' more files', ''));
     }
     files.appendChild(createFileRow('folder-tree', '', parsed.length));
     downloadTorrentTooltip.setContent('Download Torrent file');
@@ -353,7 +361,7 @@ function display() {
 function createFileRow(icon, name, size) {
   let row = document.createElement('tr');
   let iconcell = document.createElement('td');
-  iconcell.innerHTML = '<span class="far fa-' + icon + '"></span>';
+  if (icon) iconcell.innerHTML = '<span class="far fa-' + icon + '"></span>';
   row.appendChild(iconcell);
   let namecell = document.createElement('td');
   namecell.innerHTML = name;

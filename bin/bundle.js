@@ -23810,10 +23810,11 @@ function parseTorrent (torrentId) {
   }
 }
 
-function parseTorrentRemote (torrentId, cb) {
-  let parsedTorrent
+function parseTorrentRemote (torrentId, opts, cb) {
+  if (typeof opts === 'function') return parseTorrentRemote(torrentId, {}, opts)
   if (typeof cb !== 'function') throw new Error('second argument must be a Function')
 
+  let parsedTorrent
   try {
     parsedTorrent = parseTorrent(torrentId)
   } catch (err) {
@@ -23832,11 +23833,12 @@ function parseTorrentRemote (torrentId, cb) {
     })
   } else if (typeof get === 'function' && /^https?:/.test(torrentId)) {
     // http, or https url to torrent file
-    get.concat({
+    opts = Object.assign({
       url: torrentId,
       timeout: 30 * 1000,
       headers: { 'user-agent': 'WebTorrent (https://webtorrent.io)' }
-    }, (err, res, torrentBuf) => {
+    }, opts)
+    get.concat(opts, (err, res, torrentBuf) => {
       if (err) return cb(new Error(`Error downloading torrent: ${err.message}`))
       parseOrThrow(torrentBuf)
     })
@@ -38179,9 +38181,17 @@ function display() {
   files.innerHTML = "";
   if (parsed.files && parsed.files.length) {
     getFiles.style.display = "none";
-    for (let file of parsed.files) {
-      let icon = getFontAwesomeIconForMimetype(mime.lookup(file.name));
-      files.appendChild(createFileRow(icon, file.name, file.length));
+    if (parsed.files.length < 100) {
+      for (let file of parsed.files) {
+        let icon = getFontAwesomeIconForMimetype(mime.lookup(file.name));
+        files.appendChild(createFileRow(icon, file.name, file.length));
+      }
+    } else {
+      for (let i = 0; i < 100; i++) {
+        let icon = getFontAwesomeIconForMimetype(mime.lookup(parsed.files[i].name));
+        files.appendChild(createFileRow(icon, parsed.files[i].name, parsed.files[i].length));
+      }
+      files.appendChild(createFileRow('', '...and another ' + (parsed.files.length - 100) + ' more files', ''));
     }
     files.appendChild(createFileRow('folder-tree', '', parsed.length));
     downloadTorrentTooltip.setContent('Download Torrent file');
@@ -38229,7 +38239,7 @@ function display() {
 function createFileRow(icon, name, size) {
   let row = document.createElement('tr');
   let iconcell = document.createElement('td');
-  iconcell.innerHTML = '<span class="far fa-' + icon + '"></span>';
+  if (icon) iconcell.innerHTML = '<span class="far fa-' + icon + '"></span>';
   row.appendChild(iconcell);
   let namecell = document.createElement('td');
   namecell.innerHTML = name;
