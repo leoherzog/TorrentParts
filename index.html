@@ -14,8 +14,10 @@
   <link href="/favicon.ico" rel="icon" />
   <link href="/img/TorrentParts-Icon-1x.png" rel="icon" type="image/png" sizes="128x128" />
   <link href="/img/TorrentParts-Icon-2x.png" rel="icon" type="image/png" sizes="256x256" />
+  <link href="/img/TorrentParts-Icon-3x.png" rel="icon" type="image/png" sizes="512x512" />
   <link href="/img/TorrentParts-Icon-1x.png" rel="apple-touch-icon" type="image/png" sizes="128x128" />
   <link href="/img/TorrentParts-Icon-2x.png" rel="apple-touch-icon" type="image/png" sizes="256x256" />
+  <link href="/img/TorrentParts-Icon-3x.png" rel="apple-touch-icon" type="image/png" sizes="512x512" />
   <meta name="msapplication-TileColor" content="#102030" />
   <meta name="msapplication-TileImage" content="/img/TorrentParts-Icon-2x.png" />
   <meta property="og:image" content="/img/TorrentParts-Social.png" />
@@ -34,12 +36,12 @@
 
   <title>Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link</title>
 
-  <link href="style.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Alata&display=swap" rel="stylesheet" />
-  <link href="notyf.min.css" rel="stylesheet" />
-  <script async src="https://kit.fontawesome.com/9ca49f101f.js"></script>
+  <link href="/src/style.css" rel="stylesheet" />
+  <link href="/ext/alata-latin-400.woff2" rel="preload" as="style">
+  <link href="/ext/alata-latin-400.woff" rel="preload" as="style">
+  <script async src="/ext/fa.min.js"></script>
   <script async defer src="https://buttons.github.io/buttons.js"></script>
-  <script src="notyf.min.js"></script>
+  <script src="/ext/notyf.min.js"></script>
 
   <script async defer src="https://www.googletagmanager.com/gtag/js?id=G-VT4953Z89H"></script>
   <script>
@@ -67,7 +69,7 @@
       Enter URL and press enter
     </label>
 
-    <input id="torrent" type="file" aria-label="Select Torrent file" />
+    <input id="torrent" type="file" accept=".torrent" aria-label="Select Torrent file" />
     <label for="torrent">
       <span class="fas fa-cloud-upload" aria-hidden="true"></span> Select Torrent File
     </label>
@@ -205,10 +207,16 @@
   </div>
 
   <footer>
-    <a href="https://github.com/leoherzog/TorrentParts/releases" target="_blank">v1.0</a>
+    <a href="https://github.com/leoherzog/TorrentParts/releases" target="_blank" rel="noopener">v1.1</a>
   </footer>
 
-  <script src="bundle.min.js"></script>
+  <script src="/bin/bundle.min.js"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/src/sw.js'));
+    }
+  </script>
 
 </body>
 

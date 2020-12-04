@@ -1,0 +1,411 @@
+/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */
+html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}main{display:block}h1{font-size:2em;margin:.67em 0}hr{box-sizing:content-box;height:0;overflow:visible}pre{font-family:monospace,monospace;font-size:1em}a{background-color:transparent}abbr[title]{border-bottom:none;text-decoration:underline;text-decoration:underline dotted}b,strong{font-weight:bolder}code,kbd,samp{font-family:monospace,monospace;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}img{border-style:none}button,input,optgroup,select,textarea{font-family:inherit;font-size:100%;line-height:1.15;margin:0}button,input{overflow:visible}button,select{text-transform:none}[type=button],[type=reset],[type=submit],button{-webkit-appearance:button}[type=button]::-moz-focus-inner,[type=reset]::-moz-focus-inner,[type=submit]::-moz-focus-inner,button::-moz-focus-inner{border-style:none;padding:0}[type=button]:-moz-focusring,[type=reset]:-moz-focusring,[type=submit]:-moz-focusring,button:-moz-focusring{outline:1px dotted ButtonText}fieldset{padding:.35em .75em .625em}legend{box-sizing:border-box;color:inherit;display:table;max-width:100%;padding:0;white-space:normal}progress{vertical-align:baseline}textarea{overflow:auto}[type=checkbox],[type=radio]{box-sizing:border-box;padding:0}[type=number]::-webkit-inner-spin-button,[type=number]::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}[type=search]::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}details{display:block}summary{display:list-item}template{display:none}[hidden]{display:none}
+
+/*! Tippy v6.2.7 | MIT License | github.com/atomiks/tippyjs */
+.tippy-box[data-animation=fade][data-state=hidden]{opacity:0}[data-tippy-root]{max-width:calc(100vw - 10px)}.tippy-box{position:relative;background-color:#333;color:#fff;border-radius:4px;font-size:14px;line-height:1.4;outline:0;transition-property:transform,visibility,opacity}.tippy-box[data-placement^=top]>.tippy-arrow{bottom:0}.tippy-box[data-placement^=top]>.tippy-arrow:before{bottom:-7px;left:0;border-width:8px 8px 0;border-top-color:initial;transform-origin:center top}.tippy-box[data-placement^=bottom]>.tippy-arrow{top:0}.tippy-box[data-placement^=bottom]>.tippy-arrow:before{top:-7px;left:0;border-width:0 8px 8px;border-bottom-color:initial;transform-origin:center bottom}.tippy-box[data-placement^=left]>.tippy-arrow{right:0}.tippy-box[data-placement^=left]>.tippy-arrow:before{border-width:8px 0 8px 8px;border-left-color:initial;right:-7px;transform-origin:center left}.tippy-box[data-placement^=right]>.tippy-arrow{left:0}.tippy-box[data-placement^=right]>.tippy-arrow:before{left:-7px;border-width:8px 8px 8px 0;border-right-color:initial;transform-origin:center right}.tippy-box[data-inertia][data-state=visible]{transition-timing-function:cubic-bezier(.54,1.5,.38,1.11)}.tippy-arrow{width:16px;height:16px;color:#333}.tippy-arrow:before{content:"";position:absolute;border-color:transparent;border-style:solid}.tippy-content{position:relative;padding:5px 9px;z-index:1}
+
+/* Tippy shift-away-subtle theme */
+.tippy-box[data-animation=shift-away-subtle][data-state=hidden]{opacity:0}.tippy-box[data-animation=shift-away-subtle][data-state=hidden][data-placement^=top]{transform:translateY(5px)}.tippy-box[data-animation=shift-away-subtle][data-state=hidden][data-placement^=bottom]{transform:translateY(-5px)}.tippy-box[data-animation=shift-away-subtle][data-state=hidden][data-placement^=left]{transform:translateX(5px)}.tippy-box[data-animation=shift-away-subtle][data-state=hidden][data-placement^=right]{transform:translateX(-5px)}
+
+/* Custom Tippy Theme */
+.tippy-box[data-theme~="torrent-parts"] {
+  background-color: var(--accent);
+  font-weight: 600;
+  text-align: center;
+}
+.tippy-box[data-theme~="torrent-parts"][data-placement^="top"] > .tippy-arrow:before {
+  border-top-color: var(--accent);
+}
+.tippy-box[data-theme~="torrent-parts"][data-placement^="bottom"] > .tippy-arrow:before {
+  border-bottom-color: var(--accent);
+}
+.tippy-box[data-theme~="torrent-parts"][data-placement^="left"] > .tippy-arrow:before {
+  border-left-color: var(--accent);
+}
+.tippy-box[data-theme~="torrent-parts"][data-placement^="right"] > .tippy-arrow:before {
+  border-right-color: var(--accent);
+}
+.tippy-box[data-theme~="torrent-parts"] > .tippy-backdrop {
+  background-color: var(--accent);
+}
+.tippy-box[data-theme~="torrent-parts"] > .tippy-svg-arrow {
+  fill: var(--accent);
+}
+
+/*! Notyf v3.9.0 | MIT License | github.com/caroso1222/notyf */
+@-webkit-keyframes notyf-fadeinup{0%{opacity:0;transform:translateY(25%)}to{opacity:1;transform:translateY(0)}}@keyframes notyf-fadeinup{0%{opacity:0;transform:translateY(25%)}to{opacity:1;transform:translateY(0)}}@-webkit-keyframes notyf-fadeinleft{0%{opacity:0;transform:translateX(25%)}to{opacity:1;transform:translateX(0)}}@keyframes notyf-fadeinleft{0%{opacity:0;transform:translateX(25%)}to{opacity:1;transform:translateX(0)}}@-webkit-keyframes notyf-fadeoutright{0%{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(25%)}}@keyframes notyf-fadeoutright{0%{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(25%)}}@-webkit-keyframes notyf-fadeoutdown{0%{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(25%)}}@keyframes notyf-fadeoutdown{0%{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(25%)}}@-webkit-keyframes ripple{0%{transform:scale(0) translateY(-45%) translateX(13%)}to{transform:scale(1) translateY(-45%) translateX(13%)}}@keyframes ripple{0%{transform:scale(0) translateY(-45%) translateX(13%)}to{transform:scale(1) translateY(-45%) translateX(13%)}}.notyf{position:fixed;top:0;left:0;height:100%;width:100%;color:#fff;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;pointer-events:none;box-sizing:border-box;padding:20px}.notyf__icon--error,.notyf__icon--success{height:21px;width:21px;background:#fff;border-radius:50%;display:block;margin:0 auto;position:relative}.notyf__icon--error:after,.notyf__icon--error:before{content:"";background:currentColor;display:block;position:absolute;width:3px;border-radius:3px;left:9px;height:12px;top:5px}.notyf__icon--error:after{transform:rotate(-45deg)}.notyf__icon--error:before{transform:rotate(45deg)}.notyf__icon--success:after,.notyf__icon--success:before{content:"";background:currentColor;display:block;position:absolute;width:3px;border-radius:3px}.notyf__icon--success:after{height:6px;transform:rotate(-45deg);top:9px;left:6px}.notyf__icon--success:before{height:11px;transform:rotate(45deg);top:5px;left:10px}.notyf__toast{display:block;overflow:hidden;pointer-events:auto;-webkit-animation:notyf-fadeinup .3s ease-in forwards;animation:notyf-fadeinup .3s ease-in forwards;box-shadow:0 3px 7px 0 rgba(0,0,0,.25);position:relative;padding:0 15px;border-radius:2px;max-width:300px;transform:translateY(25%);box-sizing:border-box;flex-shrink:0}.notyf__toast--disappear{transform:translateY(0);-webkit-animation:notyf-fadeoutdown .3s forwards;animation:notyf-fadeoutdown .3s forwards;-webkit-animation-delay:.25s;animation-delay:.25s}.notyf__toast--disappear .notyf__icon,.notyf__toast--disappear .notyf__message{-webkit-animation:notyf-fadeoutdown .3s forwards;animation:notyf-fadeoutdown .3s forwards;opacity:1;transform:translateY(0)}.notyf__toast--disappear .notyf__dismiss{-webkit-animation:notyf-fadeoutright .3s forwards;animation:notyf-fadeoutright .3s forwards;opacity:1;transform:translateX(0)}.notyf__toast--disappear .notyf__message{-webkit-animation-delay:.05s;animation-delay:.05s}.notyf__toast--upper{margin-bottom:20px}.notyf__toast--lower{margin-top:20px}.notyf__toast--dismissible .notyf__wrapper{padding-right:30px}.notyf__ripple{height:400px;width:400px;position:absolute;transform-origin:bottom right;right:0;top:0;border-radius:50%;transform:scale(0) translateY(-51%) translateX(13%);z-index:5;-webkit-animation:ripple .4s ease-out forwards;animation:ripple .4s ease-out forwards}.notyf__wrapper{display:flex;align-items:center;padding-top:17px;padding-bottom:17px;padding-right:15px;border-radius:3px;position:relative;z-index:10}.notyf__icon{width:22px;text-align:center;font-size:1.3em;opacity:0;-webkit-animation:notyf-fadeinup .3s forwards;animation:notyf-fadeinup .3s forwards;-webkit-animation-delay:.3s;animation-delay:.3s;margin-right:13px}.notyf__dismiss{position:absolute;top:0;right:0;height:100%;width:26px;margin-right:-15px;-webkit-animation:notyf-fadeinleft .3s forwards;animation:notyf-fadeinleft .3s forwards;-webkit-animation-delay:.35s;animation-delay:.35s;opacity:0}.notyf__dismiss-btn{background-color:rgba(0,0,0,.25);border:none;cursor:pointer;transition:opacity .2s ease,background-color .2s ease;outline:none;opacity:.35;height:100%;width:100%}.notyf__dismiss-btn:after,.notyf__dismiss-btn:before{content:"";background:#fff;height:12px;width:2px;border-radius:3px;position:absolute;left:calc(50% - 1px);top:calc(50% - 5px)}.notyf__dismiss-btn:after{transform:rotate(-45deg)}.notyf__dismiss-btn:before{transform:rotate(45deg)}.notyf__dismiss-btn:hover{opacity:.7;background-color:rgba(0,0,0,.15)}.notyf__dismiss-btn:active{opacity:.8}.notyf__message{vertical-align:middle;position:relative;opacity:0;-webkit-animation:notyf-fadeinup .3s forwards;animation:notyf-fadeinup .3s forwards;-webkit-animation-delay:.25s;animation-delay:.25s;line-height:1.5em}@media only screen and (max-width:480px){.notyf{padding:0}.notyf__ripple{height:600px;width:600px;-webkit-animation-duration:.5s;animation-duration:.5s}.notyf__toast{max-width:none;border-radius:0;box-shadow:0 -2px 7px 0 rgba(0,0,0,.13);width:100%}.notyf__dismiss{width:56px}}
+
+/* Fix Notyf dismiss button */
+.notyf__dismiss-btn{border-radius: 0;}
+
+/*! Alata | OFL-1.1 License | github.com/SorkinType/Alata*/
+@font-face {
+  font-family: 'Alata';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local(''),
+       url('/ext/alata-latin-400.woff2') format('woff2'),
+       url('/ext/alata-latin-400.woff') format('woff');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* begin custom stuff */
+
+.sr-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+:root {
+  --gradient: linear-gradient(180deg, #152332, #24384D);
+  --dark-blue: #102030;
+  --light-blue: #495563;
+  --accent: #46835C;
+  --accent-alt: #A60A0A;
+  --grey: #BDBDBD;
+  --white: #FFF;
+  background: #24384D;
+  overflow-x: hidden;
+}
+
+body {
+  color: var(--white);
+  background: var(--gradient);
+  font-family: 'Alata', sans-serif;
+  height: 100vh;
+  width: 100vw;
+  overflow-x: hidden;
+}
+
+input {
+  color: var(--white);
+  background: var(--dark-blue);
+  border: 1px solid var(--light-blue);
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 900px;
+  text-overflow: ellipsis;
+}
+
+input:focus {
+  background: var(--light-blue);
+  border: 1px solid var(--grey);
+  transition: ease .2s;
+  outline: none;
+}
+
+input:disabled {
+  color: var(--grey);
+  background: transparent;
+  border: 0;
+  padding: 8px 0;
+}
+
+::placeholder {
+  color: var(--grey);
+  opacity: 0.6;
+}
+
+button {
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 900px;
+  text-align: left;
+  cursor: pointer;
+}
+
+button:disabled {
+  filter: brightness(0.6);
+  cursor: not-allowed;
+}
+
+a {
+  color: var(--grey);
+  text-decoration: underline;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.disabled {
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+header {
+  width: 100%;
+  height: 80px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--grey);
+}
+
+header > * {
+  margin: 0 24px;
+}
+
+footer {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+}
+
+footer > a {
+  color: var(--grey);
+  opacity: 0.6;
+  font-size: 10px;
+  text-transform: none;
+  text-decoration: none;
+}
+
+#startButtons {
+  height: 80px;
+  max-width: 960px;
+  margin: 64px auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+#startButtons > *, #examples > button {
+  width: 440px;
+  height: 40px;
+  line-height: 22px;
+}
+
+#magnet {
+  text-align: center;
+}
+
+#torrent {
+  display: none;
+}
+
+label[for="torrent"] {
+  color: var(--white);
+  background: var(--accent);
+  border: 0;
+  padding: 8px;
+  box-sizing: border-box;
+  border-radius: 900px;
+  text-align: center;
+  text-transform: none;
+  cursor: pointer;
+}
+
+#examples {
+  width: 100%;
+  height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#examples > button {
+  background: var(--light-blue);
+  width: 440px;
+  height: 40px;
+  line-height: 22px;
+  text-align: center;
+}
+
+#properties {
+  position: relative;
+  max-width: 960px;
+  background: var(--dark-blue);
+  box-shadow: 0px 5px 20px 0px rgba(0, 0, 0, 0.3);
+  margin: 80px auto;
+  padding: 40px;
+  border-radius: 30px;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+#reset {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 50%;
+  position: absolute;
+  top: -12px;
+  right: -12px;
+}
+
+#share {
+  position: absolute;
+  top: 0;
+  left: -28px;
+  display: flex;
+  flex-direction: column;
+}
+
+#share > div > button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 50%;
+  margin: 4px 0;
+}
+
+.property {
+  margin: 24px 0;
+  display: flex;
+  align-content: flex-start;
+  justify-content: space-between;
+}
+
+.property:first-child {
+  width: 240px;
+}
+
+.labels {
+  width: 280px;
+  text-align: right;
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.labels > a {
+  font-size: 80%;
+  margin-top: 6px;
+}
+
+.content, #files {
+  width: 460px;
+}
+
+.info {
+  color: var(--grey);
+}
+
+label {
+  text-transform: uppercase;
+}
+
+input {
+  width: 440px;
+  height: 40px;
+}
+
+#addTracker, #addWebseed {
+  width: 440px;
+  height: 40px;
+  margin: 0 0 16px 0;
+  color: var(--grey);
+  opacity: 0.6;
+  background: var(--dark-blue);
+  border: 1px solid var(--light-blue);
+  box-sizing: border-box;
+  border-radius: 900px;
+  cursor: pointer;
+}
+
+#announce > *, #urlList > * {
+  margin: 0 0 16px 0;
+}
+
+.remove {
+  margin-left: 6px;
+}
+
+@media (max-width: 1080px) {
+
+  #reset {
+    top: 0px;
+    right: 8px;
+  }
+
+  #share {
+    justify-content: center;
+    width: 95%;
+    top: auto;
+    bottom: 16px;
+    left: auto;
+    right: auto;
+    flex-direction: row;
+  }
+
+  #share > * {
+    margin: 0 4px;
+  }
+
+  #properties {
+    padding-bottom: 80px !important;
+  }
+
+}
+
+@media (max-width: 900px) {
+
+  #startButtons {
+    flex-direction: column;
+    justify-content: space-between;
+    height: 90px;
+  }
+
+  #properties {
+    margin: 0 0 32px 0;
+    padding: 0 1.5vw;
+  }
+
+  .property {
+    margin: 12px 0;
+    flex-direction: column;
+  }
+
+  .property > label {
+    margin: 12px 0;
+  }
+
+  input, button {
+    width: 80vw;
+    text-align: center;
+  }
+
+  .labels {
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .labels, .content, #files {
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #announce, #urlList {
+    text-align: center;
+  }
+
+  #announce > * > *, #urlList > * > *, #addTracker, #addWebseed, #examples > button {
+    width: 80vw;
+  }
+
+  #addTracker, #addWebseed {
+    margin-right: 22px !important;
+  }
+
+}
+
+@media (max-width: 460px) {
+  
+  #startButtons > *, .property > input {
+    width: 95%;
+  }
+
+}

@@ -1,28 +1,28 @@
 {
   "name": "torrentparts",
-  "version": "0.0.1",
+  "version": "1.1",
   "description": "📑 A website to inspect and edit Torrent files and Magnet URLs",
-  "main": "bundle.js",
+  "main": "bin/bundle.js",
   "dependencies": {
-    "browserify": "latest",
-    "Buffer": "latest",
-    "bytes": "latest",
-    "clipboard": "latest",
-    "dropzone": "latest",
-    "mime-types": "latest",
-    "parse-torrent": "latest",
-    "tippy.js": "latest",
-    "webtorrent": "latest"
+    "browserify": "^17.0.0",
+    "bytes": "^3.1.0",
+    "clipboard": "^2.0.6",
+    "mime-types": "^2.1.27",
+    "parse-torrent": "^9.0.0",
+    "tippy.js": "^6.2.7",
+    "webtorrent": "^0.110.1"
   },
   "devDependencies": {
-    "notyf": "latest",
-    "terser": "latest",
-    "watchify": "latest"
+    "buffer": "^5.2.1",
+    "Buffer": "^0.0.0",
+    "notyf": "^3.9.0",
+    "terser": "^5.3.8",
+    "watchify": "^3.11.1"
   },
   "scripts": {
-    "watch": "watchify parse.js -o bundle.js",
-    "compile": "browserify parse.js -o bundle.js",
-    "minify": "terser bundle.js -c -m -o bundle.min.js",
+    "watch": "watchify src/parse.js -o bin/bundle.js",
+    "compile": "browserify src/parse.js -o bin/bundle.js",
+    "minify": "terser bin/bundle.js -c -m -o bin/bundle.min.js",
     "build": "npm run compile && npm run minify"
   },
   "repository": {
