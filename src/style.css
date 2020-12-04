@@ -72,14 +72,7 @@ html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}main{display:b
   --grey: #BDBDBD;
   --white: #FFF;
   background: #24384D;
-  overflow-y: scroll;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   overflow-x: hidden;
-}
-
-:root:-webkit-scrollbar {
-  display: none;
 }
 
 body {
@@ -88,14 +81,7 @@ body {
   font-family: 'Alata', sans-serif;
   height: 100vh;
   width: 100vw;
-  overflow-y: scroll;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   overflow-x: hidden;
-}
-
-body:-webkit-scrollbar {
-  display: none;
 }
 
 input {
