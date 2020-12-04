@@ -2,7 +2,7 @@
 
 ## What is this?
 
-[BitTorrent](https://bittorrent.com/) is a ubiquitus and powerful way to transfer files peer-to-peer. To specify what file(s) to download with your client, you need to input either a Torrent file or Magnet URL. [Torrent Parts](https://torrent.parts/) is a client-side static web app to read and edit the metadata of a Torrent file or Magnet URL so you know what you're downloading, before you add it to your Torrent client.
+[BitTorrent](https://bittorrent.com/) is a ubiquitous and powerful way to transfer files peer-to-peer. To specify what file(s) to download with your client, you need to input either a Torrent file or Magnet URL. [Torrent Parts](https://torrent.parts/) is a client-side static web app to read and edit the metadata of a Torrent file or Magnet URL so you know what you're downloading, before you add it to your Torrent client.
 
 ### Features
 
