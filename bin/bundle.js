@@ -13654,9 +13654,8 @@ module.exports={
   "application/cals-1840": {
     "source": "iana"
   },
-  "application/cap+xml": {
+  "application/captive+json": {
     "source": "iana",
-    "charset": "UTF-8",
     "compressible": true
   },
   "application/cbor": {
@@ -13884,6 +13883,11 @@ module.exports={
   },
   "application/efi": {
     "source": "iana"
+  },
+  "application/emergencycalldata.cap+xml": {
+    "source": "iana",
+    "charset": "UTF-8",
+    "compressible": true
   },
   "application/emergencycalldata.comment+xml": {
     "source": "iana",
@@ -14504,6 +14508,10 @@ module.exports={
     "source": "apache",
     "extensions": ["onetoc","onetoc2","onetmp","onepkg"]
   },
+  "application/opc-nodeset+xml": {
+    "source": "iana",
+    "compressible": true
+  },
   "application/oscore": {
     "source": "iana"
   },
@@ -14791,6 +14799,10 @@ module.exports={
     "compressible": true
   },
   "application/samlmetadata+xml": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/sarif+json": {
     "source": "iana",
     "compressible": true
   },
@@ -15093,6 +15105,10 @@ module.exports={
   "application/tzif-leap": {
     "source": "iana"
   },
+  "application/ubjson": {
+    "compressible": false,
+    "extensions": ["ubj"]
+  },
   "application/ulpfec": {
     "source": "iana"
   },
@@ -15107,7 +15123,8 @@ module.exports={
   },
   "application/urc-targetdesc+xml": {
     "source": "iana",
-    "compressible": true
+    "compressible": true,
+    "extensions": ["td"]
   },
   "application/urc-uisocketdesc+xml": {
     "source": "iana",
@@ -15486,7 +15503,7 @@ module.exports={
   },
   "application/vnd.apple.keynote": {
     "source": "iana",
-    "extensions": ["keynote"]
+    "extensions": ["key"]
   },
   "application/vnd.apple.mpegurl": {
     "source": "iana",
@@ -15803,6 +15820,12 @@ module.exports={
     "source": "iana",
     "compressible": false
   },
+  "application/vnd.d3m-dataset": {
+    "source": "iana"
+  },
+  "application/vnd.d3m-problem": {
+    "source": "iana"
+  },
   "application/vnd.dart": {
     "source": "iana",
     "compressible": true,
@@ -15821,7 +15844,8 @@ module.exports={
     "compressible": true
   },
   "application/vnd.dbf": {
-    "source": "iana"
+    "source": "iana",
+    "extensions": ["dbf"]
   },
   "application/vnd.debian.binary-package": {
     "source": "iana"
@@ -17551,6 +17575,9 @@ module.exports={
     "source": "iana",
     "compressible": true
   },
+  "application/vnd.oma.lwm2m+cbor": {
+    "source": "iana"
+  },
   "application/vnd.oma.lwm2m+json": {
     "source": "iana",
     "compressible": true
@@ -18161,7 +18188,8 @@ module.exports={
     "source": "iana"
   },
   "application/vnd.rar": {
-    "source": "iana"
+    "source": "iana",
+    "extensions": ["rar"]
   },
   "application/vnd.realvnc.bed": {
     "source": "iana",
@@ -18459,6 +18487,10 @@ module.exports={
   },
   "application/vnd.swiftview-ics": {
     "source": "iana"
+  },
+  "application/vnd.sycle+xml": {
+    "source": "iana",
+    "compressible": true
   },
   "application/vnd.symbian.install": {
     "source": "apache",
@@ -19543,7 +19575,7 @@ module.exports={
   "application/xslt+xml": {
     "source": "iana",
     "compressible": true,
-    "extensions": ["xslt"]
+    "extensions": ["xsl","xslt"]
   },
   "application/xspf+xml": {
     "source": "apache",
@@ -19926,6 +19958,9 @@ module.exports={
   "audio/smv0": {
     "source": "iana"
   },
+  "audio/sofa": {
+    "source": "iana"
+  },
   "audio/sp-midi": {
     "source": "iana"
   },
@@ -19948,6 +19983,9 @@ module.exports={
     "source": "iana"
   },
   "audio/tone": {
+    "source": "iana"
+  },
+  "audio/tsvcis": {
     "source": "iana"
   },
   "audio/uemclip": {
@@ -20249,6 +20287,10 @@ module.exports={
   "image/avcs": {
     "source": "iana"
   },
+  "image/avif": {
+    "compressible": false,
+    "extensions": ["avif"]
+  },
   "image/bmp": {
     "source": "iana",
     "compressible": true,
@@ -20370,6 +20412,10 @@ module.exports={
   "image/ktx": {
     "source": "iana",
     "extensions": ["ktx"]
+  },
+  "image/ktx2": {
+    "source": "iana",
+    "extensions": ["ktx2"]
   },
   "image/naplps": {
     "source": "iana"
@@ -20494,6 +20540,10 @@ module.exports={
   "image/vnd.net-fpx": {
     "source": "iana",
     "extensions": ["npx"]
+  },
+  "image/vnd.pco.b16": {
+    "source": "iana",
+    "extensions": ["b16"]
   },
   "image/vnd.radiance": {
     "source": "iana"
@@ -20695,6 +20745,9 @@ module.exports={
   "model/3mf": {
     "source": "iana",
     "extensions": ["3mf"]
+  },
+  "model/e57": {
+    "source": "iana"
   },
   "model/gltf+json": {
     "source": "iana",
@@ -20927,6 +20980,9 @@ module.exports={
   "text/fwdred": {
     "source": "iana"
   },
+  "text/gff3": {
+    "source": "iana"
+  },
   "text/grammar-ref-list": {
     "source": "iana"
   },
@@ -21033,11 +21089,18 @@ module.exports={
     "source": "iana",
     "extensions": ["sgml","sgm"]
   },
+  "text/shaclc": {
+    "source": "iana"
+  },
   "text/shex": {
     "extensions": ["shex"]
   },
   "text/slim": {
     "extensions": ["slim","slm"]
+  },
+  "text/spdx": {
+    "source": "iana",
+    "extensions": ["spdx"]
   },
   "text/strings": {
     "source": "iana"
@@ -21132,6 +21195,9 @@ module.exports={
   "text/vnd.graphviz": {
     "source": "iana",
     "extensions": ["gv"]
+  },
+  "text/vnd.hans": {
+    "source": "iana"
   },
   "text/vnd.hgl": {
     "source": "iana"
