@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (process){(function (){
 /**
- * @popperjs/core v2.6.0 - MIT License
+ * @popperjs/core v2.9.0 - MIT License
  */
 
 'use strict';
@@ -22,10 +22,11 @@ function getBoundingClientRect(element) {
   };
 }
 
-/*:: import type { Window } from '../types'; */
-
-/*:: declare function getWindow(node: Node | Window): Window; */
 function getWindow(node) {
+  if (node == null) {
+    return window;
+  }
+
   if (node.toString() !== '[object Window]') {
     var ownerDocument = node.ownerDocument;
     return ownerDocument ? ownerDocument.defaultView || window : window;
@@ -44,26 +45,22 @@ function getWindowScroll(node) {
   };
 }
 
-/*:: declare function isElement(node: mixed): boolean %checks(node instanceof
-  Element); */
-
 function isElement(node) {
   var OwnElement = getWindow(node).Element;
   return node instanceof OwnElement || node instanceof Element;
 }
-/*:: declare function isHTMLElement(node: mixed): boolean %checks(node instanceof
-  HTMLElement); */
-
 
 function isHTMLElement(node) {
   var OwnElement = getWindow(node).HTMLElement;
   return node instanceof OwnElement || node instanceof HTMLElement;
 }
-/*:: declare function isShadowRoot(node: mixed): boolean %checks(node instanceof
-  ShadowRoot); */
-
 
 function isShadowRoot(node) {
+  // IE 11 has no ShadowRoot
+  if (typeof ShadowRoot === 'undefined') {
+    return false;
+  }
+
   var OwnElement = getWindow(node).ShadowRoot;
   return node instanceof OwnElement || node instanceof ShadowRoot;
 }
@@ -160,14 +157,28 @@ function getCompositeRect(elementOrVirtualElement, offsetParent, isFixed) {
   };
 }
 
-// Returns the layout rect of an element relative to its offsetParent. Layout
 // means it doesn't take into account transforms.
+
 function getLayoutRect(element) {
+  var clientRect = getBoundingClientRect(element); // Use the clientRect sizes if it's not been transformed.
+  // Fixes https://github.com/popperjs/popper-core/issues/1223
+
+  var width = element.offsetWidth;
+  var height = element.offsetHeight;
+
+  if (Math.abs(clientRect.width - width) <= 1) {
+    width = clientRect.width;
+  }
+
+  if (Math.abs(clientRect.height - height) <= 1) {
+    height = clientRect.height;
+  }
+
   return {
     x: element.offsetLeft,
     y: element.offsetTop,
-    width: element.offsetWidth,
-    height: element.offsetHeight
+    width: width,
+    height: height
   };
 }
 
@@ -180,9 +191,8 @@ function getParentNode(element) {
     // $FlowFixMe[incompatible-return]
     // $FlowFixMe[prop-missing]
     element.assignedSlot || // step into the shadow DOM of the parent of a slotted node
-    element.parentNode || // DOM Element detected
-    // $FlowFixMe[incompatible-return]: need a better way to handle this...
-    element.host || // ShadowRoot detected
+    element.parentNode || ( // DOM Element detected
+    isShadowRoot(element) ? element.host : null) || // ShadowRoot detected
     // $FlowFixMe[incompatible-call]: HTMLElement is a Node
     getDocumentElement(element) // fallback
 
@@ -210,12 +220,14 @@ reference element's position.
 */
 
 function listScrollParents(element, list) {
+  var _element$ownerDocumen;
+
   if (list === void 0) {
     list = [];
   }
 
   var scrollParent = getScrollParent(element);
-  var isBody = getNodeName(scrollParent) === 'body';
+  var isBody = scrollParent === ((_element$ownerDocumen = element.ownerDocument) == null ? void 0 : _element$ownerDocumen.body);
   var win = getWindow(scrollParent);
   var target = isBody ? [win].concat(win.visualViewport || [], isScrollParent(scrollParent) ? scrollParent : []) : scrollParent;
   var updatedList = list.concat(target);
@@ -233,29 +245,21 @@ function getTrueOffsetParent(element) {
     return null;
   }
 
-  var offsetParent = element.offsetParent;
-
-  if (offsetParent) {
-    var html = getDocumentElement(offsetParent);
-
-    if (getNodeName(offsetParent) === 'body' && getComputedStyle(offsetParent).position === 'static' && getComputedStyle(html).position !== 'static') {
-      return html;
-    }
-  }
-
-  return offsetParent;
+  return element.offsetParent;
 } // `.offsetParent` reports `null` for fixed elements, while absolute elements
 // return the containing block
 
 
 function getContainingBlock(element) {
+  var isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
   var currentNode = getParentNode(element);
 
   while (isHTMLElement(currentNode) && ['html', 'body'].indexOf(getNodeName(currentNode)) < 0) {
     var css = getComputedStyle(currentNode); // This is non-exhaustive but covers the most common CSS properties that
     // create a containing block.
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
 
-    if (css.transform !== 'none' || css.perspective !== 'none' || css.willChange && css.willChange !== 'auto') {
+    if (css.transform !== 'none' || css.perspective !== 'none' || css.contain === 'paint' || ['transform', 'perspective'].includes(css.willChange) || isFirefox && css.willChange === 'filter' || isFirefox && css.filter && css.filter !== 'none') {
       return currentNode;
     } else {
       currentNode = currentNode.parentNode;
@@ -275,7 +279,7 @@ function getOffsetParent(element) {
     offsetParent = getTrueOffsetParent(offsetParent);
   }
 
-  if (offsetParent && getNodeName(offsetParent) === 'body' && getComputedStyle(offsetParent).position === 'static') {
+  if (offsetParent && (getNodeName(offsetParent) === 'html' || getNodeName(offsetParent) === 'body' && getComputedStyle(offsetParent).position === 'static')) {
     return window;
   }
 
@@ -477,9 +481,9 @@ function getBasePlacement(placement) {
 function mergeByName(modifiers) {
   var merged = modifiers.reduce(function (merged, current) {
     var existing = merged[current.name];
-    merged[current.name] = existing ? Object.assign(Object.assign(Object.assign({}, existing), current), {}, {
-      options: Object.assign(Object.assign({}, existing.options), current.options),
-      data: Object.assign(Object.assign({}, existing.data), current.data)
+    merged[current.name] = existing ? Object.assign({}, existing, current, {
+      options: Object.assign({}, existing.options, current.options),
+      data: Object.assign({}, existing.data, current.data)
     }) : current;
     return merged;
   }, {}); // IE11 does not support Object.values
@@ -527,19 +531,25 @@ function getViewportRect(element) {
   };
 }
 
+var max = Math.max;
+var min = Math.min;
+var round = Math.round;
+
 // of the `<html>` and `<body>` rect bounds if horizontally scrollable
 
 function getDocumentRect(element) {
+  var _element$ownerDocumen;
+
   var html = getDocumentElement(element);
   var winScroll = getWindowScroll(element);
-  var body = element.ownerDocument.body;
-  var width = Math.max(html.scrollWidth, html.clientWidth, body ? body.scrollWidth : 0, body ? body.clientWidth : 0);
-  var height = Math.max(html.scrollHeight, html.clientHeight, body ? body.scrollHeight : 0, body ? body.clientHeight : 0);
+  var body = (_element$ownerDocumen = element.ownerDocument) == null ? void 0 : _element$ownerDocumen.body;
+  var width = max(html.scrollWidth, html.clientWidth, body ? body.scrollWidth : 0, body ? body.clientWidth : 0);
+  var height = max(html.scrollHeight, html.clientHeight, body ? body.scrollHeight : 0, body ? body.clientHeight : 0);
   var x = -winScroll.scrollLeft + getWindowScrollBarX(element);
   var y = -winScroll.scrollTop;
 
   if (getComputedStyle(body || html).direction === 'rtl') {
-    x += Math.max(html.clientWidth, body ? body.clientWidth : 0) - width;
+    x += max(html.clientWidth, body ? body.clientWidth : 0) - width;
   }
 
   return {
@@ -574,7 +584,7 @@ function contains(parent, child) {
 }
 
 function rectToClientRect(rect) {
-  return Object.assign(Object.assign({}, rect), {}, {
+  return Object.assign({}, rect, {
     left: rect.x,
     top: rect.y,
     right: rect.x + rect.width,
@@ -625,10 +635,10 @@ function getClippingRect(element, boundary, rootBoundary) {
   var firstClippingParent = clippingParents[0];
   var clippingRect = clippingParents.reduce(function (accRect, clippingParent) {
     var rect = getClientRectFromMixedType(element, clippingParent);
-    accRect.top = Math.max(rect.top, accRect.top);
-    accRect.right = Math.min(rect.right, accRect.right);
-    accRect.bottom = Math.min(rect.bottom, accRect.bottom);
-    accRect.left = Math.max(rect.left, accRect.left);
+    accRect.top = max(rect.top, accRect.top);
+    accRect.right = min(rect.right, accRect.right);
+    accRect.bottom = min(rect.bottom, accRect.bottom);
+    accRect.left = max(rect.left, accRect.left);
     return accRect;
   }, getClientRectFromMixedType(element, firstClippingParent));
   clippingRect.width = clippingRect.right - clippingRect.left;
@@ -721,7 +731,7 @@ function getFreshSideObject() {
 }
 
 function mergePaddingObject(paddingObject) {
-  return Object.assign(Object.assign({}, getFreshSideObject()), paddingObject);
+  return Object.assign({}, getFreshSideObject(), paddingObject);
 }
 
 function expandToHashMap(value, keys) {
@@ -762,7 +772,7 @@ function detectOverflow(state, options) {
     strategy: 'absolute',
     placement: placement
   });
-  var popperClientRect = rectToClientRect(Object.assign(Object.assign({}, popperRect), popperOffsets));
+  var popperClientRect = rectToClientRect(Object.assign({}, popperRect, popperOffsets));
   var elementClientRect = elementContext === popper ? popperClientRect : referenceClientRect; // positive = overflowing the clipping rect
   // 0 or negative = within the clipping rect
 
@@ -822,7 +832,7 @@ function popperGenerator(generatorOptions) {
     var state = {
       placement: 'bottom',
       orderedModifiers: [],
-      options: Object.assign(Object.assign({}, DEFAULT_OPTIONS), defaultOptions),
+      options: Object.assign({}, DEFAULT_OPTIONS, defaultOptions),
       modifiersData: {},
       elements: {
         reference: reference,
@@ -837,7 +847,7 @@ function popperGenerator(generatorOptions) {
       state: state,
       setOptions: function setOptions(options) {
         cleanupModifierEffects();
-        state.options = Object.assign(Object.assign(Object.assign({}, defaultOptions), state.options), options);
+        state.options = Object.assign({}, defaultOptions, state.options, options);
         state.scrollParents = {
           reference: isElement(reference) ? listScrollParents(reference) : reference.contextElement ? listScrollParents(reference.contextElement) : [],
           popper: listScrollParents(popper)
@@ -1115,8 +1125,8 @@ function roundOffsetsByDPR(_ref) {
   var win = window;
   var dpr = win.devicePixelRatio || 1;
   return {
-    x: Math.round(x * dpr) / dpr || 0,
-    y: Math.round(y * dpr) / dpr || 0
+    x: round(round(x * dpr) / dpr) || 0,
+    y: round(round(y * dpr) / dpr) || 0
   };
 }
 
@@ -1132,7 +1142,7 @@ function mapToStyles(_ref2) {
       adaptive = _ref2.adaptive,
       roundOffsets = _ref2.roundOffsets;
 
-  var _ref3 = roundOffsets ? roundOffsetsByDPR(offsets) : offsets,
+  var _ref3 = roundOffsets === true ? roundOffsetsByDPR(offsets) : typeof roundOffsets === 'function' ? roundOffsets(offsets) : offsets,
       _ref3$x = _ref3.x,
       x = _ref3$x === void 0 ? 0 : _ref3$x,
       _ref3$y = _ref3.y,
@@ -1146,23 +1156,32 @@ function mapToStyles(_ref2) {
 
   if (adaptive) {
     var offsetParent = getOffsetParent(popper);
+    var heightProp = 'clientHeight';
+    var widthProp = 'clientWidth';
 
     if (offsetParent === getWindow(popper)) {
       offsetParent = getDocumentElement(popper);
+
+      if (getComputedStyle(offsetParent).position !== 'static') {
+        heightProp = 'scrollHeight';
+        widthProp = 'scrollWidth';
+      }
     } // $FlowFixMe[incompatible-cast]: force type refinement, we compare offsetParent with window above, but Flow doesn't detect it
 
-    /*:: offsetParent = (offsetParent: Element); */
 
+    offsetParent = offsetParent;
 
     if (placement === top) {
-      sideY = bottom;
-      y -= offsetParent.clientHeight - popperRect.height;
+      sideY = bottom; // $FlowFixMe[prop-missing]
+
+      y -= offsetParent[heightProp] - popperRect.height;
       y *= gpuAcceleration ? 1 : -1;
     }
 
     if (placement === left) {
-      sideX = right;
-      x -= offsetParent.clientWidth - popperRect.width;
+      sideX = right; // $FlowFixMe[prop-missing]
+
+      x -= offsetParent[widthProp] - popperRect.width;
       x *= gpuAcceleration ? 1 : -1;
     }
   }
@@ -1174,10 +1193,10 @@ function mapToStyles(_ref2) {
   if (gpuAcceleration) {
     var _Object$assign;
 
-    return Object.assign(Object.assign({}, commonStyles), {}, (_Object$assign = {}, _Object$assign[sideY] = hasY ? '0' : '', _Object$assign[sideX] = hasX ? '0' : '', _Object$assign.transform = (win.devicePixelRatio || 1) < 2 ? "translate(" + x + "px, " + y + "px)" : "translate3d(" + x + "px, " + y + "px, 0)", _Object$assign));
+    return Object.assign({}, commonStyles, (_Object$assign = {}, _Object$assign[sideY] = hasY ? '0' : '', _Object$assign[sideX] = hasX ? '0' : '', _Object$assign.transform = (win.devicePixelRatio || 1) < 2 ? "translate(" + x + "px, " + y + "px)" : "translate3d(" + x + "px, " + y + "px, 0)", _Object$assign));
   }
 
-  return Object.assign(Object.assign({}, commonStyles), {}, (_Object$assign2 = {}, _Object$assign2[sideY] = hasY ? y + "px" : '', _Object$assign2[sideX] = hasX ? x + "px" : '', _Object$assign2.transform = '', _Object$assign2));
+  return Object.assign({}, commonStyles, (_Object$assign2 = {}, _Object$assign2[sideY] = hasY ? y + "px" : '', _Object$assign2[sideX] = hasX ? x + "px" : '', _Object$assign2.transform = '', _Object$assign2));
 }
 
 function computeStyles(_ref4) {
@@ -1208,7 +1227,7 @@ function computeStyles(_ref4) {
   };
 
   if (state.modifiersData.popperOffsets != null) {
-    state.styles.popper = Object.assign(Object.assign({}, state.styles.popper), mapToStyles(Object.assign(Object.assign({}, commonStyles), {}, {
+    state.styles.popper = Object.assign({}, state.styles.popper, mapToStyles(Object.assign({}, commonStyles, {
       offsets: state.modifiersData.popperOffsets,
       position: state.options.strategy,
       adaptive: adaptive,
@@ -1217,7 +1236,7 @@ function computeStyles(_ref4) {
   }
 
   if (state.modifiersData.arrow != null) {
-    state.styles.arrow = Object.assign(Object.assign({}, state.styles.arrow), mapToStyles(Object.assign(Object.assign({}, commonStyles), {}, {
+    state.styles.arrow = Object.assign({}, state.styles.arrow, mapToStyles(Object.assign({}, commonStyles, {
       offsets: state.modifiersData.arrow,
       position: 'absolute',
       adaptive: false,
@@ -1225,7 +1244,7 @@ function computeStyles(_ref4) {
     })));
   }
 
-  state.attributes.popper = Object.assign(Object.assign({}, state.attributes.popper), {}, {
+  state.attributes.popper = Object.assign({}, state.attributes.popper, {
     'data-popper-placement': state.placement
   });
 } // eslint-disable-next-line import/no-unused-modules
@@ -1283,6 +1302,7 @@ function effect$1(_ref2) {
     reference: {}
   };
   Object.assign(state.elements.popper.style, initialStyles.popper);
+  state.styles = initialStyles;
 
   if (state.elements.arrow) {
     Object.assign(state.elements.arrow.style, initialStyles.arrow);
@@ -1325,7 +1345,7 @@ function distanceAndSkiddingToXY(placement, rects, offset) {
   var basePlacement = getBasePlacement(placement);
   var invertDistance = [left, top].indexOf(basePlacement) >= 0 ? -1 : 1;
 
-  var _ref = typeof offset === 'function' ? offset(Object.assign(Object.assign({}, rects), {}, {
+  var _ref = typeof offset === 'function' ? offset(Object.assign({}, rects, {
     placement: placement
   })) : offset,
       skidding = _ref[0],
@@ -1395,9 +1415,6 @@ function getOppositeVariationPlacement(placement) {
   });
 }
 
-/*:: type OverflowsMap = { [ComputedPlacement]: number }; */
-
-/*;; type OverflowsMap = { [key in ComputedPlacement]: number }; */
 function computeAutoPlacement(state, options) {
   if (options === void 0) {
     options = {};
@@ -1586,8 +1603,8 @@ function getAltAxis(axis) {
   return axis === 'x' ? 'y' : 'x';
 }
 
-function within(min, value, max) {
-  return Math.max(min, Math.min(value, max));
+function within(min$1, value, max$1) {
+  return max(min$1, min(value, max$1));
 }
 
 function preventOverflow(_ref) {
@@ -1620,7 +1637,7 @@ function preventOverflow(_ref) {
   var popperOffsets = state.modifiersData.popperOffsets;
   var referenceRect = state.rects.reference;
   var popperRect = state.rects.popper;
-  var tetherOffsetValue = typeof tetherOffset === 'function' ? tetherOffset(Object.assign(Object.assign({}, state.rects), {}, {
+  var tetherOffsetValue = typeof tetherOffset === 'function' ? tetherOffset(Object.assign({}, state.rects, {
     placement: state.placement
   })) : tetherOffset;
   var data = {
@@ -1632,13 +1649,13 @@ function preventOverflow(_ref) {
     return;
   }
 
-  if (checkMainAxis) {
+  if (checkMainAxis || checkAltAxis) {
     var mainSide = mainAxis === 'y' ? top : left;
     var altSide = mainAxis === 'y' ? bottom : right;
     var len = mainAxis === 'y' ? 'height' : 'width';
     var offset = popperOffsets[mainAxis];
-    var min = popperOffsets[mainAxis] + overflow[mainSide];
-    var max = popperOffsets[mainAxis] - overflow[altSide];
+    var min$1 = popperOffsets[mainAxis] + overflow[mainSide];
+    var max$1 = popperOffsets[mainAxis] - overflow[altSide];
     var additive = tether ? -popperRect[len] / 2 : 0;
     var minLen = variation === start ? referenceRect[len] : popperRect[len];
     var maxLen = variation === start ? -popperRect[len] : -referenceRect[len]; // We need to include the arrow in the calculation so the arrow doesn't go
@@ -1665,26 +1682,29 @@ function preventOverflow(_ref) {
     var offsetModifierValue = state.modifiersData.offset ? state.modifiersData.offset[state.placement][mainAxis] : 0;
     var tetherMin = popperOffsets[mainAxis] + minOffset - offsetModifierValue - clientOffset;
     var tetherMax = popperOffsets[mainAxis] + maxOffset - offsetModifierValue;
-    var preventedOffset = within(tether ? Math.min(min, tetherMin) : min, offset, tether ? Math.max(max, tetherMax) : max);
-    popperOffsets[mainAxis] = preventedOffset;
-    data[mainAxis] = preventedOffset - offset;
-  }
 
-  if (checkAltAxis) {
-    var _mainSide = mainAxis === 'x' ? top : left;
+    if (checkMainAxis) {
+      var preventedOffset = within(tether ? min(min$1, tetherMin) : min$1, offset, tether ? max(max$1, tetherMax) : max$1);
+      popperOffsets[mainAxis] = preventedOffset;
+      data[mainAxis] = preventedOffset - offset;
+    }
 
-    var _altSide = mainAxis === 'x' ? bottom : right;
+    if (checkAltAxis) {
+      var _mainSide = mainAxis === 'x' ? top : left;
 
-    var _offset = popperOffsets[altAxis];
+      var _altSide = mainAxis === 'x' ? bottom : right;
 
-    var _min = _offset + overflow[_mainSide];
+      var _offset = popperOffsets[altAxis];
 
-    var _max = _offset - overflow[_altSide];
+      var _min = _offset + overflow[_mainSide];
 
-    var _preventedOffset = within(_min, _offset, _max);
+      var _max = _offset - overflow[_altSide];
 
-    popperOffsets[altAxis] = _preventedOffset;
-    data[altAxis] = _preventedOffset - _offset;
+      var _preventedOffset = within(tether ? min(_min, tetherMin) : _min, _offset, tether ? max(_max, tetherMax) : _max);
+
+      popperOffsets[altAxis] = _preventedOffset;
+      data[altAxis] = _preventedOffset - _offset;
+    }
   }
 
   state.modifiersData[name] = data;
@@ -1699,11 +1719,19 @@ var preventOverflow$1 = {
   requiresIfExists: ['offset']
 };
 
+var toPaddingObject = function toPaddingObject(padding, state) {
+  padding = typeof padding === 'function' ? padding(Object.assign({}, state.rects, {
+    placement: state.placement
+  })) : padding;
+  return mergePaddingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements));
+};
+
 function arrow(_ref) {
   var _state$modifiersData$;
 
   var state = _ref.state,
-      name = _ref.name;
+      name = _ref.name,
+      options = _ref.options;
   var arrowElement = state.elements.arrow;
   var popperOffsets = state.modifiersData.popperOffsets;
   var basePlacement = getBasePlacement(state.placement);
@@ -1715,7 +1743,7 @@ function arrow(_ref) {
     return;
   }
 
-  var paddingObject = state.modifiersData[name + "#persistent"].padding;
+  var paddingObject = toPaddingObject(options.padding, state);
   var arrowRect = getLayoutRect(arrowElement);
   var minProp = axis === 'y' ? top : left;
   var maxProp = axis === 'y' ? bottom : right;
@@ -1737,12 +1765,9 @@ function arrow(_ref) {
 
 function effect$2(_ref2) {
   var state = _ref2.state,
-      options = _ref2.options,
-      name = _ref2.name;
+      options = _ref2.options;
   var _options$element = options.element,
-      arrowElement = _options$element === void 0 ? '[data-popper-arrow]' : _options$element,
-      _options$padding = options.padding,
-      padding = _options$padding === void 0 ? 0 : _options$padding;
+      arrowElement = _options$element === void 0 ? '[data-popper-arrow]' : _options$element;
 
   if (arrowElement == null) {
     return;
@@ -1772,9 +1797,6 @@ function effect$2(_ref2) {
   }
 
   state.elements.arrow = arrowElement;
-  state.modifiersData[name + "#persistent"] = {
-    padding: mergePaddingObject(typeof padding !== 'number' ? padding : expandToHashMap(padding, basePlacements))
-  };
 } // eslint-disable-next-line import/no-unused-modules
 
 
@@ -1832,7 +1854,7 @@ function hide(_ref) {
     isReferenceHidden: isReferenceHidden,
     hasPopperEscaped: hasPopperEscaped
   };
-  state.attributes.popper = Object.assign(Object.assign({}, state.attributes.popper), {}, {
+  state.attributes.popper = Object.assign({}, state.attributes.popper, {
     'data-popper-reference-hidden': isReferenceHidden,
     'data-popper-escaped': hasPopperEscaped
   });
@@ -1847,10 +1869,18 @@ var hide$1 = {
   fn: hide
 };
 
+/*:: export type * from './types'; */
+
+/*;; export * from './types'; */
+
 var defaultModifiers = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1];
 var createPopper = /*#__PURE__*/popperGenerator({
   defaultModifiers: defaultModifiers
 }); // eslint-disable-next-line import/no-unused-modules
+
+/*:: export type * from './types'; */
+
+/*;; export * from './types'; */
 
 var defaultModifiers$1 = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1, offset$1, flip$1, preventOverflow$1, arrow$1, hide$1];
 var createPopper$1 = /*#__PURE__*/popperGenerator({
@@ -2654,6 +2684,7 @@ class Wire extends stream.Duplex {
     this._keepAliveInterval = null
     this._timeout = null
     this._timeoutMs = 0
+    this._timeoutExpiresAt = null
 
     this.destroyed = false // was the wire ended by calling `destroy`?
     this._finished = false
@@ -2689,10 +2720,9 @@ class Wire extends stream.Duplex {
    */
   setTimeout (ms, unref) {
     this._debug('setTimeout ms=%d unref=%s', ms, unref)
-    this._clearTimeout()
     this._timeoutMs = ms
     this._timeoutUnref = !!unref
-    this._updateTimeout()
+    this._resetTimeout(true)
   }
 
   destroy () {
@@ -2898,7 +2928,9 @@ class Wire extends stream.Duplex {
     this._debug('request index=%d offset=%d length=%d', index, offset, length)
 
     this.requests.push(new Request(index, offset, length, cb))
-    this._updateTimeout()
+    if (!this._timeout) {
+      this._resetTimeout(true)
+    }
     this._message(6, [index, offset, length], null)
   }
 
@@ -3161,7 +3193,7 @@ class Wire extends stream.Duplex {
     while (this._bufferSize >= this._parserSize) {
       const buffer = (this._buffer.length === 1)
         ? this._buffer[0]
-        : Buffer.concat(this._buffer)
+        : Buffer.concat(this._buffer, this._bufferSize)
       this._bufferSize -= this._parserSize
       this._buffer = this._bufferSize
         ? [buffer.slice(this._parserSize)]
@@ -3175,22 +3207,30 @@ class Wire extends stream.Duplex {
   _callback (request, err, buffer) {
     if (!request) return
 
-    this._clearTimeout()
+    this._resetTimeout(!this.peerChoking && !this._finished)
 
-    if (!this.peerChoking && !this._finished) this._updateTimeout()
     request.callback(err, buffer)
   }
 
-  _clearTimeout () {
-    if (!this._timeout) return
+  _resetTimeout (setAgain) {
+    if (!setAgain || !this._timeoutMs || !this.requests.length) {
+      clearTimeout(this._timeout)
+      this._timeout = null
+      this._timeoutExpiresAt = null
+      return
+    }
 
-    clearTimeout(this._timeout)
-    this._timeout = null
-  }
+    const timeoutExpiresAt = Date.now() + this._timeoutMs
 
-  _updateTimeout () {
-    if (!this._timeoutMs || !this.requests.length || this._timeout) return
+    if (this._timeout) {
+      // If existing expiration is already within 5% of correct, it's close enough
+      if (timeoutExpiresAt - this._timeoutExpiresAt < this._timeoutMs * 0.05) {
+        return
+      }
+      clearTimeout(this._timeout)
+    }
 
+    this._timeoutExpiresAt = timeoutExpiresAt
     this._timeout = setTimeout(() => this._onTimeout(), this._timeoutMs)
     if (this._timeoutUnref && this._timeout.unref) this._timeout.unref()
   }
@@ -7234,6 +7274,7 @@ const EventEmitter = require('events')
 const once = require('once')
 const parallel = require('run-parallel')
 const Peer = require('simple-peer')
+const queueMicrotask = require('queue-microtask')
 
 const common = require('./lib/common')
 const HTTPTracker = require('./lib/client/http-tracker') // empty object in browser
@@ -7307,7 +7348,7 @@ class Client extends EventEmitter {
     const webrtcSupport = this._wrtc !== false && (!!this._wrtc || Peer.WEBRTC_SUPPORT)
 
     const nextTickWarn = err => {
-      process.nextTick(() => {
+      queueMicrotask(() => {
         this.emit('warning', err)
       })
     }
@@ -7522,7 +7563,7 @@ Client.scrape = (opts, cb) => {
 module.exports = Client
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"./lib/client/http-tracker":55,"./lib/client/udp-tracker":55,"./lib/client/websocket-tracker":33,"./lib/common":34,"_process":186,"buffer":57,"debug":35,"events":98,"once":182,"run-parallel":217,"simple-peer":222}],32:[function(require,module,exports){
+},{"./lib/client/http-tracker":55,"./lib/client/udp-tracker":55,"./lib/client/websocket-tracker":33,"./lib/common":34,"_process":186,"buffer":57,"debug":35,"events":98,"once":182,"queue-microtask":192,"run-parallel":217,"simple-peer":222}],32:[function(require,module,exports){
 const EventEmitter = require('events')
 
 class Tracker extends EventEmitter {
@@ -10383,7 +10424,8 @@ class ChunkStoreWriteStream extends stream.Writable {
     chunkLength = Number(chunkLength)
     if (!chunkLength) throw new Error('Second argument must be a chunk length')
 
-    this._blockstream = new BlockStream(chunkLength, { zeroPadding: false })
+    const zeroPadding = opts.zeroPadding === undefined ? false : opts.zeroPadding
+    this._blockstream = new BlockStream(chunkLength, { zeroPadding })
     this._outstandingPuts = 0
 
     let index = 0
@@ -10391,7 +10433,8 @@ class ChunkStoreWriteStream extends stream.Writable {
       if (this.destroyed) return
 
       this._outstandingPuts += 1
-      store.put(index, chunk, () => {
+      store.put(index, chunk, (err) => {
+        if (err) return this.destroy(err)
         this._outstandingPuts -= 1
         if (this._outstandingPuts === 0 && typeof this._finalCb === 'function') {
           this._finalCb(null)
@@ -11404,7 +11447,7 @@ function getAttributeValue(suffix, element) {
 /******/ ])["default"];
 });
 },{}],80:[function(require,module,exports){
-(function (process,global,Buffer){(function (){
+(function (global,Buffer){(function (){
 /*! create-torrent. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const bencode = require('bencode')
 const BlockStream = require('block-stream2')
@@ -11416,8 +11459,10 @@ const junk = require('junk')
 const MultiStream = require('multistream')
 const once = require('once')
 const parallel = require('run-parallel')
+const queueMicrotask = require('queue-microtask')
 const sha1 = require('simple-sha1')
 const stream = require('readable-stream')
+
 const getFiles = require('./get-files') // browser exclude
 
 // TODO: When Node 10 support is dropped, replace this with Array.prototype.flat
@@ -11523,14 +11568,16 @@ function _parseInput (input, opts, cb) {
     }
   })
 
-  // remove junk files
-  input = input.filter(item => {
-    if (typeof item === 'string') {
-      return true
-    }
-    const filename = item.path[item.path.length - 1]
-    return notHidden(filename) && junk.not(filename)
-  })
+  const filterJunkFiles = opts.filterJunkFiles === undefined ? true : opts.filterJunkFiles
+  if (filterJunkFiles) {
+    // Remove junk files
+    input = input.filter(item => {
+      if (typeof item === 'string') {
+        return true
+      }
+      return !isJunkPath(item.path)
+    })
+  }
 
   if (commonPrefix) {
     input.forEach(item => {
@@ -11578,9 +11625,7 @@ function _parseInput (input, opts, cb) {
       processInput()
     })
   } else {
-    process.nextTick(() => {
-      processInput()
-    })
+    queueMicrotask(processInput)
   }
 
   function processInput () {
@@ -11614,10 +11659,6 @@ function _parseInput (input, opts, cb) {
       cb(null, files, isSingleFileTorrent)
     })
   }
-}
-
-function notHidden (file) {
-  return file[0] !== '.'
 }
 
 function getPieceList (files, pieceLength, cb) {
@@ -11758,6 +11799,18 @@ function onFiles (files, opts, cb) {
 }
 
 /**
+ * Determine if a a file is junk based on its path
+ * (defined as hidden OR recognized by the `junk` package)
+ *
+ * @param  {string} path
+ * @return {boolean}
+ */
+function isJunkPath (path) {
+  const filename = path[path.length - 1]
+  return filename[0] === '.' && junk.is(filename)
+}
+
+/**
  * Accumulator to sum file lengths
  * @param  {number} sum
  * @param  {Object} file
@@ -11840,9 +11893,10 @@ function getStreamStream (readable, file) {
 module.exports = createTorrent
 module.exports.parseInput = parseInput
 module.exports.announceList = announceList
+module.exports.isJunkPath = isJunkPath
 
-}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./get-files":55,"_process":186,"bencode":7,"block-stream2":39,"buffer":57,"filestream/read":114,"is-file":55,"junk":122,"multistream":165,"once":182,"path":184,"piece-length":185,"readable-stream":95,"run-parallel":217,"simple-sha1":241}],81:[function(require,module,exports){
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
+},{"./get-files":55,"bencode":7,"block-stream2":39,"buffer":57,"filestream/read":114,"is-file":55,"junk":122,"multistream":165,"once":182,"path":184,"piece-length":185,"queue-microtask":192,"readable-stream":95,"run-parallel":217,"simple-sha1":241}],81:[function(require,module,exports){
 arguments[4][16][0].apply(exports,arguments)
 },{"dup":16}],82:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
@@ -12461,31 +12515,52 @@ function unwrapListeners(arr) {
 
 function once(emitter, name) {
   return new Promise(function (resolve, reject) {
-    function eventListener() {
-      if (errorListener !== undefined) {
+    function errorListener(err) {
+      emitter.removeListener(name, resolver);
+      reject(err);
+    }
+
+    function resolver() {
+      if (typeof emitter.removeListener === 'function') {
         emitter.removeListener('error', errorListener);
       }
       resolve([].slice.call(arguments));
     };
-    var errorListener;
 
-    // Adding an error listener is not optional because
-    // if an error is thrown on an event emitter we cannot
-    // guarantee that the actual event we are waiting will
-    // be fired. The result could be a silent way to create
-    // memory or file descriptor leaks, which is something
-    // we should avoid.
+    eventTargetAgnosticAddListener(emitter, name, resolver, { once: true });
     if (name !== 'error') {
-      errorListener = function errorListener(err) {
-        emitter.removeListener(name, eventListener);
-        reject(err);
-      };
-
-      emitter.once('error', errorListener);
+      addErrorHandlerIfEventEmitter(emitter, errorListener, { once: true });
     }
-
-    emitter.once(name, eventListener);
   });
+}
+
+function addErrorHandlerIfEventEmitter(emitter, handler, flags) {
+  if (typeof emitter.on === 'function') {
+    eventTargetAgnosticAddListener(emitter, 'error', handler, flags);
+  }
+}
+
+function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
+  if (typeof emitter.on === 'function') {
+    if (flags.once) {
+      emitter.once(name, listener);
+    } else {
+      emitter.on(name, listener);
+    }
+  } else if (typeof emitter.addEventListener === 'function') {
+    // EventTarget does not have `error` event semantics like Node
+    // EventEmitters, we do not listen for `error` events here.
+    emitter.addEventListener(name, function wrapListener(arg) {
+      // IE does not have builtin `{ once: true }` support so we
+      // have to do it manually.
+      if (flags.once) {
+        emitter.removeEventListener(name, wrapListener);
+      }
+      listener(arg);
+    });
+  } else {
+    throw new TypeError('The "emitter" argument must be of type EventEmitter. Received type ' + typeof emitter);
+  }
 }
 
 },{}],99:[function(require,module,exports){
@@ -13418,8 +13493,9 @@ arguments[4][29][0].apply(exports,arguments)
 },{"dup":29,"events":98}],139:[function(require,module,exports){
 arguments[4][30][0].apply(exports,arguments)
 },{"./lib/_stream_duplex.js":126,"./lib/_stream_passthrough.js":127,"./lib/_stream_readable.js":128,"./lib/_stream_transform.js":129,"./lib/_stream_writable.js":130,"./lib/internal/streams/end-of-stream.js":134,"./lib/internal/streams/pipeline.js":136,"dup":30}],140:[function(require,module,exports){
-(function (process){(function (){
 module.exports = Storage
+
+const queueMicrotask = require('queue-microtask')
 
 function Storage (chunkLength, opts) {
   if (!(this instanceof Storage)) return new Storage(chunkLength, opts)
@@ -13441,7 +13517,7 @@ function Storage (chunkLength, opts) {
 Storage.prototype.put = function (index, buf, cb) {
   if (this.closed) return nextTick(cb, new Error('Storage is closed'))
 
-  var isLastChunk = (index === this.lastChunkIndex)
+  const isLastChunk = (index === this.lastChunkIndex)
   if (isLastChunk && buf.length !== this.lastChunkLength) {
     return nextTick(cb, new Error('Last chunk length must be ' + this.lastChunkLength))
   }
@@ -13455,15 +13531,20 @@ Storage.prototype.put = function (index, buf, cb) {
 Storage.prototype.get = function (index, opts, cb) {
   if (typeof opts === 'function') return this.get(index, null, opts)
   if (this.closed) return nextTick(cb, new Error('Storage is closed'))
-  var buf = this.chunks[index]
+  const buf = this.chunks[index]
   if (!buf) {
-    var err = new Error('Chunk not found')
+    const err = new Error('Chunk not found')
     err.notFound = true
     return nextTick(cb, err)
   }
   if (!opts) return nextTick(cb, null, buf)
-  var offset = opts.offset || 0
-  var len = opts.length || (buf.length - offset)
+
+  const offset = opts.offset || 0
+  const len = opts.length || (buf.length - offset)
+
+  if (opts.offset === 0 && len === buf.length - offset) {
+    return nextTick(cb, null, buf)
+  }
   nextTick(cb, null, buf.slice(offset, len + offset))
 }
 
@@ -13475,13 +13556,12 @@ Storage.prototype.close = Storage.prototype.destroy = function (cb) {
 }
 
 function nextTick (cb, err, val) {
-  process.nextTick(function () {
+  queueMicrotask(function () {
     if (cb) cb(err, val)
   })
 }
 
-}).call(this)}).call(this,require('_process'))
-},{"_process":186}],141:[function(require,module,exports){
+},{"queue-microtask":192}],141:[function(require,module,exports){
 module.exports={
   "application/1d-interleaved-parityfec": {
     "source": "iana"
@@ -13720,6 +13800,9 @@ module.exports={
   "application/cfw": {
     "source": "iana"
   },
+  "application/clr": {
+    "source": "iana"
+  },
   "application/clue+xml": {
     "source": "iana",
     "compressible": true
@@ -13885,6 +13968,15 @@ module.exports={
   },
   "application/efi": {
     "source": "iana"
+  },
+  "application/elm+json": {
+    "source": "iana",
+    "charset": "UTF-8",
+    "compressible": true
+  },
+  "application/elm+xml": {
+    "source": "iana",
+    "compressible": true
   },
   "application/emergencycalldata.cap+xml": {
     "source": "iana",
@@ -14144,6 +14236,10 @@ module.exports={
     "compressible": true
   },
   "application/jrd+json": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/jscalendar+json": {
     "source": "iana",
     "compressible": true
   },
@@ -14654,6 +14750,10 @@ module.exports={
   "application/prs.cww": {
     "source": "iana",
     "extensions": ["cww"]
+  },
+  "application/prs.cyn": {
+    "source": "iana",
+    "charset": "7-BIT"
   },
   "application/prs.hpub+zip": {
     "source": "iana",
@@ -15174,6 +15274,9 @@ module.exports={
     "source": "iana",
     "compressible": true
   },
+  "application/vnd.3gpp.interworking-data": {
+    "source": "iana"
+  },
   "application/vnd.3gpp.mc-signalling-ear": {
     "source": "iana"
   },
@@ -15389,6 +15492,9 @@ module.exports={
   "application/vnd.afpc.afplinedata-pagedef": {
     "source": "iana"
   },
+  "application/vnd.afpc.cmoca-cmresource": {
+    "source": "iana"
+  },
   "application/vnd.afpc.foca-charset": {
     "source": "iana"
   },
@@ -15399,6 +15505,9 @@ module.exports={
     "source": "iana"
   },
   "application/vnd.afpc.modca": {
+    "source": "iana"
+  },
+  "application/vnd.afpc.modca-cmtable": {
     "source": "iana"
   },
   "application/vnd.afpc.modca-formdef": {
@@ -15817,6 +15926,14 @@ module.exports={
   },
   "application/vnd.cybank": {
     "source": "iana"
+  },
+  "application/vnd.cyclonedx+json": {
+    "source": "iana",
+    "compressible": true
+  },
+  "application/vnd.cyclonedx+xml": {
+    "source": "iana",
+    "compressible": true
   },
   "application/vnd.d2l.coursepackage1p0+zip": {
     "source": "iana",
@@ -16340,6 +16457,9 @@ module.exports={
   "application/vnd.geogebra.file": {
     "source": "iana",
     "extensions": ["ggb"]
+  },
+  "application/vnd.geogebra.slides": {
+    "source": "iana"
   },
   "application/vnd.geogebra.tool": {
     "source": "iana",
@@ -18296,6 +18416,10 @@ module.exports={
     "source": "iana",
     "extensions": ["see"]
   },
+  "application/vnd.seis+json": {
+    "source": "iana",
+    "compressible": true
+  },
   "application/vnd.sema": {
     "source": "iana",
     "extensions": ["sema"]
@@ -18715,6 +18839,9 @@ module.exports={
   "application/vnd.webturbo": {
     "source": "iana",
     "extensions": ["wtb"]
+  },
+  "application/vnd.wfa.dpp": {
+    "source": "iana"
   },
   "application/vnd.wfa.p2p": {
     "source": "iana"
@@ -19650,7 +19777,8 @@ module.exports={
     "extensions": ["adp"]
   },
   "audio/amr": {
-    "source": "iana"
+    "source": "iana",
+    "extensions": ["amr"]
   },
   "audio/amr-wb": {
     "source": "iana"
@@ -19899,7 +20027,7 @@ module.exports={
   "audio/ogg": {
     "source": "iana",
     "compressible": false,
-    "extensions": ["oga","ogg","spx"]
+    "extensions": ["oga","ogg","spx","opus"]
   },
   "audio/opus": {
     "source": "iana"
@@ -19946,6 +20074,9 @@ module.exports={
   "audio/s3m": {
     "source": "apache",
     "extensions": ["s3m"]
+  },
+  "audio/scip": {
+    "source": "iana"
   },
   "audio/silk": {
     "source": "apache",
@@ -20290,6 +20421,7 @@ module.exports={
     "source": "iana"
   },
   "image/avif": {
+    "source": "iana",
     "compressible": false,
     "extensions": ["avif"]
   },
@@ -20947,6 +21079,15 @@ module.exports={
   "text/coffeescript": {
     "extensions": ["coffee","litcoffee"]
   },
+  "text/cql": {
+    "source": "iana"
+  },
+  "text/cql-expression": {
+    "source": "iana"
+  },
+  "text/cql-identifier": {
+    "source": "iana"
+  },
   "text/css": {
     "source": "iana",
     "charset": "UTF-8",
@@ -20974,6 +21115,9 @@ module.exports={
     "source": "iana"
   },
   "text/enriched": {
+    "source": "iana"
+  },
+  "text/fhirpath": {
     "source": "iana"
   },
   "text/flexfec": {
@@ -21382,6 +21526,9 @@ module.exports={
     "source": "iana",
     "extensions": ["3g2"]
   },
+  "video/av1": {
+    "source": "iana"
+  },
   "video/bmpeg": {
     "source": "iana"
   },
@@ -21428,7 +21575,8 @@ module.exports={
     "source": "iana"
   },
   "video/iso.segment": {
-    "source": "iana"
+    "source": "iana",
+    "extensions": ["m4s"]
   },
   "video/jpeg": {
     "source": "iana",
@@ -21506,6 +21654,9 @@ module.exports={
     "source": "iana"
   },
   "video/rtx": {
+    "source": "iana"
+  },
+  "video/scip": {
     "source": "iana"
   },
   "video/smpte291": {
@@ -23369,7 +23520,10 @@ class Decoder extends stream.Writable {
     var headers = this._headers
     this._headers = null
 
-    return this._stream(headers.contentLen, null)
+    return this._stream(headers.contentLen, () => {
+      this._pending--
+      this._kick()
+    })
   }
 
   decode (cb) {
@@ -23433,9 +23587,10 @@ module.exports = Decoder
 
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"buffer":57,"mp4-box-encoding":146,"next-event":181,"readable-stream":164}],148:[function(require,module,exports){
-(function (process,Buffer){(function (){
+(function (Buffer){(function (){
 var stream = require('readable-stream')
 var Box = require('mp4-box-encoding')
+var queueMicrotask = require('queue-microtask')
 
 function noop () {}
 
@@ -23492,7 +23647,7 @@ class Encoder extends stream.Readable {
     } else {
       buf = Box.encode(box, buf)
       var drained = this.push(buf)
-      if (drained) return process.nextTick(cb)
+      if (drained) return queueMicrotask(cb)
       this._drain = cb
     }
   }
@@ -23569,8 +23724,8 @@ class MediaData extends stream.PassThrough {
 
 module.exports = Encoder
 
-}).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":186,"buffer":57,"mp4-box-encoding":146,"readable-stream":164}],149:[function(require,module,exports){
+}).call(this)}).call(this,require("buffer").Buffer)
+},{"buffer":57,"mp4-box-encoding":146,"queue-microtask":192,"readable-stream":164}],149:[function(require,module,exports){
 const Decoder = require('./decode')
 const Encoder = require('./encode')
 
@@ -23867,7 +24022,7 @@ function onceStrict (fn) {
 }
 
 },{"wrappy":334}],183:[function(require,module,exports){
-(function (process,Buffer){(function (){
+(function (Buffer){(function (){
 /*! parse-torrent. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 /* global Blob */
 
@@ -23878,6 +24033,7 @@ const get = require('simple-get')
 const magnet = require('magnet-uri')
 const path = require('path')
 const sha1 = require('simple-sha1')
+const queueMicrotask = require('queue-microtask')
 
 module.exports = parseTorrent
 module.exports.remote = parseTorrentRemote
@@ -23941,7 +24097,7 @@ function parseTorrentRemote (torrentId, opts, cb) {
   }
 
   if (parsedTorrent && parsedTorrent.infoHash) {
-    process.nextTick(() => {
+    queueMicrotask(() => {
       cb(null, parsedTorrent)
     })
   } else if (isBlob(torrentId)) {
@@ -23967,7 +24123,7 @@ function parseTorrentRemote (torrentId, opts, cb) {
       parseOrThrow(torrentBuf)
     })
   } else {
-    process.nextTick(() => {
+    queueMicrotask(() => {
       cb(new Error('Invalid torrent identifier'))
     })
   }
@@ -24137,8 +24293,8 @@ function ensure (bool, fieldName) {
 // https://github.com/substack/node-browserify/issues/1483
 ;(() => { Buffer.alloc(0) })()
 
-}).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":186,"bencode":7,"blob-to-buffer":38,"buffer":57,"fs":55,"magnet-uri":123,"path":184,"simple-get":221,"simple-sha1":241}],184:[function(require,module,exports){
+}).call(this)}).call(this,require("buffer").Buffer)
+},{"bencode":7,"blob-to-buffer":38,"buffer":57,"fs":55,"magnet-uri":123,"path":184,"queue-microtask":192,"simple-get":221,"simple-sha1":241}],184:[function(require,module,exports){
 (function (process){(function (){
 // 'path' module extracted from Node.js v8.11.1 (only the posix part)
 // transplited with Babel
@@ -26391,14 +26547,16 @@ arguments[4][14][0].apply(exports,arguments)
 },{"dup":14,"ms":215}],215:[function(require,module,exports){
 arguments[4][15][0].apply(exports,arguments)
 },{"dup":15}],216:[function(require,module,exports){
-(function (process){(function (){
 /*! run-parallel-limit. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = runParallelLimit
 
+const queueMicrotask = require('queue-microtask')
+
 function runParallelLimit (tasks, limit, cb) {
   if (typeof limit !== 'number') throw new Error('second argument must be a Number')
-  var results, len, pending, keys, isErrored
-  var isSync = true
+  let results, len, pending, keys, isErrored
+  let isSync = true
+  let next
 
   if (Array.isArray(tasks)) {
     results = []
@@ -26414,7 +26572,7 @@ function runParallelLimit (tasks, limit, cb) {
       if (cb) cb(err, results)
       cb = null
     }
-    if (isSync) process.nextTick(end)
+    if (isSync) queueMicrotask(end)
     else end()
   }
 
@@ -26424,7 +26582,7 @@ function runParallelLimit (tasks, limit, cb) {
     if (--pending === 0 || err) {
       done(err)
     } else if (!isErrored && next < len) {
-      var key
+      let key
       if (keys) {
         key = keys[next]
         next += 1
@@ -26437,7 +26595,7 @@ function runParallelLimit (tasks, limit, cb) {
     }
   }
 
-  var next = limit
+  next = limit
   if (!pending) {
     // empty
     done(null)
@@ -26446,27 +26604,29 @@ function runParallelLimit (tasks, limit, cb) {
     keys.some(function (key, i) {
       tasks[key](function (err, result) { each(key, err, result) })
       if (i === limit - 1) return true // early return
+      return false
     })
   } else {
     // array
     tasks.some(function (task, i) {
       task(function (err, result) { each(i, err, result) })
       if (i === limit - 1) return true // early return
+      return false
     })
   }
 
   isSync = false
 }
 
-}).call(this)}).call(this,require('_process'))
-},{"_process":186}],217:[function(require,module,exports){
-(function (process){(function (){
+},{"queue-microtask":192}],217:[function(require,module,exports){
 /*! run-parallel. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = runParallel
 
+const queueMicrotask = require('queue-microtask')
+
 function runParallel (tasks, cb) {
-  var results, pending, keys
-  var isSync = true
+  let results, pending, keys
+  let isSync = true
 
   if (Array.isArray(tasks)) {
     results = []
@@ -26482,7 +26642,7 @@ function runParallel (tasks, cb) {
       if (cb) cb(err, results)
       cb = null
     }
-    if (isSync) process.nextTick(end)
+    if (isSync) queueMicrotask(end)
     else end()
   }
 
@@ -26511,8 +26671,7 @@ function runParallel (tasks, cb) {
   isSync = false
 }
 
-}).call(this)}).call(this,require('_process'))
-},{"_process":186}],218:[function(require,module,exports){
+},{"queue-microtask":192}],218:[function(require,module,exports){
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
@@ -28696,13 +28855,13 @@ arguments[4][30][0].apply(exports,arguments)
 },{"./lib/_stream_duplex.js":227,"./lib/_stream_passthrough.js":228,"./lib/_stream_readable.js":229,"./lib/_stream_transform.js":230,"./lib/_stream_writable.js":231,"./lib/internal/streams/end-of-stream.js":235,"./lib/internal/streams/pipeline.js":237,"dup":30}],241:[function(require,module,exports){
 /* global self */
 
-var Rusha = require('rusha')
-var rushaWorkerSha1 = require('./rusha-worker-sha1')
+const Rusha = require('rusha')
+const rushaWorkerSha1 = require('./rusha-worker-sha1')
 
-var rusha = new Rusha()
-var scope = typeof window !== 'undefined' ? window : self
-var crypto = scope.crypto || scope.msCrypto || {}
-var subtle = crypto.subtle || crypto.webkitSubtle
+const rusha = new Rusha()
+const scope = typeof window !== 'undefined' ? window : self
+const crypto = scope.crypto || scope.msCrypto || {}
+let subtle = crypto.subtle || crypto.webkitSubtle
 
 function sha1sync (buf) {
   return rusha.digest(buf)
@@ -28749,19 +28908,19 @@ function sha1 (buf, cb) {
 }
 
 function uint8array (s) {
-  var l = s.length
-  var array = new Uint8Array(l)
-  for (var i = 0; i < l; i++) {
+  const l = s.length
+  const array = new Uint8Array(l)
+  for (let i = 0; i < l; i++) {
     array[i] = s.charCodeAt(i)
   }
   return array
 }
 
 function hex (buf) {
-  var l = buf.length
-  var chars = []
-  for (var i = 0; i < l; i++) {
-    var bite = buf[i]
+  const l = buf.length
+  const chars = []
+  for (let i = 0; i < l; i++) {
+    const bite = buf[i]
     chars.push((bite >>> 4).toString(16))
     chars.push((bite & 0x0f).toString(16))
   }
@@ -28772,11 +28931,11 @@ module.exports = sha1
 module.exports.sync = sha1sync
 
 },{"./rusha-worker-sha1":242,"rusha":218}],242:[function(require,module,exports){
-var Rusha = require('rusha')
+const Rusha = require('rusha')
 
-var worker
-var nextTaskId
-var cbs
+let worker
+let nextTaskId
+let cbs
 
 function init () {
   worker = Rusha.createWorker()
@@ -28784,8 +28943,8 @@ function init () {
   cbs = {} // taskId -> cb
 
   worker.onmessage = function onRushaMessage (e) {
-    var taskId = e.data.id
-    var cb = cbs[taskId]
+    const taskId = e.data.id
+    const cb = cbs[taskId]
     delete cbs[taskId]
 
     if (e.data.error != null) {
@@ -30371,8 +30530,8 @@ exports.decode = function(encoded) {
 },{"buffer":57}],288:[function(require,module,exports){
 (function (process){(function (){
 /**!
-* tippy.js v6.2.7
-* (c) 2017-2020 atomiks
+* tippy.js v6.3.1
+* (c) 2017-2021 atomiks
 * MIT License
 */
 'use strict';
@@ -30510,10 +30669,13 @@ function setVisibilityState(els, state) {
   });
 }
 function getOwnerDocument(elementOrElements) {
-  var _normalizeToArray = normalizeToArray(elementOrElements),
-      element = _normalizeToArray[0];
+  var _element$ownerDocumen;
 
-  return element ? element.ownerDocument || document : document;
+  var _normalizeToArray = normalizeToArray(elementOrElements),
+      element = _normalizeToArray[0]; // Elements created via a <template> have an ownerDocument with no reference to the body
+
+
+  return (element == null ? void 0 : (_element$ownerDocumen = element.ownerDocument) == null ? void 0 : _element$ownerDocumen.body) ? element.ownerDocument : document;
 }
 function isCursorOutsideInteractiveBorder(popperTreeData, event) {
   var clientX = event.clientX,
@@ -31754,6 +31916,8 @@ function createTippy(reference, passedProps) {
     }
 
     onFirstUpdate = function onFirstUpdate() {
+      var _instance$popperInsta2;
+
       if (!instance.state.isVisible || ignoreOnFirstUpdate) {
         return;
       }
@@ -31774,7 +31938,10 @@ function createTippy(reference, passedProps) {
 
       handleAriaContentAttribute();
       handleAriaExpandedAttribute();
-      pushIfUnique(mountedInstances, instance);
+      pushIfUnique(mountedInstances, instance); // certain modifiers (e.g. `maxSize`) require a second update after the
+      // popper has been positioned for the first time
+
+      (_instance$popperInsta2 = instance.popperInstance) == null ? void 0 : _instance$popperInsta2.forceUpdate();
       instance.state.isMounted = true;
       invokeHook('onMount', [instance]);
 
@@ -31979,7 +32146,39 @@ var hideAll = function hideAll(_temp) {
   });
 };
 
+// every time the popper is destroyed (i.e. a new target), removing the styles
+// and causing transitions to break for singletons when the console is open, but
+// most notably for non-transform styles being used, `gpuAcceleration: false`.
+
+var applyStylesModifier = Object.assign({}, core.applyStyles, {
+  effect: function effect(_ref) {
+    var state = _ref.state;
+    var initialStyles = {
+      popper: {
+        position: state.options.strategy,
+        left: '0',
+        top: '0',
+        margin: '0'
+      },
+      arrow: {
+        position: 'absolute'
+      },
+      reference: {}
+    };
+    Object.assign(state.elements.popper.style, initialStyles.popper);
+    state.styles = initialStyles;
+
+    if (state.elements.arrow) {
+      Object.assign(state.elements.arrow.style, initialStyles.arrow);
+    } // intentionally return no cleanup function
+    // return () => { ... }
+
+  }
+});
+
 var createSingleton = function createSingleton(tippyInstances, optionalProps) {
+  var _optionalProps$popper;
+
   if (optionalProps === void 0) {
     optionalProps = {};
   }
@@ -31994,6 +32193,7 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
   var currentTarget;
   var overrides = optionalProps.overrides;
   var interceptSetPropsCleanups = [];
+  var shownOnCreate = false;
 
   function setReferences() {
     references = individualInstances.map(function (instance) {
@@ -32027,6 +32227,26 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
         instance.setProps = originalSetProps;
       };
     });
+  } // have to pass singleton, as it maybe undefined on first call
+
+
+  function prepareInstance(singleton, target) {
+    var index = references.indexOf(target); // bail-out
+
+    if (target === currentTarget) {
+      return;
+    }
+
+    currentTarget = target;
+    var overrideProps = (overrides || []).concat('content').reduce(function (acc, prop) {
+      acc[prop] = individualInstances[index].props[prop];
+      return acc;
+    }, {});
+    singleton.setProps(Object.assign({}, overrideProps, {
+      getReferenceClientRect: typeof overrideProps.getReferenceClientRect === 'function' ? overrideProps.getReferenceClientRect : function () {
+        return target.getBoundingClientRect();
+      }
+    }));
   }
 
   enableInstances(false);
@@ -32037,32 +32257,90 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
         onDestroy: function onDestroy() {
           enableInstances(true);
         },
-        onTrigger: function onTrigger(instance, event) {
-          var target = event.currentTarget;
-          var index = references.indexOf(target); // bail-out
-
-          if (target === currentTarget) {
-            return;
+        onHidden: function onHidden() {
+          currentTarget = null;
+        },
+        onClickOutside: function onClickOutside(instance) {
+          if (instance.props.showOnCreate && !shownOnCreate) {
+            shownOnCreate = true;
+            currentTarget = null;
           }
-
-          currentTarget = target;
-          var overrideProps = (overrides || []).concat('content').reduce(function (acc, prop) {
-            acc[prop] = individualInstances[index].props[prop];
-            return acc;
-          }, {});
-          instance.setProps(Object.assign({}, overrideProps, {
-            getReferenceClientRect: typeof overrideProps.getReferenceClientRect === 'function' ? overrideProps.getReferenceClientRect : function () {
-              return target.getBoundingClientRect();
-            }
-          }));
+        },
+        onShow: function onShow(instance) {
+          if (instance.props.showOnCreate && !shownOnCreate) {
+            shownOnCreate = true;
+            prepareInstance(instance, references[0]);
+          }
+        },
+        onTrigger: function onTrigger(instance, event) {
+          prepareInstance(instance, event.currentTarget);
         }
       };
     }
   };
   var singleton = tippy(div(), Object.assign({}, removeProperties(optionalProps, ['overrides']), {
     plugins: [plugin].concat(optionalProps.plugins || []),
-    triggerTarget: references
+    triggerTarget: references,
+    popperOptions: Object.assign({}, optionalProps.popperOptions, {
+      modifiers: [].concat(((_optionalProps$popper = optionalProps.popperOptions) == null ? void 0 : _optionalProps$popper.modifiers) || [], [applyStylesModifier])
+    })
   }));
+  var originalShow = singleton.show;
+
+  singleton.show = function (target) {
+    originalShow(); // first time, showOnCreate or programmatic call with no params
+    // default to showing first instance
+
+    if (!currentTarget && target == null) {
+      return prepareInstance(singleton, references[0]);
+    } // triggered from event (do nothing as prepareInstance already called by onTrigger)
+    // programmatic call with no params when already visible (do nothing again)
+
+
+    if (currentTarget && target == null) {
+      return;
+    } // target is index of instance
+
+
+    if (typeof target === 'number') {
+      return references[target] && prepareInstance(singleton, references[target]);
+    } // target is a child tippy instance
+
+
+    if (individualInstances.includes(target)) {
+      var ref = target.reference;
+      return prepareInstance(singleton, ref);
+    } // target is a ReferenceElement
+
+
+    if (references.includes(target)) {
+      return prepareInstance(singleton, target);
+    }
+  };
+
+  singleton.showNext = function () {
+    var first = references[0];
+
+    if (!currentTarget) {
+      return singleton.show(0);
+    }
+
+    var index = references.indexOf(currentTarget);
+    singleton.show(references[index + 1] || first);
+  };
+
+  singleton.showPrevious = function () {
+    var last = references[references.length - 1];
+
+    if (!currentTarget) {
+      return singleton.show(last);
+    }
+
+    var index = references.indexOf(currentTarget);
+    var target = references[index - 1] || last;
+    singleton.show(target);
+  };
+
   var originalSetProps = singleton.setProps;
 
   singleton.setProps = function (props) {
@@ -32171,7 +32449,7 @@ function delegate(targets, props) {
 
   function addEventListeners(instance) {
     var reference = instance.reference;
-    on(reference, 'touchstart', onTrigger);
+    on(reference, 'touchstart', onTrigger, TOUCH_OPTIONS);
     on(reference, 'mouseover', onTrigger);
     on(reference, 'focusin', onTrigger);
     on(reference, 'click', onTrigger);
