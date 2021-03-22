@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (process){(function (){
 /**
- * @popperjs/core v2.9.0 - MIT License
+ * @popperjs/core v2.9.1 - MIT License
  */
 
 'use strict';
@@ -251,7 +251,7 @@ function getTrueOffsetParent(element) {
 
 
 function getContainingBlock(element) {
-  var isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
+  var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') !== -1;
   var currentNode = getParentNode(element);
 
   while (isHTMLElement(currentNode) && ['html', 'body'].indexOf(getNodeName(currentNode)) < 0) {
@@ -259,7 +259,7 @@ function getContainingBlock(element) {
     // create a containing block.
     // https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block#identifying_the_containing_block
 
-    if (css.transform !== 'none' || css.perspective !== 'none' || css.contain === 'paint' || ['transform', 'perspective'].includes(css.willChange) || isFirefox && css.willChange === 'filter' || isFirefox && css.filter && css.filter !== 'none') {
+    if (css.transform !== 'none' || css.perspective !== 'none' || css.contain === 'paint' || ['transform', 'perspective'].indexOf(css.willChange) !== -1 || isFirefox && css.willChange === 'filter' || isFirefox && css.filter && css.filter !== 'none') {
       return currentNode;
     } else {
       currentNode = currentNode.parentNode;
@@ -1042,7 +1042,7 @@ var passive = {
   passive: true
 };
 
-function effect(_ref) {
+function effect$2(_ref) {
   var state = _ref.state,
       instance = _ref.instance,
       options = _ref.options;
@@ -1082,7 +1082,7 @@ var eventListeners = {
   enabled: true,
   phase: 'write',
   fn: function fn() {},
-  effect: effect,
+  effect: effect$2,
   data: {}
 };
 
@@ -1393,7 +1393,7 @@ var offset$1 = {
   fn: offset
 };
 
-var hash = {
+var hash$1 = {
   left: 'right',
   right: 'left',
   bottom: 'top',
@@ -1401,17 +1401,17 @@ var hash = {
 };
 function getOppositePlacement(placement) {
   return placement.replace(/left|right|bottom|top/g, function (matched) {
-    return hash[matched];
+    return hash$1[matched];
   });
 }
 
-var hash$1 = {
+var hash = {
   start: 'end',
   end: 'start'
 };
 function getOppositeVariationPlacement(placement) {
   return placement.replace(/start|end/g, function (matched) {
-    return hash$1[matched];
+    return hash[matched];
   });
 }
 
@@ -1763,7 +1763,7 @@ function arrow(_ref) {
   state.modifiersData[name] = (_state$modifiersData$ = {}, _state$modifiersData$[axisProp] = offset, _state$modifiersData$.centerOffset = offset - center, _state$modifiersData$);
 }
 
-function effect$2(_ref2) {
+function effect(_ref2) {
   var state = _ref2.state,
       options = _ref2.options;
   var _options$element = options.element,
@@ -1805,7 +1805,7 @@ var arrow$1 = {
   enabled: true,
   phase: 'main',
   fn: arrow,
-  effect: effect$2,
+  effect: effect,
   requires: ['popperOffsets'],
   requiresIfExists: ['preventOverflow']
 };
@@ -1869,30 +1869,22 @@ var hide$1 = {
   fn: hide
 };
 
-/*:: export type * from './types'; */
-
-/*;; export * from './types'; */
-
-var defaultModifiers = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1];
-var createPopper = /*#__PURE__*/popperGenerator({
-  defaultModifiers: defaultModifiers
-}); // eslint-disable-next-line import/no-unused-modules
-
-/*:: export type * from './types'; */
-
-/*;; export * from './types'; */
-
-var defaultModifiers$1 = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1, offset$1, flip$1, preventOverflow$1, arrow$1, hide$1];
+var defaultModifiers$1 = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1];
 var createPopper$1 = /*#__PURE__*/popperGenerator({
   defaultModifiers: defaultModifiers$1
+}); // eslint-disable-next-line import/no-unused-modules
+
+var defaultModifiers = [eventListeners, popperOffsets$1, computeStyles$1, applyStyles$1, offset$1, flip$1, preventOverflow$1, arrow$1, hide$1];
+var createPopper = /*#__PURE__*/popperGenerator({
+  defaultModifiers: defaultModifiers
 }); // eslint-disable-next-line import/no-unused-modules
 
 exports.applyStyles = applyStyles$1;
 exports.arrow = arrow$1;
 exports.computeStyles = computeStyles$1;
-exports.createPopper = createPopper$1;
-exports.createPopperLite = createPopper;
-exports.defaultModifiers = defaultModifiers$1;
+exports.createPopper = createPopper;
+exports.createPopperLite = createPopper$1;
+exports.defaultModifiers = defaultModifiers;
 exports.detectOverflow = detectOverflow;
 exports.eventListeners = eventListeners;
 exports.flip = flip$1;
@@ -10425,17 +10417,24 @@ class ChunkStoreWriteStream extends stream.Writable {
     if (!chunkLength) throw new Error('Second argument must be a chunk length')
 
     const zeroPadding = opts.zeroPadding === undefined ? false : opts.zeroPadding
-    this._blockstream = new BlockStream(chunkLength, { zeroPadding })
+    this._blockstream = new BlockStream(chunkLength, { ...opts, zeroPadding })
     this._outstandingPuts = 0
+    this._storeMaxOutstandingPuts = opts.storeMaxOutstandingPuts || 16
 
     let index = 0
     const onData = chunk => {
       if (this.destroyed) return
 
       this._outstandingPuts += 1
+      if (this._outstandingPuts >= this._storeMaxOutstandingPuts) {
+        this._blockstream.pause()
+      }
       store.put(index, chunk, (err) => {
         if (err) return this.destroy(err)
         this._outstandingPuts -= 1
+        if (this._outstandingPuts < this._storeMaxOutstandingPuts) {
+          this._blockstream.resume()
+        }
         if (this._outstandingPuts === 0 && typeof this._finalCb === 'function') {
           this._finalCb(null)
           this._finalCb = null
@@ -10474,9 +10473,9 @@ module.exports = ChunkStoreWriteStream
 
 },{"block-stream2":39,"readable-stream":77}],79:[function(require,module,exports){
 /*!
- * clipboard.js v2.0.6
+ * clipboard.js v2.0.8
  * https://clipboardjs.com/
- * 
+ *
  * Licensed MIT © Zeno Rocha
  */
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -10489,220 +10488,660 @@ module.exports = ChunkStoreWriteStream
 	else
 		root["ClipboardJS"] = factory();
 })(this, function() {
-return /******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports) {
+return /******/ (function() { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ({
 
-function select(element) {
-    var selectedText;
+/***/ 134:
+/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
-    if (element.nodeName === 'SELECT') {
-        element.focus();
+"use strict";
 
-        selectedText = element.value;
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  "default": function() { return /* binding */ clipboard; }
+});
+
+// EXTERNAL MODULE: ./node_modules/tiny-emitter/index.js
+var tiny_emitter = __webpack_require__(279);
+var tiny_emitter_default = /*#__PURE__*/__webpack_require__.n(tiny_emitter);
+// EXTERNAL MODULE: ./node_modules/good-listener/src/listen.js
+var listen = __webpack_require__(370);
+var listen_default = /*#__PURE__*/__webpack_require__.n(listen);
+// EXTERNAL MODULE: ./node_modules/select/src/select.js
+var src_select = __webpack_require__(817);
+var select_default = /*#__PURE__*/__webpack_require__.n(src_select);
+;// CONCATENATED MODULE: ./src/clipboard-action.js
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+
+/**
+ * Inner class which performs selection from either `text` or `target`
+ * properties and then executes copy or cut operations.
+ */
+
+var ClipboardAction = /*#__PURE__*/function () {
+  /**
+   * @param {Object} options
+   */
+  function ClipboardAction(options) {
+    _classCallCheck(this, ClipboardAction);
+
+    this.resolveOptions(options);
+    this.initSelection();
+  }
+  /**
+   * Defines base properties passed from constructor.
+   * @param {Object} options
+   */
+
+
+  _createClass(ClipboardAction, [{
+    key: "resolveOptions",
+    value: function resolveOptions() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      this.action = options.action;
+      this.container = options.container;
+      this.emitter = options.emitter;
+      this.target = options.target;
+      this.text = options.text;
+      this.trigger = options.trigger;
+      this.selectedText = '';
     }
-    else if (element.nodeName === 'INPUT' || element.nodeName === 'TEXTAREA') {
-        var isReadOnly = element.hasAttribute('readonly');
+    /**
+     * Decides which selection strategy is going to be applied based
+     * on the existence of `text` and `target` properties.
+     */
 
-        if (!isReadOnly) {
-            element.setAttribute('readonly', '');
-        }
-
-        element.select();
-        element.setSelectionRange(0, element.value.length);
-
-        if (!isReadOnly) {
-            element.removeAttribute('readonly');
-        }
-
-        selectedText = element.value;
-    }
-    else {
-        if (element.hasAttribute('contenteditable')) {
-            element.focus();
-        }
-
-        var selection = window.getSelection();
-        var range = document.createRange();
-
-        range.selectNodeContents(element);
-        selection.removeAllRanges();
-        selection.addRange(range);
-
-        selectedText = selection.toString();
-    }
-
-    return selectedText;
-}
-
-module.exports = select;
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports) {
-
-function E () {
-  // Keep this empty so it's easier to inherit from
-  // (via https://github.com/lipsmack from https://github.com/scottcorgan/tiny-emitter/issues/3)
-}
-
-E.prototype = {
-  on: function (name, callback, ctx) {
-    var e = this.e || (this.e = {});
-
-    (e[name] || (e[name] = [])).push({
-      fn: callback,
-      ctx: ctx
-    });
-
-    return this;
-  },
-
-  once: function (name, callback, ctx) {
-    var self = this;
-    function listener () {
-      self.off(name, listener);
-      callback.apply(ctx, arguments);
-    };
-
-    listener._ = callback
-    return this.on(name, listener, ctx);
-  },
-
-  emit: function (name) {
-    var data = [].slice.call(arguments, 1);
-    var evtArr = ((this.e || (this.e = {}))[name] || []).slice();
-    var i = 0;
-    var len = evtArr.length;
-
-    for (i; i < len; i++) {
-      evtArr[i].fn.apply(evtArr[i].ctx, data);
-    }
-
-    return this;
-  },
-
-  off: function (name, callback) {
-    var e = this.e || (this.e = {});
-    var evts = e[name];
-    var liveEvents = [];
-
-    if (evts && callback) {
-      for (var i = 0, len = evts.length; i < len; i++) {
-        if (evts[i].fn !== callback && evts[i].fn._ !== callback)
-          liveEvents.push(evts[i]);
+  }, {
+    key: "initSelection",
+    value: function initSelection() {
+      if (this.text) {
+        this.selectFake();
+      } else if (this.target) {
+        this.selectTarget();
       }
     }
+    /**
+     * Creates a fake textarea element, sets its value from `text` property,
+     */
 
-    // Remove event from queue to prevent memory leak
-    // Suggested by https://github.com/lazd
-    // Ref: https://github.com/scottcorgan/tiny-emitter/commit/c6ebfaa9bc973b33d110a84a307742b7cf94c953#commitcomment-5024910
+  }, {
+    key: "createFakeElement",
+    value: function createFakeElement() {
+      var isRTL = document.documentElement.getAttribute('dir') === 'rtl';
+      this.fakeElem = document.createElement('textarea'); // Prevent zooming on iOS
 
-    (liveEvents.length)
-      ? e[name] = liveEvents
-      : delete e[name];
+      this.fakeElem.style.fontSize = '12pt'; // Reset box model
 
-    return this;
+      this.fakeElem.style.border = '0';
+      this.fakeElem.style.padding = '0';
+      this.fakeElem.style.margin = '0'; // Move element out of screen horizontally
+
+      this.fakeElem.style.position = 'absolute';
+      this.fakeElem.style[isRTL ? 'right' : 'left'] = '-9999px'; // Move element to the same position vertically
+
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      this.fakeElem.style.top = "".concat(yPosition, "px");
+      this.fakeElem.setAttribute('readonly', '');
+      this.fakeElem.value = this.text;
+      return this.fakeElem;
+    }
+    /**
+     * Get's the value of fakeElem,
+     * and makes a selection on it.
+     */
+
+  }, {
+    key: "selectFake",
+    value: function selectFake() {
+      var _this = this;
+
+      var fakeElem = this.createFakeElement();
+
+      this.fakeHandlerCallback = function () {
+        return _this.removeFake();
+      };
+
+      this.fakeHandler = this.container.addEventListener('click', this.fakeHandlerCallback) || true;
+      this.container.appendChild(fakeElem);
+      this.selectedText = select_default()(fakeElem);
+      this.copyText();
+      this.removeFake();
+    }
+    /**
+     * Only removes the fake element after another click event, that way
+     * a user can hit `Ctrl+C` to copy because selection still exists.
+     */
+
+  }, {
+    key: "removeFake",
+    value: function removeFake() {
+      if (this.fakeHandler) {
+        this.container.removeEventListener('click', this.fakeHandlerCallback);
+        this.fakeHandler = null;
+        this.fakeHandlerCallback = null;
+      }
+
+      if (this.fakeElem) {
+        this.container.removeChild(this.fakeElem);
+        this.fakeElem = null;
+      }
+    }
+    /**
+     * Selects the content from element passed on `target` property.
+     */
+
+  }, {
+    key: "selectTarget",
+    value: function selectTarget() {
+      this.selectedText = select_default()(this.target);
+      this.copyText();
+    }
+    /**
+     * Executes the copy operation based on the current selection.
+     */
+
+  }, {
+    key: "copyText",
+    value: function copyText() {
+      var succeeded;
+
+      try {
+        succeeded = document.execCommand(this.action);
+      } catch (err) {
+        succeeded = false;
+      }
+
+      this.handleResult(succeeded);
+    }
+    /**
+     * Fires an event based on the copy operation result.
+     * @param {Boolean} succeeded
+     */
+
+  }, {
+    key: "handleResult",
+    value: function handleResult(succeeded) {
+      this.emitter.emit(succeeded ? 'success' : 'error', {
+        action: this.action,
+        text: this.selectedText,
+        trigger: this.trigger,
+        clearSelection: this.clearSelection.bind(this)
+      });
+    }
+    /**
+     * Moves focus away from `target` and back to the trigger, removes current selection.
+     */
+
+  }, {
+    key: "clearSelection",
+    value: function clearSelection() {
+      if (this.trigger) {
+        this.trigger.focus();
+      }
+
+      document.activeElement.blur();
+      window.getSelection().removeAllRanges();
+    }
+    /**
+     * Sets the `action` to be performed which can be either 'copy' or 'cut'.
+     * @param {String} action
+     */
+
+  }, {
+    key: "destroy",
+
+    /**
+     * Destroy lifecycle.
+     */
+    value: function destroy() {
+      this.removeFake();
+    }
+  }, {
+    key: "action",
+    set: function set() {
+      var action = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'copy';
+      this._action = action;
+
+      if (this._action !== 'copy' && this._action !== 'cut') {
+        throw new Error('Invalid "action" value, use either "copy" or "cut"');
+      }
+    }
+    /**
+     * Gets the `action` property.
+     * @return {String}
+     */
+    ,
+    get: function get() {
+      return this._action;
+    }
+    /**
+     * Sets the `target` property using an element
+     * that will be have its content copied.
+     * @param {Element} target
+     */
+
+  }, {
+    key: "target",
+    set: function set(target) {
+      if (target !== undefined) {
+        if (target && _typeof(target) === 'object' && target.nodeType === 1) {
+          if (this.action === 'copy' && target.hasAttribute('disabled')) {
+            throw new Error('Invalid "target" attribute. Please use "readonly" instead of "disabled" attribute');
+          }
+
+          if (this.action === 'cut' && (target.hasAttribute('readonly') || target.hasAttribute('disabled'))) {
+            throw new Error('Invalid "target" attribute. You can\'t cut text from elements with "readonly" or "disabled" attributes');
+          }
+
+          this._target = target;
+        } else {
+          throw new Error('Invalid "target" value, use a valid Element');
+        }
+      }
+    }
+    /**
+     * Gets the `target` property.
+     * @return {String|HTMLElement}
+     */
+    ,
+    get: function get() {
+      return this._target;
+    }
+  }]);
+
+  return ClipboardAction;
+}();
+
+/* harmony default export */ var clipboard_action = (ClipboardAction);
+;// CONCATENATED MODULE: ./src/clipboard.js
+function clipboard_typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { clipboard_typeof = function _typeof(obj) { return typeof obj; }; } else { clipboard_typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return clipboard_typeof(obj); }
+
+function clipboard_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function clipboard_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function clipboard_createClass(Constructor, protoProps, staticProps) { if (protoProps) clipboard_defineProperties(Constructor.prototype, protoProps); if (staticProps) clipboard_defineProperties(Constructor, staticProps); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (clipboard_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
+
+
+/**
+ * Helper function to retrieve attribute value.
+ * @param {String} suffix
+ * @param {Element} element
+ */
+
+function getAttributeValue(suffix, element) {
+  var attribute = "data-clipboard-".concat(suffix);
+
+  if (!element.hasAttribute(attribute)) {
+    return;
   }
-};
 
-module.exports = E;
-module.exports.TinyEmitter = E;
+  return element.getAttribute(attribute);
+}
+/**
+ * Base class which takes one or more elements, adds event listeners to them,
+ * and instantiates a new `ClipboardAction` on each click.
+ */
+
+
+var Clipboard = /*#__PURE__*/function (_Emitter) {
+  _inherits(Clipboard, _Emitter);
+
+  var _super = _createSuper(Clipboard);
+
+  /**
+   * @param {String|HTMLElement|HTMLCollection|NodeList} trigger
+   * @param {Object} options
+   */
+  function Clipboard(trigger, options) {
+    var _this;
+
+    clipboard_classCallCheck(this, Clipboard);
+
+    _this = _super.call(this);
+
+    _this.resolveOptions(options);
+
+    _this.listenClick(trigger);
+
+    return _this;
+  }
+  /**
+   * Defines if attributes would be resolved using internal setter functions
+   * or custom functions that were passed in the constructor.
+   * @param {Object} options
+   */
+
+
+  clipboard_createClass(Clipboard, [{
+    key: "resolveOptions",
+    value: function resolveOptions() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      this.action = typeof options.action === 'function' ? options.action : this.defaultAction;
+      this.target = typeof options.target === 'function' ? options.target : this.defaultTarget;
+      this.text = typeof options.text === 'function' ? options.text : this.defaultText;
+      this.container = clipboard_typeof(options.container) === 'object' ? options.container : document.body;
+    }
+    /**
+     * Adds a click event listener to the passed trigger.
+     * @param {String|HTMLElement|HTMLCollection|NodeList} trigger
+     */
+
+  }, {
+    key: "listenClick",
+    value: function listenClick(trigger) {
+      var _this2 = this;
+
+      this.listener = listen_default()(trigger, 'click', function (e) {
+        return _this2.onClick(e);
+      });
+    }
+    /**
+     * Defines a new `ClipboardAction` on each click event.
+     * @param {Event} e
+     */
+
+  }, {
+    key: "onClick",
+    value: function onClick(e) {
+      var trigger = e.delegateTarget || e.currentTarget;
+
+      if (this.clipboardAction) {
+        this.clipboardAction = null;
+      }
+
+      this.clipboardAction = new clipboard_action({
+        action: this.action(trigger),
+        target: this.target(trigger),
+        text: this.text(trigger),
+        container: this.container,
+        trigger: trigger,
+        emitter: this
+      });
+    }
+    /**
+     * Default `action` lookup function.
+     * @param {Element} trigger
+     */
+
+  }, {
+    key: "defaultAction",
+    value: function defaultAction(trigger) {
+      return getAttributeValue('action', trigger);
+    }
+    /**
+     * Default `target` lookup function.
+     * @param {Element} trigger
+     */
+
+  }, {
+    key: "defaultTarget",
+    value: function defaultTarget(trigger) {
+      var selector = getAttributeValue('target', trigger);
+
+      if (selector) {
+        return document.querySelector(selector);
+      }
+    }
+    /**
+     * Returns the support of the given action, or all actions if no action is
+     * given.
+     * @param {String} [action]
+     */
+
+  }, {
+    key: "defaultText",
+
+    /**
+     * Default `text` lookup function.
+     * @param {Element} trigger
+     */
+    value: function defaultText(trigger) {
+      return getAttributeValue('text', trigger);
+    }
+    /**
+     * Destroy lifecycle.
+     */
+
+  }, {
+    key: "destroy",
+    value: function destroy() {
+      this.listener.destroy();
+
+      if (this.clipboardAction) {
+        this.clipboardAction.destroy();
+        this.clipboardAction = null;
+      }
+    }
+  }], [{
+    key: "isSupported",
+    value: function isSupported() {
+      var action = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ['copy', 'cut'];
+      var actions = typeof action === 'string' ? [action] : action;
+      var support = !!document.queryCommandSupported;
+      actions.forEach(function (action) {
+        support = support && !!document.queryCommandSupported(action);
+      });
+      return support;
+    }
+  }]);
+
+  return Clipboard;
+}((tiny_emitter_default()));
+
+/* harmony default export */ var clipboard = (Clipboard);
+
+/***/ }),
+
+/***/ 828:
+/***/ (function(module) {
+
+var DOCUMENT_NODE_TYPE = 9;
+
+/**
+ * A polyfill for Element.matches()
+ */
+if (typeof Element !== 'undefined' && !Element.prototype.matches) {
+    var proto = Element.prototype;
+
+    proto.matches = proto.matchesSelector ||
+                    proto.mozMatchesSelector ||
+                    proto.msMatchesSelector ||
+                    proto.oMatchesSelector ||
+                    proto.webkitMatchesSelector;
+}
+
+/**
+ * Finds the closest parent that matches a selector.
+ *
+ * @param {Element} element
+ * @param {String} selector
+ * @return {Function}
+ */
+function closest (element, selector) {
+    while (element && element.nodeType !== DOCUMENT_NODE_TYPE) {
+        if (typeof element.matches === 'function' &&
+            element.matches(selector)) {
+          return element;
+        }
+        element = element.parentNode;
+    }
+}
+
+module.exports = closest;
 
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
 
-var is = __webpack_require__(3);
-var delegate = __webpack_require__(4);
+/***/ 438:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var closest = __webpack_require__(828);
+
+/**
+ * Delegates event to a selector.
+ *
+ * @param {Element} element
+ * @param {String} selector
+ * @param {String} type
+ * @param {Function} callback
+ * @param {Boolean} useCapture
+ * @return {Object}
+ */
+function _delegate(element, selector, type, callback, useCapture) {
+    var listenerFn = listener.apply(this, arguments);
+
+    element.addEventListener(type, listenerFn, useCapture);
+
+    return {
+        destroy: function() {
+            element.removeEventListener(type, listenerFn, useCapture);
+        }
+    }
+}
+
+/**
+ * Delegates event to a selector.
+ *
+ * @param {Element|String|Array} [elements]
+ * @param {String} selector
+ * @param {String} type
+ * @param {Function} callback
+ * @param {Boolean} useCapture
+ * @return {Object}
+ */
+function delegate(elements, selector, type, callback, useCapture) {
+    // Handle the regular Element usage
+    if (typeof elements.addEventListener === 'function') {
+        return _delegate.apply(null, arguments);
+    }
+
+    // Handle Element-less usage, it defaults to global delegation
+    if (typeof type === 'function') {
+        // Use `document` as the first parameter, then apply arguments
+        // This is a short way to .unshift `arguments` without running into deoptimizations
+        return _delegate.bind(null, document).apply(null, arguments);
+    }
+
+    // Handle Selector-based usage
+    if (typeof elements === 'string') {
+        elements = document.querySelectorAll(elements);
+    }
+
+    // Handle Array-like based usage
+    return Array.prototype.map.call(elements, function (element) {
+        return _delegate(element, selector, type, callback, useCapture);
+    });
+}
+
+/**
+ * Finds closest match and invokes callback.
+ *
+ * @param {Element} element
+ * @param {String} selector
+ * @param {String} type
+ * @param {Function} callback
+ * @return {Function}
+ */
+function listener(element, selector, type, callback) {
+    return function(e) {
+        e.delegateTarget = closest(e.target, selector);
+
+        if (e.delegateTarget) {
+            callback.call(element, e);
+        }
+    }
+}
+
+module.exports = delegate;
+
+
+/***/ }),
+
+/***/ 879:
+/***/ (function(__unused_webpack_module, exports) {
+
+/**
+ * Check if argument is a HTML element.
+ *
+ * @param {Object} value
+ * @return {Boolean}
+ */
+exports.node = function(value) {
+    return value !== undefined
+        && value instanceof HTMLElement
+        && value.nodeType === 1;
+};
+
+/**
+ * Check if argument is a list of HTML elements.
+ *
+ * @param {Object} value
+ * @return {Boolean}
+ */
+exports.nodeList = function(value) {
+    var type = Object.prototype.toString.call(value);
+
+    return value !== undefined
+        && (type === '[object NodeList]' || type === '[object HTMLCollection]')
+        && ('length' in value)
+        && (value.length === 0 || exports.node(value[0]));
+};
+
+/**
+ * Check if argument is a string.
+ *
+ * @param {Object} value
+ * @return {Boolean}
+ */
+exports.string = function(value) {
+    return typeof value === 'string'
+        || value instanceof String;
+};
+
+/**
+ * Check if argument is a function.
+ *
+ * @param {Object} value
+ * @return {Boolean}
+ */
+exports.fn = function(value) {
+    var type = Object.prototype.toString.call(value);
+
+    return type === '[object Function]';
+};
+
+
+/***/ }),
+
+/***/ 370:
+/***/ (function(module, __unused_webpack_exports, __webpack_require__) {
+
+var is = __webpack_require__(879);
+var delegate = __webpack_require__(438);
 
 /**
  * Validates all params and calls the right
@@ -10799,652 +11238,193 @@ module.exports = listen;
 
 
 /***/ }),
-/* 3 */
-/***/ (function(module, exports) {
 
-/**
- * Check if argument is a HTML element.
- *
- * @param {Object} value
- * @return {Boolean}
- */
-exports.node = function(value) {
-    return value !== undefined
-        && value instanceof HTMLElement
-        && value.nodeType === 1;
-};
+/***/ 817:
+/***/ (function(module) {
 
-/**
- * Check if argument is a list of HTML elements.
- *
- * @param {Object} value
- * @return {Boolean}
- */
-exports.nodeList = function(value) {
-    var type = Object.prototype.toString.call(value);
+function select(element) {
+    var selectedText;
 
-    return value !== undefined
-        && (type === '[object NodeList]' || type === '[object HTMLCollection]')
-        && ('length' in value)
-        && (value.length === 0 || exports.node(value[0]));
-};
+    if (element.nodeName === 'SELECT') {
+        element.focus();
 
-/**
- * Check if argument is a string.
- *
- * @param {Object} value
- * @return {Boolean}
- */
-exports.string = function(value) {
-    return typeof value === 'string'
-        || value instanceof String;
-};
+        selectedText = element.value;
+    }
+    else if (element.nodeName === 'INPUT' || element.nodeName === 'TEXTAREA') {
+        var isReadOnly = element.hasAttribute('readonly');
 
-/**
- * Check if argument is a function.
- *
- * @param {Object} value
- * @return {Boolean}
- */
-exports.fn = function(value) {
-    var type = Object.prototype.toString.call(value);
+        if (!isReadOnly) {
+            element.setAttribute('readonly', '');
+        }
 
-    return type === '[object Function]';
-};
+        element.select();
+        element.setSelectionRange(0, element.value.length);
+
+        if (!isReadOnly) {
+            element.removeAttribute('readonly');
+        }
+
+        selectedText = element.value;
+    }
+    else {
+        if (element.hasAttribute('contenteditable')) {
+            element.focus();
+        }
+
+        var selection = window.getSelection();
+        var range = document.createRange();
+
+        range.selectNodeContents(element);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        selectedText = selection.toString();
+    }
+
+    return selectedText;
+}
+
+module.exports = select;
 
 
 /***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
 
-var closest = __webpack_require__(5);
+/***/ 279:
+/***/ (function(module) {
 
-/**
- * Delegates event to a selector.
- *
- * @param {Element} element
- * @param {String} selector
- * @param {String} type
- * @param {Function} callback
- * @param {Boolean} useCapture
- * @return {Object}
- */
-function _delegate(element, selector, type, callback, useCapture) {
-    var listenerFn = listener.apply(this, arguments);
-
-    element.addEventListener(type, listenerFn, useCapture);
-
-    return {
-        destroy: function() {
-            element.removeEventListener(type, listenerFn, useCapture);
-        }
-    }
+function E () {
+  // Keep this empty so it's easier to inherit from
+  // (via https://github.com/lipsmack from https://github.com/scottcorgan/tiny-emitter/issues/3)
 }
 
-/**
- * Delegates event to a selector.
- *
- * @param {Element|String|Array} [elements]
- * @param {String} selector
- * @param {String} type
- * @param {Function} callback
- * @param {Boolean} useCapture
- * @return {Object}
- */
-function delegate(elements, selector, type, callback, useCapture) {
-    // Handle the regular Element usage
-    if (typeof elements.addEventListener === 'function') {
-        return _delegate.apply(null, arguments);
-    }
+E.prototype = {
+  on: function (name, callback, ctx) {
+    var e = this.e || (this.e = {});
 
-    // Handle Element-less usage, it defaults to global delegation
-    if (typeof type === 'function') {
-        // Use `document` as the first parameter, then apply arguments
-        // This is a short way to .unshift `arguments` without running into deoptimizations
-        return _delegate.bind(null, document).apply(null, arguments);
-    }
-
-    // Handle Selector-based usage
-    if (typeof elements === 'string') {
-        elements = document.querySelectorAll(elements);
-    }
-
-    // Handle Array-like based usage
-    return Array.prototype.map.call(elements, function (element) {
-        return _delegate(element, selector, type, callback, useCapture);
+    (e[name] || (e[name] = [])).push({
+      fn: callback,
+      ctx: ctx
     });
-}
 
-/**
- * Finds closest match and invokes callback.
- *
- * @param {Element} element
- * @param {String} selector
- * @param {String} type
- * @param {Function} callback
- * @return {Function}
- */
-function listener(element, selector, type, callback) {
-    return function(e) {
-        e.delegateTarget = closest(e.target, selector);
+    return this;
+  },
 
-        if (e.delegateTarget) {
-            callback.call(element, e);
-        }
-    }
-}
+  once: function (name, callback, ctx) {
+    var self = this;
+    function listener () {
+      self.off(name, listener);
+      callback.apply(ctx, arguments);
+    };
 
-module.exports = delegate;
+    listener._ = callback
+    return this.on(name, listener, ctx);
+  },
 
+  emit: function (name) {
+    var data = [].slice.call(arguments, 1);
+    var evtArr = ((this.e || (this.e = {}))[name] || []).slice();
+    var i = 0;
+    var len = evtArr.length;
 
-/***/ }),
-/* 5 */
-/***/ (function(module, exports) {
-
-var DOCUMENT_NODE_TYPE = 9;
-
-/**
- * A polyfill for Element.matches()
- */
-if (typeof Element !== 'undefined' && !Element.prototype.matches) {
-    var proto = Element.prototype;
-
-    proto.matches = proto.matchesSelector ||
-                    proto.mozMatchesSelector ||
-                    proto.msMatchesSelector ||
-                    proto.oMatchesSelector ||
-                    proto.webkitMatchesSelector;
-}
-
-/**
- * Finds the closest parent that matches a selector.
- *
- * @param {Element} element
- * @param {String} selector
- * @return {Function}
- */
-function closest (element, selector) {
-    while (element && element.nodeType !== DOCUMENT_NODE_TYPE) {
-        if (typeof element.matches === 'function' &&
-            element.matches(selector)) {
-          return element;
-        }
-        element = element.parentNode;
-    }
-}
-
-module.exports = closest;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-
-// EXTERNAL MODULE: ./node_modules/select/src/select.js
-var src_select = __webpack_require__(0);
-var select_default = /*#__PURE__*/__webpack_require__.n(src_select);
-
-// CONCATENATED MODULE: ./src/clipboard-action.js
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-
-
-/**
- * Inner class which performs selection from either `text` or `target`
- * properties and then executes copy or cut operations.
- */
-
-var clipboard_action_ClipboardAction = function () {
-    /**
-     * @param {Object} options
-     */
-    function ClipboardAction(options) {
-        _classCallCheck(this, ClipboardAction);
-
-        this.resolveOptions(options);
-        this.initSelection();
+    for (i; i < len; i++) {
+      evtArr[i].fn.apply(evtArr[i].ctx, data);
     }
 
-    /**
-     * Defines base properties passed from constructor.
-     * @param {Object} options
-     */
+    return this;
+  },
 
+  off: function (name, callback) {
+    var e = this.e || (this.e = {});
+    var evts = e[name];
+    var liveEvents = [];
 
-    _createClass(ClipboardAction, [{
-        key: 'resolveOptions',
-        value: function resolveOptions() {
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-            this.action = options.action;
-            this.container = options.container;
-            this.emitter = options.emitter;
-            this.target = options.target;
-            this.text = options.text;
-            this.trigger = options.trigger;
-
-            this.selectedText = '';
-        }
-
-        /**
-         * Decides which selection strategy is going to be applied based
-         * on the existence of `text` and `target` properties.
-         */
-
-    }, {
-        key: 'initSelection',
-        value: function initSelection() {
-            if (this.text) {
-                this.selectFake();
-            } else if (this.target) {
-                this.selectTarget();
-            }
-        }
-
-        /**
-         * Creates a fake textarea element, sets its value from `text` property,
-         * and makes a selection on it.
-         */
-
-    }, {
-        key: 'selectFake',
-        value: function selectFake() {
-            var _this = this;
-
-            var isRTL = document.documentElement.getAttribute('dir') == 'rtl';
-
-            this.removeFake();
-
-            this.fakeHandlerCallback = function () {
-                return _this.removeFake();
-            };
-            this.fakeHandler = this.container.addEventListener('click', this.fakeHandlerCallback) || true;
-
-            this.fakeElem = document.createElement('textarea');
-            // Prevent zooming on iOS
-            this.fakeElem.style.fontSize = '12pt';
-            // Reset box model
-            this.fakeElem.style.border = '0';
-            this.fakeElem.style.padding = '0';
-            this.fakeElem.style.margin = '0';
-            // Move element out of screen horizontally
-            this.fakeElem.style.position = 'absolute';
-            this.fakeElem.style[isRTL ? 'right' : 'left'] = '-9999px';
-            // Move element to the same position vertically
-            var yPosition = window.pageYOffset || document.documentElement.scrollTop;
-            this.fakeElem.style.top = yPosition + 'px';
-
-            this.fakeElem.setAttribute('readonly', '');
-            this.fakeElem.value = this.text;
-
-            this.container.appendChild(this.fakeElem);
-
-            this.selectedText = select_default()(this.fakeElem);
-            this.copyText();
-        }
-
-        /**
-         * Only removes the fake element after another click event, that way
-         * a user can hit `Ctrl+C` to copy because selection still exists.
-         */
-
-    }, {
-        key: 'removeFake',
-        value: function removeFake() {
-            if (this.fakeHandler) {
-                this.container.removeEventListener('click', this.fakeHandlerCallback);
-                this.fakeHandler = null;
-                this.fakeHandlerCallback = null;
-            }
-
-            if (this.fakeElem) {
-                this.container.removeChild(this.fakeElem);
-                this.fakeElem = null;
-            }
-        }
-
-        /**
-         * Selects the content from element passed on `target` property.
-         */
-
-    }, {
-        key: 'selectTarget',
-        value: function selectTarget() {
-            this.selectedText = select_default()(this.target);
-            this.copyText();
-        }
-
-        /**
-         * Executes the copy operation based on the current selection.
-         */
-
-    }, {
-        key: 'copyText',
-        value: function copyText() {
-            var succeeded = void 0;
-
-            try {
-                succeeded = document.execCommand(this.action);
-            } catch (err) {
-                succeeded = false;
-            }
-
-            this.handleResult(succeeded);
-        }
-
-        /**
-         * Fires an event based on the copy operation result.
-         * @param {Boolean} succeeded
-         */
-
-    }, {
-        key: 'handleResult',
-        value: function handleResult(succeeded) {
-            this.emitter.emit(succeeded ? 'success' : 'error', {
-                action: this.action,
-                text: this.selectedText,
-                trigger: this.trigger,
-                clearSelection: this.clearSelection.bind(this)
-            });
-        }
-
-        /**
-         * Moves focus away from `target` and back to the trigger, removes current selection.
-         */
-
-    }, {
-        key: 'clearSelection',
-        value: function clearSelection() {
-            if (this.trigger) {
-                this.trigger.focus();
-            }
-            document.activeElement.blur();
-            window.getSelection().removeAllRanges();
-        }
-
-        /**
-         * Sets the `action` to be performed which can be either 'copy' or 'cut'.
-         * @param {String} action
-         */
-
-    }, {
-        key: 'destroy',
-
-
-        /**
-         * Destroy lifecycle.
-         */
-        value: function destroy() {
-            this.removeFake();
-        }
-    }, {
-        key: 'action',
-        set: function set() {
-            var action = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'copy';
-
-            this._action = action;
-
-            if (this._action !== 'copy' && this._action !== 'cut') {
-                throw new Error('Invalid "action" value, use either "copy" or "cut"');
-            }
-        }
-
-        /**
-         * Gets the `action` property.
-         * @return {String}
-         */
-        ,
-        get: function get() {
-            return this._action;
-        }
-
-        /**
-         * Sets the `target` property using an element
-         * that will be have its content copied.
-         * @param {Element} target
-         */
-
-    }, {
-        key: 'target',
-        set: function set(target) {
-            if (target !== undefined) {
-                if (target && (typeof target === 'undefined' ? 'undefined' : _typeof(target)) === 'object' && target.nodeType === 1) {
-                    if (this.action === 'copy' && target.hasAttribute('disabled')) {
-                        throw new Error('Invalid "target" attribute. Please use "readonly" instead of "disabled" attribute');
-                    }
-
-                    if (this.action === 'cut' && (target.hasAttribute('readonly') || target.hasAttribute('disabled'))) {
-                        throw new Error('Invalid "target" attribute. You can\'t cut text from elements with "readonly" or "disabled" attributes');
-                    }
-
-                    this._target = target;
-                } else {
-                    throw new Error('Invalid "target" value, use a valid Element');
-                }
-            }
-        }
-
-        /**
-         * Gets the `target` property.
-         * @return {String|HTMLElement}
-         */
-        ,
-        get: function get() {
-            return this._target;
-        }
-    }]);
-
-    return ClipboardAction;
-}();
-
-/* harmony default export */ var clipboard_action = (clipboard_action_ClipboardAction);
-// EXTERNAL MODULE: ./node_modules/tiny-emitter/index.js
-var tiny_emitter = __webpack_require__(1);
-var tiny_emitter_default = /*#__PURE__*/__webpack_require__.n(tiny_emitter);
-
-// EXTERNAL MODULE: ./node_modules/good-listener/src/listen.js
-var listen = __webpack_require__(2);
-var listen_default = /*#__PURE__*/__webpack_require__.n(listen);
-
-// CONCATENATED MODULE: ./src/clipboard.js
-var clipboard_typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-var clipboard_createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function clipboard_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-
-
-
-
-/**
- * Base class which takes one or more elements, adds event listeners to them,
- * and instantiates a new `ClipboardAction` on each click.
- */
-
-var clipboard_Clipboard = function (_Emitter) {
-    _inherits(Clipboard, _Emitter);
-
-    /**
-     * @param {String|HTMLElement|HTMLCollection|NodeList} trigger
-     * @param {Object} options
-     */
-    function Clipboard(trigger, options) {
-        clipboard_classCallCheck(this, Clipboard);
-
-        var _this = _possibleConstructorReturn(this, (Clipboard.__proto__ || Object.getPrototypeOf(Clipboard)).call(this));
-
-        _this.resolveOptions(options);
-        _this.listenClick(trigger);
-        return _this;
+    if (evts && callback) {
+      for (var i = 0, len = evts.length; i < len; i++) {
+        if (evts[i].fn !== callback && evts[i].fn._ !== callback)
+          liveEvents.push(evts[i]);
+      }
     }
 
-    /**
-     * Defines if attributes would be resolved using internal setter functions
-     * or custom functions that were passed in the constructor.
-     * @param {Object} options
-     */
+    // Remove event from queue to prevent memory leak
+    // Suggested by https://github.com/lazd
+    // Ref: https://github.com/scottcorgan/tiny-emitter/commit/c6ebfaa9bc973b33d110a84a307742b7cf94c953#commitcomment-5024910
 
+    (liveEvents.length)
+      ? e[name] = liveEvents
+      : delete e[name];
 
-    clipboard_createClass(Clipboard, [{
-        key: 'resolveOptions',
-        value: function resolveOptions() {
-            var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    return this;
+  }
+};
 
-            this.action = typeof options.action === 'function' ? options.action : this.defaultAction;
-            this.target = typeof options.target === 'function' ? options.target : this.defaultTarget;
-            this.text = typeof options.text === 'function' ? options.text : this.defaultText;
-            this.container = clipboard_typeof(options.container) === 'object' ? options.container : document.body;
-        }
+module.exports = E;
+module.exports.TinyEmitter = E;
 
-        /**
-         * Adds a click event listener to the passed trigger.
-         * @param {String|HTMLElement|HTMLCollection|NodeList} trigger
-         */
-
-    }, {
-        key: 'listenClick',
-        value: function listenClick(trigger) {
-            var _this2 = this;
-
-            this.listener = listen_default()(trigger, 'click', function (e) {
-                return _this2.onClick(e);
-            });
-        }
-
-        /**
-         * Defines a new `ClipboardAction` on each click event.
-         * @param {Event} e
-         */
-
-    }, {
-        key: 'onClick',
-        value: function onClick(e) {
-            var trigger = e.delegateTarget || e.currentTarget;
-
-            if (this.clipboardAction) {
-                this.clipboardAction = null;
-            }
-
-            this.clipboardAction = new clipboard_action({
-                action: this.action(trigger),
-                target: this.target(trigger),
-                text: this.text(trigger),
-                container: this.container,
-                trigger: trigger,
-                emitter: this
-            });
-        }
-
-        /**
-         * Default `action` lookup function.
-         * @param {Element} trigger
-         */
-
-    }, {
-        key: 'defaultAction',
-        value: function defaultAction(trigger) {
-            return getAttributeValue('action', trigger);
-        }
-
-        /**
-         * Default `target` lookup function.
-         * @param {Element} trigger
-         */
-
-    }, {
-        key: 'defaultTarget',
-        value: function defaultTarget(trigger) {
-            var selector = getAttributeValue('target', trigger);
-
-            if (selector) {
-                return document.querySelector(selector);
-            }
-        }
-
-        /**
-         * Returns the support of the given action, or all actions if no action is
-         * given.
-         * @param {String} [action]
-         */
-
-    }, {
-        key: 'defaultText',
-
-
-        /**
-         * Default `text` lookup function.
-         * @param {Element} trigger
-         */
-        value: function defaultText(trigger) {
-            return getAttributeValue('text', trigger);
-        }
-
-        /**
-         * Destroy lifecycle.
-         */
-
-    }, {
-        key: 'destroy',
-        value: function destroy() {
-            this.listener.destroy();
-
-            if (this.clipboardAction) {
-                this.clipboardAction.destroy();
-                this.clipboardAction = null;
-            }
-        }
-    }], [{
-        key: 'isSupported',
-        value: function isSupported() {
-            var action = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ['copy', 'cut'];
-
-            var actions = typeof action === 'string' ? [action] : action;
-            var support = !!document.queryCommandSupported;
-
-            actions.forEach(function (action) {
-                support = support && !!document.queryCommandSupported(action);
-            });
-
-            return support;
-        }
-    }]);
-
-    return Clipboard;
-}(tiny_emitter_default.a);
-
-/**
- * Helper function to retrieve attribute value.
- * @param {String} suffix
- * @param {Element} element
- */
-
-
-function getAttributeValue(suffix, element) {
-    var attribute = 'data-clipboard-' + suffix;
-
-    if (!element.hasAttribute(attribute)) {
-        return;
-    }
-
-    return element.getAttribute(attribute);
-}
-
-/* harmony default export */ var clipboard = __webpack_exports__["default"] = (clipboard_Clipboard);
 
 /***/ })
-/******/ ])["default"];
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		if(__webpack_module_cache__[moduleId]) {
+/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	!function() {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = function(module) {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				function() { return module['default']; } :
+/******/ 				function() { return module; };
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	!function() {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = function(exports, definition) {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	}();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	!function() {
+/******/ 		__webpack_require__.o = function(obj, prop) { return Object.prototype.hasOwnProperty.call(obj, prop); }
+/******/ 	}();
+/******/ 	
+/************************************************************************/
+/******/ 	// module exports must be returned from runtime so entry inlining is disabled
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(134);
+/******/ })()
+.default;
 });
 },{}],80:[function(require,module,exports){
 (function (global,Buffer){(function (){
@@ -25823,16 +25803,18 @@ exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
 },{"./decode":189,"./encode":190}],192:[function(require,module,exports){
+(function (global){(function (){
 /*! queue-microtask. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 let promise
 
 module.exports = typeof queueMicrotask === 'function'
-  ? queueMicrotask.bind(globalThis)
+  ? queueMicrotask.bind(typeof window !== 'undefined' ? window : global)
   // reuse resolved promise, and allocate it lazily
   : cb => (promise || (promise = Promise.resolve()))
     .then(cb)
     .catch(err => setTimeout(() => { throw err }, 0))
 
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],193:[function(require,module,exports){
 var iterate = function (list) {
   var offset = 0
@@ -27893,7 +27875,7 @@ class Peer extends stream.Duplex {
     try {
       this._pc = new (this._wrtc.RTCPeerConnection)(this.config)
     } catch (err) {
-      queueMicrotask(() => this.destroy(errCode(err, 'ERR_PC_CONSTRUCTOR')))
+      this.destroy(errCode(err, 'ERR_PC_CONSTRUCTOR'))
       return
     }
 
@@ -27915,6 +27897,13 @@ class Peer extends stream.Duplex {
     }
     this._pc.onicecandidate = event => {
       this._onIceCandidate(event)
+    }
+
+    // HACK: Fix for odd Firefox behavior, see: https://github.com/feross/simple-peer/pull/783
+    if (typeof this._pc.peerIdentity === 'object') {
+      this._pc.peerIdentity.catch(err => {
+        this.destroy(errCode(err, 'ERR_PC_PEER_IDENTITY'))
+      })
     }
 
     // Other spec events, unused by this implementation:
@@ -27966,7 +27955,8 @@ class Peer extends stream.Duplex {
   }
 
   signal (data) {
-    if (this.destroyed) throw errCode(new Error('cannot signal after peer is destroyed'), 'ERR_SIGNALING')
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot signal after peer is destroyed'), 'ERR_DESTROYED')
     if (typeof data === 'string') {
       try {
         data = JSON.parse(data)
@@ -28029,6 +28019,8 @@ class Peer extends stream.Duplex {
    * @param {ArrayBufferView|ArrayBuffer|Buffer|string|Blob} chunk
    */
   send (chunk) {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot send after peer is destroyed'), 'ERR_DESTROYED')
     this._channel.send(chunk)
   }
 
@@ -28038,6 +28030,8 @@ class Peer extends stream.Duplex {
    * @param {Object} init
    */
   addTransceiver (kind, init) {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot addTransceiver after peer is destroyed'), 'ERR_DESTROYED')
     this._debug('addTransceiver()')
 
     if (this.initiator) {
@@ -28060,6 +28054,8 @@ class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   addStream (stream) {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot addStream after peer is destroyed'), 'ERR_DESTROYED')
     this._debug('addStream()')
 
     stream.getTracks().forEach(track => {
@@ -28073,6 +28069,8 @@ class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   addTrack (track, stream) {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot addTrack after peer is destroyed'), 'ERR_DESTROYED')
     this._debug('addTrack()')
 
     const submap = this._senderMap.get(track) || new Map() // nested Maps map [track, stream] to sender
@@ -28096,6 +28094,8 @@ class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   replaceTrack (oldTrack, newTrack, stream) {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot replaceTrack after peer is destroyed'), 'ERR_DESTROYED')
     this._debug('replaceTrack()')
 
     const submap = this._senderMap.get(oldTrack)
@@ -28118,6 +28118,8 @@ class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   removeTrack (track, stream) {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot removeTrack after peer is destroyed'), 'ERR_DESTROYED')
     this._debug('removeSender()')
 
     const submap = this._senderMap.get(track)
@@ -28143,6 +28145,8 @@ class Peer extends stream.Duplex {
    * @param {MediaStream} stream
    */
   removeStream (stream) {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot removeStream after peer is destroyed'), 'ERR_DESTROYED')
     this._debug('removeSenders()')
 
     stream.getTracks().forEach(track => {
@@ -28167,6 +28171,9 @@ class Peer extends stream.Duplex {
   }
 
   negotiate () {
+    if (this.destroying) return
+    if (this.destroyed) throw errCode(new Error('cannot negotiate after peer is destroyed'), 'ERR_DESTROYED')
+
     if (this.initiator) {
       if (this._isNegotiating) {
         this._queuedNegotiation = true
