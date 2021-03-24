@@ -25,7 +25,7 @@ This project wouldn't be possible without the fantastic work of:
 - [@cvisuri](https://github.com/cvisuri), for design work
 - [@CorralPeltzer](https://github.com/CorralPeltzer), for [`newTrackon`](https://github.com/CorralPeltzer/newTrackon)
 - [@substack](https://github.com/substack) and contributors, for [`Browserify`](https://github.com/browserify/browserify)
-- [Github Pages](https://pages.github.com/) hosting
+- [Cloudflare Pages](https://pages.cloudflare.com/) hosting
 
 ## License
 
