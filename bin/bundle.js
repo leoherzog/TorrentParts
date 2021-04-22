@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (process){(function (){
 /**
- * @popperjs/core v2.9.1 - MIT License
+ * @popperjs/core v2.9.2 - MIT License
  */
 
 'use strict';
@@ -252,6 +252,17 @@ function getTrueOffsetParent(element) {
 
 function getContainingBlock(element) {
   var isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') !== -1;
+  var isIE = navigator.userAgent.indexOf('Trident') !== -1;
+
+  if (isIE && isHTMLElement(element)) {
+    // In IE 9, 10 and 11 fixed elements containing block is always established by the viewport
+    var elementCss = getComputedStyle(element);
+
+    if (elementCss.position === 'fixed') {
+      return null;
+    }
+  }
+
   var currentNode = getParentNode(element);
 
   while (isHTMLElement(currentNode) && ['html', 'body'].indexOf(getNodeName(currentNode)) < 0) {
@@ -7644,7 +7655,7 @@ class WebSocketTracker extends Tracker {
       this._send(params)
     } else {
       // Limit the number of offers that are generated, since it can be slow
-      const numwant = Math.min(opts.numwant, 10)
+      const numwant = Math.min(opts.numwant, 5)
 
       this._generateOffers(numwant, offers => {
         params.numwant = numwant
@@ -7866,8 +7877,8 @@ class WebSocketTracker extends Tracker {
         if (this._trackerId) params.trackerid = this._trackerId
         this._send(params)
       })
-      peer.signal(data.offer)
       this.client.emit('peer', peer)
+      peer.signal(data.offer)
     }
 
     if (data.answer && data.peer_id) {
@@ -7875,8 +7886,8 @@ class WebSocketTracker extends Tracker {
       peer = this.peers[offerId]
       if (peer) {
         peer.id = common.binaryToHex(data.peer_id)
-        peer.signal(data.answer)
         this.client.emit('peer', peer)
+        peer.signal(data.answer)
 
         clearTimeout(peer.trackerTimeout)
         peer.trackerTimeout = null
@@ -11478,6 +11489,7 @@ const announceList = [
  * @param  {Array.<Array.<string>>=} opts.announceList
  * @param  {Array.<string>=} opts.urlList
  * @param  {Object=} opts.info
+ * @param  {Function} opts.onProgress
  * @param  {function} cb
  * @return {Buffer} buffer of .torrent file data
  */
@@ -11641,10 +11653,13 @@ function _parseInput (input, opts, cb) {
   }
 }
 
-function getPieceList (files, pieceLength, cb) {
+const MAX_OUTSTANDING_HASHES = 5
+
+function getPieceList (files, pieceLength, estimatedTorrentLength, opts, cb) {
   cb = once(cb)
   const pieces = []
   let length = 0
+  let hashedLength = 0
 
   const streams = files.map(file => file.getStream)
 
@@ -11670,9 +11685,17 @@ function getPieceList (files, pieceLength, cb) {
     sha1(chunk, hash => {
       pieces[i] = hash
       remainingHashes -= 1
+      if (remainingHashes < MAX_OUTSTANDING_HASHES) {
+        blockstream.resume()
+      }
+      hashedLength += chunk.length
+      if (opts.onProgress) opts.onProgress(hashedLength, estimatedTorrentLength)
       maybeDone()
     })
     remainingHashes += 1
+    if (remainingHashes >= MAX_OUTSTANDING_HASHES) {
+      blockstream.pause()
+    }
     pieceNum += 1
   }
 
@@ -11757,25 +11780,32 @@ function onFiles (files, opts, cb) {
 
   if (opts.urlList !== undefined) torrent['url-list'] = opts.urlList
 
-  const pieceLength = opts.pieceLength || calcPieceLength(files.reduce(sumLength, 0))
+  const estimatedTorrentLength = files.reduce(sumLength, 0)
+  const pieceLength = opts.pieceLength || calcPieceLength(estimatedTorrentLength)
   torrent.info['piece length'] = pieceLength
 
-  getPieceList(files, pieceLength, (err, pieces, torrentLength) => {
-    if (err) return cb(err)
-    torrent.info.pieces = pieces
+  getPieceList(
+    files,
+    pieceLength,
+    estimatedTorrentLength,
+    opts,
+    (err, pieces, torrentLength) => {
+      if (err) return cb(err)
+      torrent.info.pieces = pieces
 
-    files.forEach(file => {
-      delete file.getStream
-    })
+      files.forEach(file => {
+        delete file.getStream
+      })
 
-    if (opts.singleFileTorrent) {
-      torrent.info.length = torrentLength
-    } else {
-      torrent.info.files = files
+      if (opts.singleFileTorrent) {
+        torrent.info.length = torrentLength
+      } else {
+        torrent.info.files = files
+      }
+
+      cb(null, bencode.encode(torrent))
     }
-
-    cb(null, bencode.encode(torrent))
-  })
+  )
 }
 
 /**
@@ -11998,6 +12028,18 @@ module.exports = eos;
 },{"once":182}],97:[function(require,module,exports){
 'use strict';
 
+/**
+ * @typedef {{ [key: string]: any }} Extensions
+ * @typedef {Error} Err
+ * @property {string} message
+ */
+
+/**
+ *
+ * @param {Error} obj
+ * @param {Extensions} props
+ * @returns {Error & Extensions}
+ */
 function assign(obj, props) {
     for (const key in props) {
         Object.defineProperty(obj, key, {
@@ -12010,6 +12052,13 @@ function assign(obj, props) {
     return obj;
 }
 
+/**
+ *
+ * @param {any} err - An Error
+ * @param {string|Extensions} code - A string code or props to set on the error
+ * @param {Extensions} [props] - Props to set on the error
+ * @returns {Error & Extensions}
+ */
 function createError(err, code, props) {
     if (!err || typeof err === 'string') {
         throw new TypeError('Please pass an Error to err-code');
@@ -12021,10 +12070,10 @@ function createError(err, code, props) {
 
     if (typeof code === 'object') {
         props = code;
-        code = undefined;
+        code = '';
     }
 
-    if (code != null) {
+    if (code) {
         props.code = code;
     }
 
@@ -12038,7 +12087,10 @@ function createError(err, code, props) {
 
         ErrClass.prototype = Object.create(Object.getPrototypeOf(err));
 
-        return assign(new ErrClass(), props);
+        // @ts-ignore
+        const output = assign(new ErrClass(), props);
+
+        return output;
     }
 }
 
@@ -13933,7 +13985,7 @@ module.exports={
   "application/ecmascript": {
     "source": "iana",
     "compressible": true,
-    "extensions": ["ecma","es"]
+    "extensions": ["es","ecma"]
   },
   "application/edi-consent": {
     "source": "iana"
@@ -14478,13 +14530,11 @@ module.exports={
   },
   "application/mrb-consumer+xml": {
     "source": "iana",
-    "compressible": true,
-    "extensions": ["xdf"]
+    "compressible": true
   },
   "application/mrb-publish+xml": {
     "source": "iana",
-    "compressible": true,
-    "extensions": ["xdf"]
+    "compressible": true
   },
   "application/msc-ivr+xml": {
     "source": "iana",
@@ -15863,6 +15913,9 @@ module.exports={
     "compressible": true
   },
   "application/vnd.crypto-shade-file": {
+    "source": "iana"
+  },
+  "application/vnd.cryptomator.encrypted": {
     "source": "iana"
   },
   "application/vnd.ctc-posml": {
@@ -17329,6 +17382,9 @@ module.exports={
   "application/vnd.nearst.inv+json": {
     "source": "iana",
     "compressible": true
+  },
+  "application/vnd.nebumind.line": {
+    "source": "iana"
   },
   "application/vnd.nervana": {
     "source": "iana"
@@ -19615,8 +19671,7 @@ module.exports={
   },
   "application/xcap-error+xml": {
     "source": "iana",
-    "compressible": true,
-    "extensions": ["xer"]
+    "compressible": true
   },
   "application/xcap-ns+xml": {
     "source": "iana",
@@ -20944,6 +20999,10 @@ module.exports={
   "model/vnd.rosette.annotated-data-model": {
     "source": "iana"
   },
+  "model/vnd.sap.vds": {
+    "source": "iana",
+    "extensions": ["vds"]
+  },
   "model/vnd.usdz+zip": {
     "source": "iana",
     "compressible": false,
@@ -21522,6 +21581,9 @@ module.exports={
     "source": "iana"
   },
   "video/encaprtp": {
+    "source": "iana"
+  },
+  "video/ffv1": {
     "source": "iana"
   },
   "video/flexfec": {
@@ -28303,7 +28365,10 @@ class Peer extends stream.Duplex {
     this._channel.onclose = () => {
       this._onChannelClose()
     }
-    this._channel.onerror = err => {
+    this._channel.onerror = event => {
+      const err = event.error instanceof Error
+        ? event.error
+        : new Error(`Datachannel error: ${event.message} ${event.filename}:${event.lineno}:${event.colno}`)
       this.destroy(errCode(err, 'ERR_DATA_CHANNEL'))
     }
 
@@ -29521,6 +29586,8 @@ var ClientRequest = module.exports = function (opts) {
 	}
 	self._mode = decideMode(preferBinary, useFetch)
 	self._fetchTimer = null
+	self._socketTimeout = null
+	self._socketTimer = null
 
 	self.on('finish', function () {
 		self._onFinish()
@@ -29562,6 +29629,10 @@ ClientRequest.prototype._onFinish = function () {
 	if (self._destroyed)
 		return
 	var opts = self._opts
+
+	if ('timeout' in opts && opts.timeout !== 0) {
+		self.setTimeout(opts.timeout)
+	}
 
 	var headersObj = self._headers
 	var body = null
@@ -29610,9 +29681,10 @@ ClientRequest.prototype._onFinish = function () {
 			signal: signal
 		}).then(function (response) {
 			self._fetchResponse = response
+			self._resetTimers(false)
 			self._connect()
 		}, function (reason) {
-			global.clearTimeout(self._fetchTimer)
+			self._resetTimers(true)
 			if (!self._destroyed)
 				self.emit('error', reason)
 		})
@@ -29668,6 +29740,7 @@ ClientRequest.prototype._onFinish = function () {
 		xhr.onerror = function () {
 			if (self._destroyed)
 				return
+			self._resetTimers(true)
 			self.emit('error', new Error('XHR error'))
 		}
 
@@ -29699,13 +29772,15 @@ function statusValid (xhr) {
 ClientRequest.prototype._onXHRProgress = function () {
 	var self = this
 
+	self._resetTimers(false)
+
 	if (!statusValid(self._xhr) || self._destroyed)
 		return
 
 	if (!self._response)
 		self._connect()
 
-	self._response._onXHRProgress()
+	self._response._onXHRProgress(self._resetTimers.bind(self))
 }
 
 ClientRequest.prototype._connect = function () {
@@ -29714,7 +29789,7 @@ ClientRequest.prototype._connect = function () {
 	if (self._destroyed)
 		return
 
-	self._response = new IncomingMessage(self._xhr, self._fetchResponse, self._mode, self._fetchTimer)
+	self._response = new IncomingMessage(self._xhr, self._fetchResponse, self._mode, self._resetTimers.bind(self))
 	self._response.on('error', function(err) {
 		self.emit('error', err)
 	})
@@ -29729,16 +29804,35 @@ ClientRequest.prototype._write = function (chunk, encoding, cb) {
 	cb()
 }
 
-ClientRequest.prototype.abort = ClientRequest.prototype.destroy = function () {
+ClientRequest.prototype._resetTimers = function (done) {
+	var self = this
+
+	global.clearTimeout(self._socketTimer)
+	self._socketTimer = null
+
+	if (done) {
+		global.clearTimeout(self._fetchTimer)
+		self._fetchTimer = null
+	} else if (self._socketTimeout) {
+		self._socketTimer = global.setTimeout(function () {
+			self.emit('timeout')
+		}, self._socketTimeout)
+	}
+}
+
+ClientRequest.prototype.abort = ClientRequest.prototype.destroy = function (err) {
 	var self = this
 	self._destroyed = true
-	global.clearTimeout(self._fetchTimer)
+	self._resetTimers(true)
 	if (self._response)
 		self._response._destroyed = true
 	if (self._xhr)
 		self._xhr.abort()
 	else if (self._fetchAbortController)
 		self._fetchAbortController.abort()
+
+	if (err)
+		self.emit('error', err)
 }
 
 ClientRequest.prototype.end = function (data, encoding, cb) {
@@ -29751,8 +29845,17 @@ ClientRequest.prototype.end = function (data, encoding, cb) {
 	stream.Writable.prototype.end.call(self, data, encoding, cb)
 }
 
+ClientRequest.prototype.setTimeout = function (timeout, cb) {
+	var self = this
+
+	if (cb)
+		self.once('timeout', cb)
+
+	self._socketTimeout = timeout
+	self._resetTimers(false)
+}
+
 ClientRequest.prototype.flushHeaders = function () {}
-ClientRequest.prototype.setTimeout = function () {}
 ClientRequest.prototype.setNoDelay = function () {}
 ClientRequest.prototype.setSocketKeepAlive = function () {}
 
@@ -29795,7 +29898,7 @@ var rStates = exports.readyStates = {
 	DONE: 4
 }
 
-var IncomingMessage = exports.IncomingMessage = function (xhr, response, mode, fetchTimer) {
+var IncomingMessage = exports.IncomingMessage = function (xhr, response, mode, resetTimers) {
 	var self = this
 	stream.Readable.call(self)
 
@@ -29828,6 +29931,7 @@ var IncomingMessage = exports.IncomingMessage = function (xhr, response, mode, f
 		if (capability.writableStream) {
 			var writable = new WritableStream({
 				write: function (chunk) {
+					resetTimers(false)
 					return new Promise(function (resolve, reject) {
 						if (self._destroyed) {
 							reject()
@@ -29839,11 +29943,12 @@ var IncomingMessage = exports.IncomingMessage = function (xhr, response, mode, f
 					})
 				},
 				close: function () {
-					global.clearTimeout(fetchTimer)
+					resetTimers(true)
 					if (!self._destroyed)
 						self.push(null)
 				},
 				abort: function (err) {
+					resetTimers(true)
 					if (!self._destroyed)
 						self.emit('error', err)
 				}
@@ -29851,7 +29956,7 @@ var IncomingMessage = exports.IncomingMessage = function (xhr, response, mode, f
 
 			try {
 				response.body.pipeTo(writable).catch(function (err) {
-					global.clearTimeout(fetchTimer)
+					resetTimers(true)
 					if (!self._destroyed)
 						self.emit('error', err)
 				})
@@ -29864,15 +29969,15 @@ var IncomingMessage = exports.IncomingMessage = function (xhr, response, mode, f
 			reader.read().then(function (result) {
 				if (self._destroyed)
 					return
+				resetTimers(result.done)
 				if (result.done) {
-					global.clearTimeout(fetchTimer)
 					self.push(null)
 					return
 				}
 				self.push(Buffer.from(result.value))
 				read()
 			}).catch(function (err) {
-				global.clearTimeout(fetchTimer)
+				resetTimers(true)
 				if (!self._destroyed)
 					self.emit('error', err)
 			})
@@ -29931,7 +30036,7 @@ IncomingMessage.prototype._read = function () {
 	}
 }
 
-IncomingMessage.prototype._onXHRProgress = function () {
+IncomingMessage.prototype._onXHRProgress = function (resetTimers) {
 	var self = this
 
 	var xhr = self._xhr
@@ -29978,6 +30083,7 @@ IncomingMessage.prototype._onXHRProgress = function () {
 				}
 			}
 			reader.onload = function () {
+				resetTimers(true)
 				self.push(null)
 			}
 			// reader.onerror = ??? // TODO: this
@@ -29987,6 +30093,7 @@ IncomingMessage.prototype._onXHRProgress = function () {
 
 	// The ms-stream case handles end separately in reader.onload()
 	if (self._xhr.readyState === rStates.DONE && self._mode !== 'ms-stream') {
+		resetTimers(true)
 		self.push(null)
 	}
 }
@@ -33245,6 +33352,7 @@ arguments[4][14][0].apply(exports,arguments)
 arguments[4][15][0].apply(exports,arguments)
 },{"dup":15}],294:[function(require,module,exports){
 (function (Buffer){(function (){
+/*! torrent-piece. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const BLOCK_LENGTH = 1 << 14
 
 class Piece {
@@ -33283,8 +33391,11 @@ class Piece {
 
   reserveRemaining () {
     if (!this.init()) return -1
-    if (this._reservations < this._chunks) {
-      const min = this._reservations
+    if (this._cancellations.length || this._reservations < this._chunks) {
+      let min = this._reservations
+      while (this._cancellations.length) {
+        min = Math.min(min, this._cancellations.pop())
+      }
       this._reservations = this._chunks
       return min
     }
