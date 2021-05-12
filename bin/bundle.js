@@ -13110,6 +13110,8 @@ function magnetURIDecode (uri) {
       } else if ((m = xt.match(/^urn:btih:(.{32})/))) {
         const decodedStr = base32.decode(m[1])
         result.infoHash = Buffer.from(decodedStr, 'binary').toString('hex')
+      } else if ((m = xt.match(/^urn:btmh:1220(.{64})/))) {
+        result.infoHashV2 = m[1].toLowerCase()
       }
     })
   }
@@ -13124,6 +13126,7 @@ function magnetURIDecode (uri) {
   }
 
   if (result.infoHash) result.infoHashBuffer = Buffer.from(result.infoHash, 'hex')
+  if (result.infoHashV2) result.infoHashV2Buffer = Buffer.from(result.infoHashV2, 'hex')
   if (result.publicKey) result.publicKeyBuffer = Buffer.from(result.publicKey, 'hex')
 
   if (result.dn) result.name = result.dn
@@ -13160,8 +13163,19 @@ function magnetURIEncode (obj) {
 
   // support using convenience names, in addition to spec names
   // (example: `infoHash` for `xt`, `name` for `dn`)
-  if (obj.infoHashBuffer) obj.xt = `urn:btih:${obj.infoHashBuffer.toString('hex')}`
-  if (obj.infoHash) obj.xt = `urn:btih:${obj.infoHash}`
+
+  // Deduplicate xt by using a set
+  let xts = new Set()
+  if (obj.xt && typeof obj.xt === 'string') xts.add(obj.xt)
+  if (obj.xt && Array.isArray(obj.xt)) xts = new Set(obj.xt)
+  if (obj.infoHashBuffer) xts.add(`urn:btih:${obj.infoHashBuffer.toString('hex')}`)
+  if (obj.infoHash) xts.add(`urn:btih:${obj.infoHash}`)
+  if (obj.infoHashV2Buffer) xts.add(obj.xt = `urn:btmh:1220${obj.infoHashV2Buffer.toString('hex')}`)
+  if (obj.infoHashV2) xts.add(`urn:btmh:1220${obj.infoHashV2}`)
+  const xtsDeduped = Array.from(xts)
+  if (xtsDeduped.length === 1) obj.xt = xtsDeduped[0]
+  if (xtsDeduped.length > 1) obj.xt = xtsDeduped
+
   if (obj.publicKeyBuffer) obj.xs = `urn:btpk:${obj.publicKeyBuffer.toString('hex')}`
   if (obj.publicKey) obj.xs = `urn:btpk:${obj.publicKey}`
   if (obj.name) obj.dn = obj.name
