@@ -11,7 +11,7 @@
     "mime-types": "^2.1.27",
     "parse-torrent": "^9.0.0",
     "tippy.js": "^6.2.7",
-    "webtorrent": "^0.110.1"
+    "webtorrent": "^1.0.0"
   },
   "devDependencies": {
     "buffer": "^5.2.1",
