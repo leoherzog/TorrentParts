@@ -449,7 +449,7 @@ async function addCurrentTrackers() {
   addTrackers.className = 'disabled';
   addTrackers.innerHTML = 'Adding...';
   try {
-    let response = await fetch("https://newtrackon.com/api/100"); // get trackers with 100% uptime
+    let response = await fetch("https://newtrackon.com/api/stable"); // get trackers with 95% uptime
     let trackers = await response.text();
     parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
     parsed.announce.push("http://bt1.archive.org:6969/announce");
