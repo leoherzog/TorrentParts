@@ -30,6 +30,9 @@
     "type": "git",
     "url": "https://github.com/leoherzog/TorrentParts.git"
   },
+  "glitch": {
+    "projectType": "generated_static"
+  },
   "author": "Leo Herzog",
   "license": "MIT",
   "bugs": {
