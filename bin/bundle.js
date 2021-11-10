@@ -34562,6 +34562,10 @@ module.exports={
     "compressible": true,
     "extensions": ["srx"]
   },
+  "application/spdx+json": {
+    "source": "iana",
+    "compressible": true
+  },
   "application/spirits-event+xml": {
     "source": "iana",
     "compressible": true
@@ -35042,6 +35046,10 @@ module.exports={
   },
   "application/vnd.afpc.modca-pagesegment": {
     "source": "iana"
+  },
+  "application/vnd.age": {
+    "source": "iana",
+    "extensions": ["age"]
   },
   "application/vnd.ah-barcode": {
     "source": "iana"
@@ -36883,6 +36891,10 @@ module.exports={
   "application/vnd.mynfc": {
     "source": "iana",
     "extensions": ["taglet"]
+  },
+  "application/vnd.nacamar.ybrid+json": {
+    "source": "iana",
+    "compressible": true
   },
   "application/vnd.ncd.control": {
     "source": "iana"
@@ -40218,6 +40230,7 @@ module.exports={
   },
   "image/vnd.microsoft.icon": {
     "source": "iana",
+    "compressible": true,
     "extensions": ["ico"]
   },
   "image/vnd.mix": {
@@ -40227,6 +40240,7 @@ module.exports={
     "source": "iana"
   },
   "image/vnd.ms-dds": {
+    "compressible": true,
     "extensions": ["dds"]
   },
   "image/vnd.ms-modi": {
@@ -40915,6 +40929,10 @@ module.exports={
   "text/vnd.esmertec.theme-descriptor": {
     "source": "iana",
     "charset": "UTF-8"
+  },
+  "text/vnd.familysearch.gedcom": {
+    "source": "iana",
+    "extensions": ["ged"]
   },
   "text/vnd.ficlab.flt": {
     "source": "iana"
@@ -54402,7 +54420,7 @@ exports.decode = function(encoded) {
 },{"buffer":110}],475:[function(require,module,exports){
 (function (process){(function (){
 /**!
-* tippy.js v6.3.3
+* tippy.js v6.3.6
 * (c) 2017-2021 atomiks
 * MIT License
 */
@@ -54550,7 +54568,7 @@ function getOwnerDocument(elementOrElements) {
       element = _normalizeToArray[0]; // Elements created via a <template> have an ownerDocument with no reference to the body
 
 
-  return (element == null ? void 0 : (_element$ownerDocumen = element.ownerDocument) == null ? void 0 : _element$ownerDocumen.body) ? element.ownerDocument : document;
+  return element != null && (_element$ownerDocumen = element.ownerDocument) != null && _element$ownerDocumen.body ? element.ownerDocument : document;
 }
 function isCursorOutsideInteractiveBorder(popperTreeData, event) {
   var clientX = event.clientX,
@@ -54595,13 +54613,13 @@ function actualContains(parent, child) {
   var target = child;
 
   while (target) {
-    var _ref2;
+    var _target$getRootNode;
 
     if (parent.contains(target)) {
       return true;
     }
 
-    target = (_ref2 = target.getRootNode == null ? void 0 : target.getRootNode()) == null ? void 0 : _ref2.host;
+    target = target.getRootNode == null ? void 0 : (_target$getRootNode = target.getRootNode()) == null ? void 0 : _target$getRootNode.host;
   }
 
   return false;
@@ -54780,7 +54798,7 @@ var defaultProps = Object.assign({
   touch: true,
   trigger: 'mouseenter focus',
   triggerTarget: null
-}, pluginProps, {}, renderProps);
+}, pluginProps, renderProps);
 var defaultKeys = Object.keys(defaultProps);
 var setDefaultProps = function setDefaultProps(partialProps) {
   /* istanbul ignore else */
@@ -54807,7 +54825,7 @@ function getExtendedPassedProps(passedProps) {
 
     return acc;
   }, {});
-  return Object.assign({}, passedProps, {}, pluginProps);
+  return Object.assign({}, passedProps, pluginProps);
 }
 function getDataAttributeProps(reference, plugins) {
   var propKeys = plugins ? Object.keys(getExtendedPassedProps(Object.assign({}, defaultProps, {
@@ -54838,7 +54856,7 @@ function evaluateProps(reference, props) {
   var out = Object.assign({}, props, {
     content: invokeWithArgsOrReturn(props.content, [reference])
   }, props.ignoreAttributes ? {} : getDataAttributeProps(reference, props.plugins));
-  out.aria = Object.assign({}, defaultProps.aria, {}, out.aria);
+  out.aria = Object.assign({}, defaultProps.aria, out.aria);
   out.aria = {
     expanded: out.aria.expanded === 'auto' ? props.interactive : out.aria.expanded,
     content: out.aria.content === 'auto' ? props.interactive ? null : 'describedby' : out.aria.content
@@ -54999,7 +55017,7 @@ var mouseMoveListeners = []; // Used by `hideAll()`
 
 var mountedInstances = [];
 function createTippy(reference, passedProps) {
-  var props = evaluateProps(reference, Object.assign({}, defaultProps, {}, getExtendedPassedProps(removeUndefinedProps(passedProps)))); // ===========================================================================
+  var props = evaluateProps(reference, Object.assign({}, defaultProps, getExtendedPassedProps(removeUndefinedProps(passedProps)))); // ===========================================================================
   // 🔒 Private members
   // ===========================================================================
 
@@ -55099,10 +55117,9 @@ function createTippy(reference, passedProps) {
       instance.clearDelayTimeouts();
     }
   });
-  popper.addEventListener('mouseleave', function (event) {
+  popper.addEventListener('mouseleave', function () {
     if (instance.props.interactive && instance.props.trigger.indexOf('mouseenter') >= 0) {
       getDocument().addEventListener('mousemove', debouncedOnMouseMove);
-      debouncedOnMouseMove(event);
     }
   });
   return instance; // ===========================================================================
@@ -55122,7 +55139,7 @@ function createTippy(reference, passedProps) {
     var _instance$props$rende;
 
     // @ts-ignore
-    return !!((_instance$props$rende = instance.props.render) == null ? void 0 : _instance$props$rende.$$tippy);
+    return !!((_instance$props$rende = instance.props.render) != null && _instance$props$rende.$$tippy);
   }
 
   function getCurrentTarget() {
@@ -55149,8 +55166,12 @@ function createTippy(reference, passedProps) {
     return getValueAtIndexOrReturn(instance.props.delay, isShow ? 0 : 1, defaultProps.delay);
   }
 
-  function handleStyles() {
-    popper.style.pointerEvents = instance.props.interactive && instance.state.isVisible ? '' : 'none';
+  function handleStyles(fromHide) {
+    if (fromHide === void 0) {
+      fromHide = false;
+    }
+
+    popper.style.pointerEvents = instance.props.interactive && !fromHide ? '' : 'none';
     popper.style.zIndex = "" + instance.props.zIndex;
   }
 
@@ -55161,7 +55182,7 @@ function createTippy(reference, passedProps) {
 
     pluginsHooks.forEach(function (pluginHooks) {
       if (pluginHooks[hook]) {
-        pluginHooks[hook].apply(void 0, args);
+        pluginHooks[hook].apply(pluginHooks, args);
       }
     });
 
@@ -55236,7 +55257,9 @@ function createTippy(reference, passedProps) {
     } // Clicked on the event listeners target
 
 
-    if (actualContains(getCurrentTarget(), actualTarget)) {
+    if (normalizeToArray(instance.props.triggerTarget || reference).some(function (el) {
+      return actualContains(el, actualTarget);
+    })) {
       if (currentInput.isTouch) {
         return;
       }
@@ -55602,6 +55625,7 @@ function createTippy(reference, passedProps) {
       parentNode.appendChild(popper);
     }
 
+    instance.state.isMounted = true;
     createPopperInstance();
     /* istanbul ignore else */
 
@@ -55709,7 +55733,7 @@ function createTippy(reference, passedProps) {
     invokeHook('onBeforeUpdate', [instance, partialProps]);
     removeListeners();
     var prevProps = instance.props;
-    var nextProps = evaluateProps(reference, Object.assign({}, prevProps, {}, removeUndefinedProps(partialProps), {
+    var nextProps = evaluateProps(reference, Object.assign({}, prevProps, removeUndefinedProps(partialProps), {
       ignoreAttributes: true
     }));
     instance.props = nextProps;
@@ -55838,7 +55862,6 @@ function createTippy(reference, passedProps) {
       // popper has been positioned for the first time
 
       (_instance$popperInsta2 = instance.popperInstance) == null ? void 0 : _instance$popperInsta2.forceUpdate();
-      instance.state.isMounted = true;
       invokeHook('onMount', [instance]);
 
       if (instance.props.animation && getIsDefaultRenderFn()) {
@@ -55885,7 +55908,7 @@ function createTippy(reference, passedProps) {
 
     cleanupInteractiveMouseListeners();
     removeDocumentPress();
-    handleStyles();
+    handleStyles(true);
 
     if (getIsDefaultRenderFn()) {
       var _getDefaultTemplateCh4 = getDefaultTemplateChildren(),
@@ -56086,10 +56109,19 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
 
   var individualInstances = tippyInstances;
   var references = [];
+  var triggerTargets = [];
   var currentTarget;
   var overrides = optionalProps.overrides;
   var interceptSetPropsCleanups = [];
   var shownOnCreate = false;
+
+  function setTriggerTargets() {
+    triggerTargets = individualInstances.map(function (instance) {
+      return normalizeToArray(instance.props.triggerTarget || instance.reference);
+    }).reduce(function (acc, item) {
+      return acc.concat(item);
+    }, []);
+  }
 
   function setReferences() {
     references = individualInstances.map(function (instance) {
@@ -56127,7 +56159,7 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
 
 
   function prepareInstance(singleton, target) {
-    var index = references.indexOf(target); // bail-out
+    var index = triggerTargets.indexOf(target); // bail-out
 
     if (target === currentTarget) {
       return;
@@ -56140,13 +56172,16 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
     }, {});
     singleton.setProps(Object.assign({}, overrideProps, {
       getReferenceClientRect: typeof overrideProps.getReferenceClientRect === 'function' ? overrideProps.getReferenceClientRect : function () {
-        return target.getBoundingClientRect();
+        var _references$index;
+
+        return (_references$index = references[index]) == null ? void 0 : _references$index.getBoundingClientRect();
       }
     }));
   }
 
   enableInstances(false);
   setReferences();
+  setTriggerTargets();
   var plugin = {
     fn: function fn() {
       return {
@@ -56176,7 +56211,7 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
   };
   var singleton = tippy(div(), Object.assign({}, removeProperties(optionalProps, ['overrides']), {
     plugins: [plugin].concat(optionalProps.plugins || []),
-    triggerTarget: references,
+    triggerTarget: triggerTargets,
     popperOptions: Object.assign({}, optionalProps.popperOptions, {
       modifiers: [].concat(((_optionalProps$popper = optionalProps.popperOptions) == null ? void 0 : _optionalProps$popper.modifiers) || [], [applyStylesModifier])
     })
@@ -56252,9 +56287,10 @@ var createSingleton = function createSingleton(tippyInstances, optionalProps) {
     individualInstances = nextInstances;
     enableInstances(false);
     setReferences();
+    setTriggerTargets();
     interceptSetPropsCleanups = interceptSetProps(singleton);
     singleton.setProps({
-      triggerTarget: references
+      triggerTarget: triggerTargets
     });
   };
 
@@ -56287,7 +56323,7 @@ function delegate(targets, props) {
     trigger: 'manual',
     touch: false
   });
-  var childProps = Object.assign({}, nativeProps, {
+  var childProps = Object.assign({}, defaultProps, nativeProps, {
     showOnCreate: true
   });
   var returnValue = tippy(targets, parentProps);
@@ -56413,7 +56449,7 @@ var animateFill = {
     var _instance$props$rende;
 
     // @ts-ignore
-    if (!((_instance$props$rende = instance.props.render) == null ? void 0 : _instance$props$rende.$$tippy)) {
+    if (!((_instance$props$rende = instance.props.render) != null && _instance$props$rende.$$tippy)) {
       if (process.env.NODE_ENV !== "production") {
         errorWhen(instance.props.animateFill, 'The `animateFill` plugin requires the default render function.');
       }
