@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (process){(function (){
 /**
- * @popperjs/core v2.11.0 - MIT License
+ * @popperjs/core v2.11.2 - MIT License
  */
 
 'use strict';
@@ -668,7 +668,7 @@ function getClippingParents(element) {
 
 
   return clippingParents.filter(function (clippingParent) {
-    return isElement(clippingParent) && contains(clippingParent, clipperElement) && getNodeName(clippingParent) !== 'body' && (canEscapeClipping ? getComputedStyle(clippingParent).position !== 'static' : true);
+    return isElement(clippingParent) && contains(clippingParent, clipperElement) && getNodeName(clippingParent) !== 'body';
   });
 } // Gets the maximum area that the element is visible in due to any number of
 // clipping parents
@@ -1188,13 +1188,21 @@ function mapToStyles(_ref2) {
       adaptive = _ref2.adaptive,
       roundOffsets = _ref2.roundOffsets,
       isFixed = _ref2.isFixed;
+  var _offsets$x = offsets.x,
+      x = _offsets$x === void 0 ? 0 : _offsets$x,
+      _offsets$y = offsets.y,
+      y = _offsets$y === void 0 ? 0 : _offsets$y;
 
-  var _ref3 = roundOffsets === true ? roundOffsetsByDPR(offsets) : typeof roundOffsets === 'function' ? roundOffsets(offsets) : offsets,
-      _ref3$x = _ref3.x,
-      x = _ref3$x === void 0 ? 0 : _ref3$x,
-      _ref3$y = _ref3.y,
-      y = _ref3$y === void 0 ? 0 : _ref3$y;
+  var _ref3 = typeof roundOffsets === 'function' ? roundOffsets({
+    x: x,
+    y: y
+  }) : {
+    x: x,
+    y: y
+  };
 
+  x = _ref3.x;
+  y = _ref3.y;
   var hasX = offsets.hasOwnProperty('x');
   var hasY = offsets.hasOwnProperty('y');
   var sideX = left;
@@ -1239,6 +1247,17 @@ function mapToStyles(_ref2) {
     position: position
   }, adaptive && unsetSides);
 
+  var _ref4 = roundOffsets === true ? roundOffsetsByDPR({
+    x: x,
+    y: y
+  }) : {
+    x: x,
+    y: y
+  };
+
+  x = _ref4.x;
+  y = _ref4.y;
+
   if (gpuAcceleration) {
     var _Object$assign;
 
@@ -1248,9 +1267,9 @@ function mapToStyles(_ref2) {
   return Object.assign({}, commonStyles, (_Object$assign2 = {}, _Object$assign2[sideY] = hasY ? y + "px" : '', _Object$assign2[sideX] = hasX ? x + "px" : '', _Object$assign2.transform = '', _Object$assign2));
 }
 
-function computeStyles(_ref4) {
-  var state = _ref4.state,
-      options = _ref4.options;
+function computeStyles(_ref5) {
+  var state = _ref5.state,
+      options = _ref5.options;
   var _options$gpuAccelerat = options.gpuAcceleration,
       gpuAcceleration = _options$gpuAccelerat === void 0 ? true : _options$gpuAccelerat,
       _options$adaptive = options.adaptive,
@@ -8096,6 +8115,7 @@ const RC4 = require('rc4')
 
 const BITFIELD_GROW = 400000
 const KEEP_ALIVE_TIMEOUT = 55000
+const ALLOWED_FAST_SET_MAX_LENGTH = 100
 
 const MESSAGE_PROTOCOL = Buffer.from('\u0013BitTorrent protocol')
 const MESSAGE_KEEP_ALIVE = Buffer.from([0x00, 0x00, 0x00, 0x00])
@@ -8106,6 +8126,10 @@ const MESSAGE_UNINTERESTED = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x03])
 
 const MESSAGE_RESERVED = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 const MESSAGE_PORT = [0x00, 0x00, 0x00, 0x03, 0x09, 0x00, 0x00]
+
+// BEP6 Fast Extension
+const MESSAGE_HAVE_ALL = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x0E])
+const MESSAGE_HAVE_NONE = Buffer.from([0x00, 0x00, 0x00, 0x01, 0x0F])
 
 const DH_PRIME = 'ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a63a36210000000000090563'
 const DH_GENERATOR = 2
@@ -8125,6 +8149,18 @@ class Request {
     this.length = length
     this.callback = callback
   }
+}
+
+class HaveAllBitField {
+  constructor () {
+    this.buffer = new Uint8Array() // dummy
+  }
+
+  get (index) {
+    return true
+  }
+
+  set (index) {}
 }
 
 class Wire extends stream.Duplex {
@@ -8149,6 +8185,7 @@ class Wire extends stream.Duplex {
     // possible torrents but prevent malicious peers from growing bitfield to fill memory.
     this.peerPieces = new BitField(0, { grow: BITFIELD_GROW })
 
+    this.extensions = {}
     this.peerExtensions = {}
 
     this.requests = [] // outgoing
@@ -8162,6 +8199,11 @@ class Wire extends stream.Duplex {
     this.extendedHandshake = {}
 
     this.peerExtendedHandshake = {} // remote peer's extended handshake
+
+    // BEP6 Fast Estension
+    this.hasFast = false // is fast extension enabled?
+    this.allowedFastSet = [] // allowed fast set
+    this.peerAllowedFastSet = [] // peer's allowed fast set
 
     this._ext = {} // string -> function, ex 'ut_metadata' -> ut_metadata()
     this._nextExt = 1
@@ -8251,13 +8293,14 @@ class Wire extends stream.Duplex {
     this._debug('destroy')
     this.emit('close')
     this.end()
+    return this
   }
 
   end (...args) {
     this._debug('end')
     this._onUninterested()
     this._onChoke()
-    super.end(...args)
+    return super.end(...args)
   }
 
   /**
@@ -8392,10 +8435,21 @@ class Wire extends stream.Duplex {
 
     const reserved = Buffer.from(MESSAGE_RESERVED)
 
-    // enable extended message
-    reserved[5] |= 0x10
+    this.extensions = {
+      extended: true,
+      dht: !!(extensions && extensions.dht),
+      fast: !!(extensions && extensions.fast)
+    }
 
-    if (extensions && extensions.dht) reserved[7] |= 1
+    reserved[5] |= 0x10 // enable extended message
+    if (this.extensions.dht) reserved[7] |= 0x01
+    if (this.extensions.fast) reserved[7] |= 0x04
+
+    // BEP6 Fast Extension: The extension is enabled only if both ends of the connection set this bit.
+    if (this.extensions.fast && this.peerExtensions.fast) {
+      this._debug('fast extension is enabled')
+      this.hasFast = true
+    }
 
     this._push(Buffer.concat([MESSAGE_PROTOCOL, reserved, infoHashBuffer, peerIdBuffer]))
     this._handshakeSent = true
@@ -8434,10 +8488,22 @@ class Wire extends stream.Duplex {
     if (this.amChoking) return
     this.amChoking = true
     this._debug('choke')
-    while (this.peerRequests.length) {
-      this.peerRequests.pop()
-    }
     this._push(MESSAGE_CHOKE)
+
+    if (this.hasFast) {
+      // BEP6: If a peer sends a choke, it MUST reject all requests from the peer to whom the choke
+      // was sent except it SHOULD NOT reject requests for pieces that are in the allowed fast set.
+      while (this.peerRequests.length) {
+        const request = this.peerRequests[0]
+        if (!this.allowedFastSet.includes(request.piece)) {
+          this.reject(request.piece, request.offset, request.length)
+        }
+      }
+    } else {
+      while (this.peerRequests.length) {
+        this.peerRequests.pop()
+      }
+    }
   }
 
   /**
@@ -8499,7 +8565,10 @@ class Wire extends stream.Duplex {
   request (index, offset, length, cb) {
     if (!cb) cb = () => {}
     if (this._finished) return cb(new Error('wire is closed'))
-    if (this.peerChoking) return cb(new Error('peer is choking'))
+
+    if (this.peerChoking && !(this.hasFast && this.peerAllowedFastSet.includes(index))) {
+      return cb(new Error('peer is choking'))
+    }
 
     this._debug('request index=%d offset=%d length=%d', index, offset, length)
 
@@ -8549,6 +8618,58 @@ class Wire extends stream.Duplex {
     const message = Buffer.from(MESSAGE_PORT)
     message.writeUInt16BE(port, 5)
     this._push(message)
+  }
+
+  /**
+   * Message: "suggest" <len=0x0005><id=0x0D><piece index> (BEP6)
+   * @param {number} index
+   */
+  suggest (index) {
+    if (!this.hasFast) throw Error('fast extension is disabled')
+    this._debug('suggest %d', index)
+    this._message(0x0D, [index], null)
+  }
+
+  /**
+   * Message: "have-all" <len=0x0001><id=0x0E> (BEP6)
+   */
+  haveAll () {
+    if (!this.hasFast) throw Error('fast extension is disabled')
+    this._debug('have-all')
+    this._push(MESSAGE_HAVE_ALL)
+  }
+
+  /**
+   * Message: "have-none" <len=0x0001><id=0x0F> (BEP6)
+   */
+  haveNone () {
+    if (!this.hasFast) throw Error('fast extension is disabled')
+    this._debug('have-none')
+    this._push(MESSAGE_HAVE_NONE)
+  }
+
+  /**
+   * Message "reject": <len=0x000D><id=0x10><index><offset><length> (BEP6)
+   * @param  {number}   index
+   * @param  {number}   offset
+   * @param  {number}   length
+   */
+  reject (index, offset, length) {
+    if (!this.hasFast) throw Error('fast extension is disabled')
+    this._debug('reject index=%d offset=%d length=%d', index, offset, length)
+    this._pull(this.peerRequests, index, offset, length)
+    this._message(0x10, [index, offset, length], null)
+  }
+
+  /**
+   * Message: "allowed-fast" <len=0x0005><id=0x11><piece index> (BEP6)
+   * @param {number} index
+   */
+  allowedFast (index) {
+    if (!this.hasFast) throw Error('fast extension is disabled')
+    this._debug('allowed-fast %d', index)
+    if (!this.allowedFastSet.includes(index)) this.allowedFastSet.push(index)
+    this._message(0x11, [index], null)
   }
 
   /**
@@ -8732,6 +8853,12 @@ class Wire extends stream.Duplex {
     this.peerIdBuffer = peerIdBuffer
     this.peerExtensions = extensions
 
+    // BEP6 Fast Extension: The extension is enabled only if both ends of the connection set this bit.
+    if (this.extensions.fast && this.peerExtensions.fast) {
+      this._debug('fast extension is enabled')
+      this.hasFast = true
+    }
+
     this.emit('handshake', infoHash, peerId, extensions)
 
     for (const name in this._ext) {
@@ -8749,8 +8876,11 @@ class Wire extends stream.Duplex {
     this.peerChoking = true
     this._debug('got choke')
     this.emit('choke')
-    while (this.requests.length) {
-      this._callback(this.requests.pop(), new Error('peer is choking'), null)
+    if (!this.hasFast) {
+      // BEP6 Fast Extension: Choke no longer implicitly rejects all pending requests
+      while (this.requests.length) {
+        this._callback(this.requests.pop(), new Error('peer is choking'), null)
+      }
     }
   }
 
@@ -8787,12 +8917,21 @@ class Wire extends stream.Duplex {
   }
 
   _onRequest (index, offset, length) {
-    if (this.amChoking) return
+    if (this.amChoking && !(this.hasFast && this.allowedFastSet.includes(index))) {
+      // BEP6: If a peer receives a request from a peer its choking, the peer receiving
+      // the request SHOULD send a reject unless the piece is in the allowed fast set.
+      if (this.hasFast) this.reject(index, offset, length)
+      return
+    }
     this._debug('got request index=%d offset=%d length=%d', index, offset, length)
 
     const respond = (err, buffer) => {
       if (request !== this._pull(this.peerRequests, index, offset, length)) return
-      if (err) return this._debug('error satisfying request index=%d offset=%d length=%d (%s)', index, offset, length, err.message)
+      if (err) {
+        this._debug('error satisfying request index=%d offset=%d length=%d (%s)', index, offset, length, err.message)
+        if (this.hasFast) this.reject(index, offset, length)
+        return
+      }
       this.piece(index, offset, buffer)
     }
 
@@ -8819,6 +8958,69 @@ class Wire extends stream.Duplex {
   _onPort (port) {
     this._debug('got port %d', port)
     this.emit('port', port)
+  }
+
+  _onSuggest (index) {
+    if (!this.hasFast) {
+      // BEP6: the peer MUST close the connection
+      this._debug('Error: got suggest whereas fast extension is disabled')
+      this.destroy()
+      return
+    }
+    this._debug('got suggest %d', index)
+    this.emit('suggest', index)
+  }
+
+  _onHaveAll () {
+    if (!this.hasFast) {
+      // BEP6: the peer MUST close the connection
+      this._debug('Error: got have-all whereas fast extension is disabled')
+      this.destroy()
+      return
+    }
+    this._debug('got have-all')
+    this.peerPieces = new HaveAllBitField()
+    this.emit('have-all')
+  }
+
+  _onHaveNone () {
+    if (!this.hasFast) {
+      // BEP6: the peer MUST close the connection
+      this._debug('Error: got have-none whereas fast extension is disabled')
+      this.destroy()
+      return
+    }
+    this._debug('got have-none')
+    this.emit('have-none')
+  }
+
+  _onReject (index, offset, length) {
+    if (!this.hasFast) {
+      // BEP6: the peer MUST close the connection
+      this._debug('Error: got reject whereas fast extension is disabled')
+      this.destroy()
+      return
+    }
+    this._debug('got reject index=%d offset=%d length=%d', index, offset, length)
+    this._callback(
+      this._pull(this.requests, index, offset, length),
+      new Error('request was rejected'),
+      null
+    )
+    this.emit('reject', index, offset, length)
+  }
+
+  _onAllowedFast (index) {
+    if (!this.hasFast) {
+      // BEP6: the peer MUST close the connection
+      this._debug('Error: got allowed-fast whereas fast extension is disabled')
+      this.destroy()
+      return
+    }
+    this._debug('got allowed-fast %d', index)
+    if (!this.peerAllowedFastSet.includes(index)) this.peerAllowedFastSet.push(index)
+    if (this.peerAllowedFastSet.length > ALLOWED_FAST_SET_MAX_LENGTH) this.peerAllowedFastSet.shift()
+    this.emit('allowed-fast', index)
   }
 
   _onExtended (ext, buf) {
@@ -9016,6 +9218,20 @@ class Wire extends stream.Duplex {
         )
       case 9:
         return this._onPort(buffer.readUInt16BE(1))
+      case 0x0D:
+        return this._onSuggest(buffer.readUInt32BE(1))
+      case 0x0E:
+        return this._onHaveAll()
+      case 0x0F:
+        return this._onHaveNone()
+      case 0x10:
+        return this._onReject(
+          buffer.readUInt32BE(1),
+          buffer.readUInt32BE(5),
+          buffer.readUInt32BE(9)
+        )
+      case 0x11:
+        return this._onAllowedFast(buffer.readUInt32BE(1))
       case 20:
         return this._onExtended(buffer.readUInt8(1), buffer.slice(2))
       default:
@@ -9133,6 +9349,7 @@ class Wire extends stream.Duplex {
     handshake = handshake.slice(19)
     this._onHandshake(handshake.slice(8, 28), handshake.slice(28, 48), {
       dht: !!(handshake[7] & 0x01), // see bep_0005
+      fast: !!(handshake[7] & 0x04), // see bep_0006
       extended: !!(handshake[5] & 0x10) // see bep_0010
     })
     this._parse(4, this._onMessageLength)
@@ -20978,6 +21195,10 @@ function parse(val) {
     unit = results[4].toLowerCase();
   }
 
+  if (isNaN(floatValue)) {
+    return null;
+  }
+
   return Math.floor(map[unit] * floatValue);
 }
 
@@ -21287,7 +21508,7 @@ module.exports = CipherBase
 
 },{"inherits":246,"safe-buffer":383,"stream":434,"string_decoder":472}],135:[function(require,module,exports){
 /*!
- * clipboard.js v2.0.8
+ * clipboard.js v2.0.10
  * https://clipboardjs.com/
  *
  * Licensed MIT © Zeno Rocha
@@ -21305,7 +21526,7 @@ module.exports = CipherBase
 return /******/ (function() { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 134:
+/***/ 686:
 /***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -21324,264 +21545,155 @@ var listen_default = /*#__PURE__*/__webpack_require__.n(listen);
 // EXTERNAL MODULE: ./node_modules/select/src/select.js
 var src_select = __webpack_require__(817);
 var select_default = /*#__PURE__*/__webpack_require__.n(src_select);
-;// CONCATENATED MODULE: ./src/clipboard-action.js
+;// CONCATENATED MODULE: ./src/common/command.js
+/**
+ * Executes a given operation type.
+ * @param {String} type
+ * @return {Boolean}
+ */
+function command(type) {
+  try {
+    return document.execCommand(type);
+  } catch (err) {
+    return false;
+  }
+}
+;// CONCATENATED MODULE: ./src/actions/cut.js
+
+
+/**
+ * Cut action wrapper.
+ * @param {String|HTMLElement} target
+ * @return {String}
+ */
+
+var ClipboardActionCut = function ClipboardActionCut(target) {
+  var selectedText = select_default()(target);
+  command('cut');
+  return selectedText;
+};
+
+/* harmony default export */ var actions_cut = (ClipboardActionCut);
+;// CONCATENATED MODULE: ./src/common/create-fake-element.js
+/**
+ * Creates a fake textarea element with a value.
+ * @param {String} value
+ * @return {HTMLElement}
+ */
+function createFakeElement(value) {
+  var isRTL = document.documentElement.getAttribute('dir') === 'rtl';
+  var fakeElement = document.createElement('textarea'); // Prevent zooming on iOS
+
+  fakeElement.style.fontSize = '12pt'; // Reset box model
+
+  fakeElement.style.border = '0';
+  fakeElement.style.padding = '0';
+  fakeElement.style.margin = '0'; // Move element out of screen horizontally
+
+  fakeElement.style.position = 'absolute';
+  fakeElement.style[isRTL ? 'right' : 'left'] = '-9999px'; // Move element to the same position vertically
+
+  var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+  fakeElement.style.top = "".concat(yPosition, "px");
+  fakeElement.setAttribute('readonly', '');
+  fakeElement.value = value;
+  return fakeElement;
+}
+;// CONCATENATED MODULE: ./src/actions/copy.js
+
+
+
+/**
+ * Copy action wrapper.
+ * @param {String|HTMLElement} target
+ * @param {Object} options
+ * @return {String}
+ */
+
+var ClipboardActionCopy = function ClipboardActionCopy(target) {
+  var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
+    container: document.body
+  };
+  var selectedText = '';
+
+  if (typeof target === 'string') {
+    var fakeElement = createFakeElement(target);
+    options.container.appendChild(fakeElement);
+    selectedText = select_default()(fakeElement);
+    command('copy');
+    fakeElement.remove();
+  } else {
+    selectedText = select_default()(target);
+    command('copy');
+  }
+
+  return selectedText;
+};
+
+/* harmony default export */ var actions_copy = (ClipboardActionCopy);
+;// CONCATENATED MODULE: ./src/actions/default.js
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+
+
+/**
+ * Inner function which performs selection from either `text` or `target`
+ * properties and then executes copy or cut operations.
+ * @param {Object} options
+ */
+
+var ClipboardActionDefault = function ClipboardActionDefault() {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // Defines base properties passed from constructor.
+  var _options$action = options.action,
+      action = _options$action === void 0 ? 'copy' : _options$action,
+      container = options.container,
+      target = options.target,
+      text = options.text; // Sets the `action` to be performed which can be either 'copy' or 'cut'.
+
+  if (action !== 'copy' && action !== 'cut') {
+    throw new Error('Invalid "action" value, use either "copy" or "cut"');
+  } // Sets the `target` property using an element that will be have its content copied.
+
+
+  if (target !== undefined) {
+    if (target && _typeof(target) === 'object' && target.nodeType === 1) {
+      if (action === 'copy' && target.hasAttribute('disabled')) {
+        throw new Error('Invalid "target" attribute. Please use "readonly" instead of "disabled" attribute');
+      }
+
+      if (action === 'cut' && (target.hasAttribute('readonly') || target.hasAttribute('disabled'))) {
+        throw new Error('Invalid "target" attribute. You can\'t cut text from elements with "readonly" or "disabled" attributes');
+      }
+    } else {
+      throw new Error('Invalid "target" value, use a valid Element');
+    }
+  } // Define selection strategy based on `text` property.
+
+
+  if (text) {
+    return actions_copy(text, {
+      container: container
+    });
+  } // Defines which selection strategy based on `target` property.
+
+
+  if (target) {
+    return action === 'cut' ? actions_cut(target) : actions_copy(target, {
+      container: container
+    });
+  }
+};
+
+/* harmony default export */ var actions_default = (ClipboardActionDefault);
+;// CONCATENATED MODULE: ./src/clipboard.js
+function clipboard_typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { clipboard_typeof = function _typeof(obj) { return typeof obj; }; } else { clipboard_typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return clipboard_typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
-
-
-/**
- * Inner class which performs selection from either `text` or `target`
- * properties and then executes copy or cut operations.
- */
-
-var ClipboardAction = /*#__PURE__*/function () {
-  /**
-   * @param {Object} options
-   */
-  function ClipboardAction(options) {
-    _classCallCheck(this, ClipboardAction);
-
-    this.resolveOptions(options);
-    this.initSelection();
-  }
-  /**
-   * Defines base properties passed from constructor.
-   * @param {Object} options
-   */
-
-
-  _createClass(ClipboardAction, [{
-    key: "resolveOptions",
-    value: function resolveOptions() {
-      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-      this.action = options.action;
-      this.container = options.container;
-      this.emitter = options.emitter;
-      this.target = options.target;
-      this.text = options.text;
-      this.trigger = options.trigger;
-      this.selectedText = '';
-    }
-    /**
-     * Decides which selection strategy is going to be applied based
-     * on the existence of `text` and `target` properties.
-     */
-
-  }, {
-    key: "initSelection",
-    value: function initSelection() {
-      if (this.text) {
-        this.selectFake();
-      } else if (this.target) {
-        this.selectTarget();
-      }
-    }
-    /**
-     * Creates a fake textarea element, sets its value from `text` property,
-     */
-
-  }, {
-    key: "createFakeElement",
-    value: function createFakeElement() {
-      var isRTL = document.documentElement.getAttribute('dir') === 'rtl';
-      this.fakeElem = document.createElement('textarea'); // Prevent zooming on iOS
-
-      this.fakeElem.style.fontSize = '12pt'; // Reset box model
-
-      this.fakeElem.style.border = '0';
-      this.fakeElem.style.padding = '0';
-      this.fakeElem.style.margin = '0'; // Move element out of screen horizontally
-
-      this.fakeElem.style.position = 'absolute';
-      this.fakeElem.style[isRTL ? 'right' : 'left'] = '-9999px'; // Move element to the same position vertically
-
-      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
-      this.fakeElem.style.top = "".concat(yPosition, "px");
-      this.fakeElem.setAttribute('readonly', '');
-      this.fakeElem.value = this.text;
-      return this.fakeElem;
-    }
-    /**
-     * Get's the value of fakeElem,
-     * and makes a selection on it.
-     */
-
-  }, {
-    key: "selectFake",
-    value: function selectFake() {
-      var _this = this;
-
-      var fakeElem = this.createFakeElement();
-
-      this.fakeHandlerCallback = function () {
-        return _this.removeFake();
-      };
-
-      this.fakeHandler = this.container.addEventListener('click', this.fakeHandlerCallback) || true;
-      this.container.appendChild(fakeElem);
-      this.selectedText = select_default()(fakeElem);
-      this.copyText();
-      this.removeFake();
-    }
-    /**
-     * Only removes the fake element after another click event, that way
-     * a user can hit `Ctrl+C` to copy because selection still exists.
-     */
-
-  }, {
-    key: "removeFake",
-    value: function removeFake() {
-      if (this.fakeHandler) {
-        this.container.removeEventListener('click', this.fakeHandlerCallback);
-        this.fakeHandler = null;
-        this.fakeHandlerCallback = null;
-      }
-
-      if (this.fakeElem) {
-        this.container.removeChild(this.fakeElem);
-        this.fakeElem = null;
-      }
-    }
-    /**
-     * Selects the content from element passed on `target` property.
-     */
-
-  }, {
-    key: "selectTarget",
-    value: function selectTarget() {
-      this.selectedText = select_default()(this.target);
-      this.copyText();
-    }
-    /**
-     * Executes the copy operation based on the current selection.
-     */
-
-  }, {
-    key: "copyText",
-    value: function copyText() {
-      var succeeded;
-
-      try {
-        succeeded = document.execCommand(this.action);
-      } catch (err) {
-        succeeded = false;
-      }
-
-      this.handleResult(succeeded);
-    }
-    /**
-     * Fires an event based on the copy operation result.
-     * @param {Boolean} succeeded
-     */
-
-  }, {
-    key: "handleResult",
-    value: function handleResult(succeeded) {
-      this.emitter.emit(succeeded ? 'success' : 'error', {
-        action: this.action,
-        text: this.selectedText,
-        trigger: this.trigger,
-        clearSelection: this.clearSelection.bind(this)
-      });
-    }
-    /**
-     * Moves focus away from `target` and back to the trigger, removes current selection.
-     */
-
-  }, {
-    key: "clearSelection",
-    value: function clearSelection() {
-      if (this.trigger) {
-        this.trigger.focus();
-      }
-
-      document.activeElement.blur();
-      window.getSelection().removeAllRanges();
-    }
-    /**
-     * Sets the `action` to be performed which can be either 'copy' or 'cut'.
-     * @param {String} action
-     */
-
-  }, {
-    key: "destroy",
-
-    /**
-     * Destroy lifecycle.
-     */
-    value: function destroy() {
-      this.removeFake();
-    }
-  }, {
-    key: "action",
-    set: function set() {
-      var action = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'copy';
-      this._action = action;
-
-      if (this._action !== 'copy' && this._action !== 'cut') {
-        throw new Error('Invalid "action" value, use either "copy" or "cut"');
-      }
-    }
-    /**
-     * Gets the `action` property.
-     * @return {String}
-     */
-    ,
-    get: function get() {
-      return this._action;
-    }
-    /**
-     * Sets the `target` property using an element
-     * that will be have its content copied.
-     * @param {Element} target
-     */
-
-  }, {
-    key: "target",
-    set: function set(target) {
-      if (target !== undefined) {
-        if (target && _typeof(target) === 'object' && target.nodeType === 1) {
-          if (this.action === 'copy' && target.hasAttribute('disabled')) {
-            throw new Error('Invalid "target" attribute. Please use "readonly" instead of "disabled" attribute');
-          }
-
-          if (this.action === 'cut' && (target.hasAttribute('readonly') || target.hasAttribute('disabled'))) {
-            throw new Error('Invalid "target" attribute. You can\'t cut text from elements with "readonly" or "disabled" attributes');
-          }
-
-          this._target = target;
-        } else {
-          throw new Error('Invalid "target" value, use a valid Element');
-        }
-      }
-    }
-    /**
-     * Gets the `target` property.
-     * @return {String|HTMLElement}
-     */
-    ,
-    get: function get() {
-      return this._target;
-    }
-  }]);
-
-  return ClipboardAction;
-}();
-
-/* harmony default export */ var clipboard_action = (ClipboardAction);
-;// CONCATENATED MODULE: ./src/clipboard.js
-function clipboard_typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { clipboard_typeof = function _typeof(obj) { return typeof obj; }; } else { clipboard_typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return clipboard_typeof(obj); }
-
-function clipboard_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function clipboard_defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
-
-function clipboard_createClass(Constructor, protoProps, staticProps) { if (protoProps) clipboard_defineProperties(Constructor.prototype, protoProps); if (staticProps) clipboard_defineProperties(Constructor, staticProps); return Constructor; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
 
@@ -21596,6 +21708,8 @@ function _assertThisInitialized(self) { if (self === void 0) { throw new Referen
 function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Date.prototype.toString.call(Reflect.construct(Date, [], function () {})); return true; } catch (e) { return false; } }
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+
 
 
 
@@ -21633,7 +21747,7 @@ var Clipboard = /*#__PURE__*/function (_Emitter) {
   function Clipboard(trigger, options) {
     var _this;
 
-    clipboard_classCallCheck(this, Clipboard);
+    _classCallCheck(this, Clipboard);
 
     _this = _super.call(this);
 
@@ -21650,7 +21764,7 @@ var Clipboard = /*#__PURE__*/function (_Emitter) {
    */
 
 
-  clipboard_createClass(Clipboard, [{
+  _createClass(Clipboard, [{
     key: "resolveOptions",
     value: function resolveOptions() {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -21682,18 +21796,26 @@ var Clipboard = /*#__PURE__*/function (_Emitter) {
     key: "onClick",
     value: function onClick(e) {
       var trigger = e.delegateTarget || e.currentTarget;
-
-      if (this.clipboardAction) {
-        this.clipboardAction = null;
-      }
-
-      this.clipboardAction = new clipboard_action({
-        action: this.action(trigger),
-        target: this.target(trigger),
-        text: this.text(trigger),
+      var action = this.action(trigger) || 'copy';
+      var text = actions_default({
+        action: action,
         container: this.container,
+        target: this.target(trigger),
+        text: this.text(trigger)
+      }); // Fires an event based on the copy operation result.
+
+      this.emit(text ? 'success' : 'error', {
+        action: action,
+        text: text,
         trigger: trigger,
-        emitter: this
+        clearSelection: function clearSelection() {
+          if (trigger) {
+            trigger.focus();
+          }
+
+          document.activeElement.blur();
+          window.getSelection().removeAllRanges();
+        }
       });
     }
     /**
@@ -21721,9 +21843,10 @@ var Clipboard = /*#__PURE__*/function (_Emitter) {
       }
     }
     /**
-     * Returns the support of the given action, or all actions if no action is
-     * given.
-     * @param {String} [action]
+     * Allow fire programmatically a copy action
+     * @param {String|HTMLElement} target
+     * @param {Object} options
+     * @returns Text copied.
      */
 
   }, {
@@ -21744,13 +21867,33 @@ var Clipboard = /*#__PURE__*/function (_Emitter) {
     key: "destroy",
     value: function destroy() {
       this.listener.destroy();
-
-      if (this.clipboardAction) {
-        this.clipboardAction.destroy();
-        this.clipboardAction = null;
-      }
     }
   }], [{
+    key: "copy",
+    value: function copy(target) {
+      var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
+        container: document.body
+      };
+      return actions_copy(target, options);
+    }
+    /**
+     * Allow fire programmatically a cut action
+     * @param {String|HTMLElement} target
+     * @returns Text cutted.
+     */
+
+  }, {
+    key: "cut",
+    value: function cut(target) {
+      return actions_cut(target);
+    }
+    /**
+     * Returns the support of the given action, or all actions if no action is
+     * given.
+     * @param {String} [action]
+     */
+
+  }, {
     key: "isSupported",
     value: function isSupported() {
       var action = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ['copy', 'cut'];
@@ -22236,7 +22379,7 @@ module.exports.TinyEmitter = E;
 /******/ 	// module exports must be returned from runtime so entry inlining is disabled
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(134);
+/******/ 	return __webpack_require__(686);
 /******/ })()
 .default;
 });
@@ -29694,6 +29837,10 @@ module.exports = class FixedFIFO {
     return last
   }
 
+  peek () {
+    return this.buffer[this.btm]
+  }
+
   isEmpty () {
     return this.buffer[this.btm] === undefined
   }
@@ -29726,6 +29873,10 @@ module.exports = class FastFIFO {
       return this.tail.shift()
     }
     return val
+  }
+
+  peek () {
+    return this.tail.peek()
   }
 
   isEmpty () {
@@ -50192,12 +50343,20 @@ function simpleGet (opts, cb) {
   if (opts.json) opts.headers.accept = 'application/json'
   if (opts.method) opts.method = opts.method.toUpperCase()
 
+  const originalHost = opts.hostname // hostname before potential redirect
   const protocol = opts.protocol === 'https:' ? https : http // Support http/https urls
   const req = protocol.request(opts, res => {
     if (opts.followRedirects !== false && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
       opts.url = res.headers.location // Follow 3xx redirects
       delete opts.headers.host // Discard `host` header on redirect (see #32)
       res.resume() // Discard response
+
+      const redirectHost = url.parse(opts.url).hostname // eslint-disable-line node/no-deprecated-api
+      // If redirected host is different than original host, drop headers to prevent cookie leak (#73)
+      if (redirectHost !== null && redirectHost !== originalHost) {
+        delete opts.headers.cookie
+        delete opts.headers.authorization
+      }
 
       if (opts.method === 'POST' && [301, 302].includes(res.statusCode)) {
         opts.method = 'GET' // On 301/302 redirect, change POST to GET (see #35)
@@ -53098,7 +53257,7 @@ const WRITE_DRAIN_STATUS = WRITE_QUEUED | WRITE_UNDRAINED | OPEN_STATUS | WRITE_
 const WRITE_STATUS = OPEN_STATUS | WRITE_ACTIVE | WRITE_QUEUED
 const WRITE_PRIMARY_AND_ACTIVE = WRITE_PRIMARY | WRITE_ACTIVE
 const WRITE_ACTIVE_AND_SYNC = WRITE_ACTIVE | WRITE_SYNC
-const WRITE_FINISHING_STATUS = OPEN_STATUS | WRITE_FINISHING | WRITE_QUEUED
+const WRITE_FINISHING_STATUS = OPEN_STATUS | WRITE_FINISHING | WRITE_QUEUED_AND_ACTIVE | WRITE_DONE
 const WRITE_BACKPRESSURE_STATUS = WRITE_UNDRAINED | DESTROY_STATUS | WRITE_FINISHING | WRITE_DONE
 
 const asyncIterator = Symbol.asyncIterator || Symbol('asyncIterator')
@@ -53659,6 +53818,7 @@ class Readable extends Stream {
         destroy = ite.return()
       },
       destroy (cb) {
+        if (!destroy) return cb(null)
         destroy.then(cb.bind(null, null)).catch(cb)
       }
     })
@@ -59467,7 +59627,9 @@ class WebTorrent extends EventEmitter {
 
           const existingTorrent = this.get(torrentBuf)
           if (existingTorrent) {
-            torrent._destroy(new Error(`Cannot add duplicate torrent ${existingTorrent.infoHash}`))
+            console.warn('A torrent with the same id is already being seeded')
+            torrent._destroy()
+            if (typeof onseed === 'function') onseed(existingTorrent)
           } else {
             torrent._onTorrentId(torrentBuf)
           }
@@ -60315,7 +60477,8 @@ class Peer extends EventEmitter {
 
   handshake () {
     const opts = {
-      dht: this.swarm.private ? false : !!this.swarm.client.dht
+      dht: this.swarm.private ? false : !!this.swarm.client.dht,
+      fast: true
     }
     this.wire.handshake(this.swarm.infoHash, this.swarm.client.peerId, opts)
     this.sentHandshake = true
@@ -61138,6 +61301,28 @@ class Torrent extends EventEmitter {
     this.bitfield.set(index, true)
   }
 
+  _hasAllPieces () {
+    for (let index = 0; index < this.pieces.length; index++) {
+      if (!this.bitfield.get(index)) return false
+    }
+    return true
+  }
+
+  _hasNoPieces () {
+    return !this._hasMorePieces(0)
+  }
+
+  _hasMorePieces (threshold) {
+    let count = 0
+    for (let index = 0; index < this.pieces.length; index++) {
+      if (this.bitfield.get(index)) {
+        count += 1
+        if (count > threshold) return true
+      }
+    }
+    return false
+  }
+
   /**
    * Called when the metadata, listening server, and underlying chunk store is initialized.
    */
@@ -61627,6 +61812,26 @@ class Torrent extends EventEmitter {
       this._updateWireInterest(wire)
     })
 
+    // fast extension (BEP6)
+    wire.on('have-all', () => {
+      wire.isSeeder = true
+      wire.choke() // always choke seeders
+      this._update()
+      this._updateWireInterest(wire)
+    })
+
+    // fast extension (BEP6)
+    wire.on('have-none', () => {
+      wire.isSeeder = false
+      this._update()
+      this._updateWireInterest(wire)
+    })
+
+    // fast extension (BEP6)
+    wire.on('allowed-fast', (index) => {
+      this._update()
+    })
+
     wire.once('interested', () => {
       wire.unchoke()
     })
@@ -61655,7 +61860,10 @@ class Torrent extends EventEmitter {
       this.store.get(index, { offset, length }, cb)
     })
 
-    wire.bitfield(this.bitfield) // always send bitfield (required)
+    // always send bitfield or equivalent fast extension message (required)
+    if (wire.hasFast && this._hasAllPieces()) wire.haveAll()
+    else if (wire.hasFast && this._hasNoPieces()) wire.haveNone()
+    else wire.bitfield(this.bitfield)
 
     // initialize interest in case bitfield message was already received before above handler was registered
     this._updateWireInterest(wire)
@@ -61772,14 +61980,41 @@ class Torrent extends EventEmitter {
     // to allow function hoisting
     const self = this
 
-    if (wire.peerChoking) return
-    if (!wire.downloaded) return validateWire()
-
     const minOutstandingRequests = getBlockPipelineLength(wire, PIPELINE_MIN_DURATION)
     if (wire.requests.length >= minOutstandingRequests) return
     const maxOutstandingRequests = getBlockPipelineLength(wire, PIPELINE_MAX_DURATION)
 
+    if (wire.peerChoking) {
+      if (wire.hasFast && wire.peerAllowedFastSet.length > 0 &&
+        !this._hasMorePieces(wire.peerAllowedFastSet.length - 1)) {
+        requestAllowedFastSet()
+      }
+      return
+    }
+
+    if (!wire.downloaded) return validateWire()
+
     trySelectWire(false) || trySelectWire(true)
+
+    function requestAllowedFastSet () {
+      if (wire.requests.length >= maxOutstandingRequests) return false
+
+      for (const piece of wire.peerAllowedFastSet) {
+        if (wire.peerPieces.get(piece) && !self.bitfield.get(piece)) {
+          while (self._request(wire, piece, false) &&
+            wire.requests.length < maxOutstandingRequests) {
+            // body intentionally empty
+            // request all non-reserved blocks in this piece
+          }
+        }
+
+        if (wire.requests.length < maxOutstandingRequests) continue
+
+        return true
+      }
+
+      return false
+    }
 
     function genPieceFilterFunc (start, end, tried, rank) {
       return i => i >= start && i <= end && !(i in tried) && wire.peerPieces.get(i) && (!rank || rank(i))
@@ -61880,7 +62115,8 @@ class Torrent extends EventEmitter {
             piece = self._rarityMap.getRarestPiece(filter)
             if (piece < 0) break
 
-            while (self._request(wire, piece, self._critical[piece] || hotswap)) {
+            while (self._request(wire, piece, self._critical[piece] || hotswap) &&
+              wire.requests.length < maxOutstandingRequests) {
               // body intentionally empty
               // request all non-reserved blocks in this piece
             }
@@ -61898,7 +62134,8 @@ class Torrent extends EventEmitter {
           for (piece = next.from + next.offset; piece <= next.to; piece++) {
             if (!wire.peerPieces.get(piece) || !rank(piece)) continue
 
-            while (self._request(wire, piece, self._critical[piece] || hotswap)) {
+            while (self._request(wire, piece, self._critical[piece] || hotswap) &&
+              wire.requests.length < maxOutstandingRequests) {
               // body intentionally empty
               // request all non-reserved blocks in piece
             }
@@ -62336,7 +62573,17 @@ class Torrent extends EventEmitter {
 }
 
 function getBlockPipelineLength (wire, duration) {
-  return 2 + Math.ceil(duration * wire.downloadSpeed() / Piece.BLOCK_LENGTH)
+  let length = 2 + Math.ceil(duration * wire.downloadSpeed() / Piece.BLOCK_LENGTH)
+
+  // Honor reqq (maximum number of outstanding request messages) if specified by peer
+  if (wire.peerExtendedHandshake) {
+    const reqq = wire.peerExtendedHandshake.reqq
+    if (typeof reqq === 'number' && reqq > 0) {
+      length = Math.min(length, reqq)
+    }
+  }
+
+  return length
 }
 
 function getPiecePipelineLength (wire, duration, pieceLength) {
@@ -62578,7 +62825,7 @@ module.exports = WebConn
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"../package.json":495,"bitfield":27,"bittorrent-protocol":28,"buffer":110,"debug":161,"lt_donthave":256,"simple-get":394,"simple-sha1":411}],495:[function(require,module,exports){
 module.exports={
-  "version": "1.5.8"
+  "version": "1.8.3"
 }
 },{}],496:[function(require,module,exports){
 // Returns a wrapper function that returns a wrapped callback
