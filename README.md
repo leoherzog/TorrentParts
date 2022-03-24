@@ -47,9 +47,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 <a href="https://twitter.com/xd1936" target="_blank">
   <img src="https://herzog.tech/signature/twitter.svg.png" width="32px" />
 </a>
-<a href="https://facebook.com/xd1936" target="_blank">
-  <img src="https://herzog.tech/signature/facebook.svg.png" width="32px" />
-</a>
 <a href="https://github.com/leoherzog" target="_blank">
   <img src="https://herzog.tech/signature/github.svg.png" width="32px" />
 </a>
