@@ -5,19 +5,19 @@
   "main": "bin/bundle.js",
   "dependencies": {
     "browserify": "^17.0.0",
-    "bytes": "^3.1.0",
-    "clipboard": "^2.0.8",
+    "bytes": "^3.1.2",
+    "clipboard": "^2.0.10",
     "magnet-uri": "^6.2.0",
-    "mime-types": "^2.1.34",
+    "mime-types": "^2.1.35",
     "parse-torrent": "^9.1.4",
-    "tippy.js": "^6.3.6",
-    "webtorrent": "^1.5.8"
+    "tippy.js": "^6.3.7",
+    "webtorrent": "^1.8.6"
   },
   "devDependencies": {
-    "Buffer": "0.0.0",
     "buffer": "^6.0.3",
+    "Buffer": "npm:buffer@^6.0.3",
     "notyf": "^3.10.0",
-    "terser": "^5.9.0",
+    "terser": "^5.12.1",
     "watchify": "^4.0.0"
   },
   "scripts": {
