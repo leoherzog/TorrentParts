@@ -1,6 +1,6 @@
+require('buffer');
 const clipboard = require('clipboard');
 const parser = require('parse-torrent');
-const Buffer = require('Buffer');
 const bytes = require('bytes');
 const mime = require('mime-types');
 const WebTorrent = require('webtorrent');

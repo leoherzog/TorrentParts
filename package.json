@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "buffer": "^6.0.3",
-    "Buffer": "npm:buffer@^6.0.3",
     "notyf": "^3.10.0",
     "terser": "^5.12.1",
     "watchify": "^4.0.0"
