@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (process){(function (){
 /**
- * @popperjs/core v2.11.4 - MIT License
+ * @popperjs/core v2.11.5 - MIT License
  */
 
 'use strict';
@@ -7967,9 +7967,9 @@ var BitField = /** @class */ (function () {
         var j = i >> 3;
         if (value) {
             if (this.buffer.length < j + 1) {
-                var length_1 = Math.max(j + 1, Math.min(2 * this.buffer.length, this.grow));
-                if (length_1 <= this.grow) {
-                    var newBuffer = new Uint8Array(length_1);
+                var length = Math.max(j + 1, Math.min(2 * this.buffer.length, this.grow));
+                if (length <= this.grow) {
+                    var newBuffer = new Uint8Array(length);
                     newBuffer.set(this.buffer);
                     this.buffer = newBuffer;
                 }
@@ -8395,10 +8395,13 @@ class Wire extends stream.Duplex {
     if (this.hasFast) {
       // BEP6: If a peer sends a choke, it MUST reject all requests from the peer to whom the choke
       // was sent except it SHOULD NOT reject requests for pieces that are in the allowed fast set.
-      while (this.peerRequests.length) {
-        const request = this.peerRequests[0]
-        if (!this.allowedFastSet.includes(request.piece)) {
-          this.reject(request.piece, request.offset, request.length)
+      let allowedCount = 0
+      while (this.peerRequests.length > allowedCount) { // until only allowed requests are left
+        const request = this.peerRequests[allowedCount] // first non-allowed request
+        if (this.allowedFastSet.includes(request.piece)) {
+          ++allowedCount // count request as allowed
+        } else {
+          this.reject(request.piece, request.offset, request.length) // removes from this.peerRequests
         }
       }
     } else {
@@ -13107,6 +13110,7 @@ class WebSocketTracker extends Tracker {
         clearTimeout(peer.trackerTimeout)
         peer.trackerTimeout = null
         delete this.peers[offerId]
+        peer.destroy()
       } else {
         debug(`got unexpected answer: ${JSON.stringify(data.answer)}`)
       }
@@ -59372,7 +59376,7 @@ class WebTorrent extends EventEmitter {
           }
           port.postMessage(chunk)
           if (!chunk) cleanup()
-          if (!this.workerKeepAliveInterval) this.workerKeepAliveInterval = setInterval(() => fetch(`${this.serviceWorker.scriptURL.substr(0, this.serviceWorker.scriptURL.lastIndexOf('/') + 1).slice(window.location.origin.length)}webtorrent/keepalive/`), keepAliveTime)
+          if (!this.workerKeepAliveInterval) this.workerKeepAliveInterval = setInterval(() => fetch(`${this.serviceWorker.scriptURL.slice(0, this.serviceWorker.scriptURL.lastIndexOf('/') + 1).slice(window.location.origin.length)}webtorrent/keepalive/`), keepAliveTime)
         } else {
           cleanup()
         }
@@ -60040,7 +60044,7 @@ class File extends EventEmitter {
     if (typeof window === 'undefined') throw new Error('browser-only method')
     if (!this._serviceWorker) throw new Error('No worker registered')
     if (this._serviceWorker.state !== 'activated') throw new Error('Worker isn\'t activated')
-    const workerPath = this._serviceWorker.scriptURL.substr(0, this._serviceWorker.scriptURL.lastIndexOf('/') + 1).slice(window.location.origin.length)
+    const workerPath = this._serviceWorker.scriptURL.slice(0, this._serviceWorker.scriptURL.lastIndexOf('/') + 1).slice(window.location.origin.length)
     const url = `${workerPath}webtorrent/${this._torrent.infoHash}/${encodeURI(this.path)}`
     cb(null, url)
   }
@@ -60049,7 +60053,7 @@ class File extends EventEmitter {
     if (typeof window === 'undefined') throw new Error('browser-only method')
     if (!this._serviceWorker) throw new Error('No worker registered')
     if (this._serviceWorker.state !== 'activated') throw new Error('Worker isn\'t activated')
-    const workerPath = this._serviceWorker.scriptURL.substr(0, this._serviceWorker.scriptURL.lastIndexOf('/') + 1).slice(window.location.origin.length)
+    const workerPath = this._serviceWorker.scriptURL.slice(0, this._serviceWorker.scriptURL.lastIndexOf('/') + 1).slice(window.location.origin.length)
     elem.src = `${workerPath}webtorrent/${this._torrent.infoHash}/${encodeURI(this.path)}`
     cb(null, elem)
   }
@@ -61104,14 +61108,6 @@ class Torrent extends EventEmitter {
 
     this.bitfield = new BitField(this.pieces.length)
 
-    this.wires.forEach(wire => {
-      // If we didn't have the metadata at the time ut_metadata was initialized for this
-      // wire, we still want to make it available to the peer in case they request it.
-      if (wire.ut_metadata) wire.ut_metadata.setMetadata(this.metadata)
-
-      this._onWireWithMetadata(wire)
-    })
-
     // Emit 'metadata' before 'ready' and 'done'
     this.emit('metadata')
 
@@ -61265,6 +61261,15 @@ class Torrent extends EventEmitter {
 
     // In case any selections were made before torrent was ready
     this._updateSelections()
+
+    // Start requesting pieces after we have initially verified them
+    this.wires.forEach(wire => {
+      // If we didn't have the metadata at the time ut_metadata was initialized for this
+      // wire, we still want to make it available to the peer in case they request it.
+      if (wire.ut_metadata) wire.ut_metadata.setMetadata(this.metadata)
+
+      this._onWireWithMetadata(wire)
+    })
   }
 
   destroy (opts, cb) {
@@ -61684,7 +61689,7 @@ class Torrent extends EventEmitter {
     // More info: https://github.com/webtorrent/bittorrent-protocol#extension-api
     this.emit('wire', wire, addr)
 
-    if (this.metadata) {
+    if (this.ready) {
       queueMicrotask(() => {
         // This allows wire.handshake() to be called (by Peer.onHandshake) before any
         // messages get sent on the wire
@@ -62217,9 +62222,9 @@ class Torrent extends EventEmitter {
 
     const maxOutstandingRequests = isWebSeed
       ? Math.min(
-          getPiecePipelineLength(wire, PIPELINE_MAX_DURATION, self.pieceLength),
-          self.maxWebConns
-        )
+        getPiecePipelineLength(wire, PIPELINE_MAX_DURATION, self.pieceLength),
+        self.maxWebConns
+      )
       : getBlockPipelineLength(wire, PIPELINE_MAX_DURATION)
 
     if (numRequests >= maxOutstandingRequests) return false
@@ -62632,7 +62637,7 @@ class WebConn extends Wire {
         const fileEnd = requestedFile.offset + requestedFile.length - 1
         const url = this.url +
           (this.url[this.url.length - 1] === '/' ? '' : '/') +
-          requestedFile.path
+          requestedFile.path.replace(this._torrent.path, '')
         return {
           url,
           fileOffsetInRange: Math.max(requestedFile.offset - rangeStart, 0),
@@ -62749,7 +62754,7 @@ module.exports = WebConn
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"../package.json":494,"bitfield":26,"bittorrent-protocol":27,"buffer":109,"debug":160,"lt_donthave":255,"simple-get":393,"simple-sha1":410}],494:[function(require,module,exports){
 module.exports={
-  "version": "1.8.6"
+  "version": "1.8.14"
 }
 },{}],495:[function(require,module,exports){
 // Returns a wrapper function that returns a wrapped callback
@@ -62962,10 +62967,6 @@ function start() {
   copyurl.on('success', function(e) {
     notyf.success('Copied site URL to clipboard!');
     console.info(e);
-    gtag('event', 'share', {
-      "method": "Copy URL",
-      "content_id": e.text,
-    });
   });
   copyurl.on('failure', function(e) {
     notyf.error('Problem copying to clipboard');
@@ -62975,10 +62976,6 @@ function start() {
   let copymagnet = new clipboard('#copyMagnet');
   copymagnet.on('success', function(e) {
     notyf.success('Copied Magnet URL to clipboard!');
-    gtag('event', 'share', {
-      "method": "Copy Magnet",
-      "content_id": e.text,
-    });
   });
   copymagnet.on('failure', function(e) {
     notyf.error('Problem copying to clipboard');
@@ -63168,14 +63165,6 @@ function display() {
 
   sourceTooltip.enable();
 
-  gtag('event', 'view_item', {
-    items: [{
-      "item_id": parsed.infoHash,
-      "item_name": parsed.name,
-      "item_category": source
-    }]
-  });
-
 }
 
 function createFileRow(icon, name, size) {
@@ -63262,7 +63251,6 @@ function resetProperties() {
   copyMagnet.setAttribute('data-clipboard-text', '');
   document.title = 'Torrent Parts | Inspect and edit what\'s in your Torrent file or Magnet link';
   sourceTooltip.disable();
-  gtag('event', 'reset');
 }
 
 async function addCurrentTrackers() {
@@ -63285,7 +63273,6 @@ async function addCurrentTrackers() {
   addTrackers.className = '';
   addTrackers.innerHTML = 'Add Known Working Trackers';
   display();
-  gtag('event', 'add_trackers');
 }
 
 function addRow() {
@@ -63336,7 +63323,6 @@ function getFilesFromPeers() {
     torrent.destroy();
   });
   display();
-  gtag('event', 'attempt_webtorrent_fetch');
 }
 
 // https://stackoverflow.com/a/36899900/2700296
@@ -63353,10 +63339,6 @@ function saveTorrent() {
   a.click();
   window.URL.revokeObjectURL(url);
   a.remove();
-  gtag('event', 'share', {
-    "method": "Torrent Download",
-    "content_id": parsed.name
-  });
 }
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"buffer":109,"bytes":115,"clipboard":134,"mime-types":279,"parse-torrent":331,"tippy.js":474,"webtorrent":487}]},{},[497]);

@@ -151,10 +151,6 @@ function start() {
   copyurl.on('success', function(e) {
     notyf.success('Copied site URL to clipboard!');
     console.info(e);
-    gtag('event', 'share', {
-      "method": "Copy URL",
-      "content_id": e.text,
-    });
   });
   copyurl.on('failure', function(e) {
     notyf.error('Problem copying to clipboard');
@@ -164,10 +160,6 @@ function start() {
   let copymagnet = new clipboard('#copyMagnet');
   copymagnet.on('success', function(e) {
     notyf.success('Copied Magnet URL to clipboard!');
-    gtag('event', 'share', {
-      "method": "Copy Magnet",
-      "content_id": e.text,
-    });
   });
   copymagnet.on('failure', function(e) {
     notyf.error('Problem copying to clipboard');
@@ -357,14 +349,6 @@ function display() {
 
   sourceTooltip.enable();
 
-  gtag('event', 'view_item', {
-    items: [{
-      "item_id": parsed.infoHash,
-      "item_name": parsed.name,
-      "item_category": source
-    }]
-  });
-
 }
 
 function createFileRow(icon, name, size) {
@@ -451,7 +435,6 @@ function resetProperties() {
   copyMagnet.setAttribute('data-clipboard-text', '');
   document.title = 'Torrent Parts | Inspect and edit what\'s in your Torrent file or Magnet link';
   sourceTooltip.disable();
-  gtag('event', 'reset');
 }
 
 async function addCurrentTrackers() {
@@ -474,7 +457,6 @@ async function addCurrentTrackers() {
   addTrackers.className = '';
   addTrackers.innerHTML = 'Add Known Working Trackers';
   display();
-  gtag('event', 'add_trackers');
 }
 
 function addRow() {
@@ -525,7 +507,6 @@ function getFilesFromPeers() {
     torrent.destroy();
   });
   display();
-  gtag('event', 'attempt_webtorrent_fetch');
 }
 
 // https://stackoverflow.com/a/36899900/2700296
@@ -542,8 +523,4 @@ function saveTorrent() {
   a.click();
   window.URL.revokeObjectURL(url);
   a.remove();
-  gtag('event', 'share', {
-    "method": "Torrent Download",
-    "content_id": parsed.name
-  });
 }
