@@ -9361,7 +9361,7 @@ class Wire extends stream.Duplex {
 module.exports = Wire
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bencode":22,"bitfield":26,"buffer":109,"crypto":159,"debug":160,"randombytes":356,"rc4":375,"readable-stream":42,"simple-sha1":410,"speedometer":432,"unordered-array-remove":480}],28:[function(require,module,exports){
+},{"bencode":22,"bitfield":26,"buffer":109,"crypto":159,"debug":160,"randombytes":356,"rc4":375,"readable-stream":42,"simple-sha1":410,"speedometer":432,"unordered-array-remove":481}],28:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -11701,7 +11701,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":28,"./_stream_duplex":29,"./internal/streams/destroy":36,"./internal/streams/state":40,"./internal/streams/stream":41,"_process":340,"buffer":109,"inherits":245,"util-deprecate":484}],34:[function(require,module,exports){
+},{"../errors":28,"./_stream_duplex":29,"./internal/streams/destroy":36,"./internal/streams/state":40,"./internal/streams/stream":41,"_process":340,"buffer":109,"inherits":245,"util-deprecate":485}],34:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -13110,7 +13110,6 @@ class WebSocketTracker extends Tracker {
         clearTimeout(peer.trackerTimeout)
         peer.trackerTimeout = null
         delete this.peers[offerId]
-        peer.destroy()
       } else {
         debug(`got unexpected answer: ${JSON.stringify(data.answer)}`)
       }
@@ -13415,7 +13414,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":49,"./_stream_duplex":50,"dup":32,"inherits":245}],54:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":49,"./_stream_duplex":50,"./internal/streams/destroy":57,"./internal/streams/state":61,"./internal/streams/stream":62,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],55:[function(require,module,exports){
+},{"../errors":49,"./_stream_duplex":50,"./internal/streams/destroy":57,"./internal/streams/state":61,"./internal/streams/stream":62,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],55:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":58,"_process":340,"dup":34}],56:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -18883,7 +18882,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":94,"./_stream_duplex":95,"dup":32,"inherits":245}],99:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":94,"./_stream_duplex":95,"./internal/streams/destroy":102,"./internal/streams/state":106,"./internal/streams/stream":107,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],100:[function(require,module,exports){
+},{"../errors":94,"./_stream_duplex":95,"./internal/streams/destroy":102,"./internal/streams/state":106,"./internal/streams/stream":107,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],100:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":103,"_process":340,"dup":34}],101:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -21224,7 +21223,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":117,"./_stream_duplex":118,"dup":32,"inherits":245}],122:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":117,"./_stream_duplex":118,"./internal/streams/destroy":125,"./internal/streams/state":129,"./internal/streams/stream":130,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],123:[function(require,module,exports){
+},{"../errors":117,"./_stream_duplex":118,"./internal/streams/destroy":125,"./internal/streams/state":129,"./internal/streams/stream":130,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],123:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":126,"_process":340,"dup":34}],124:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -21414,7 +21413,7 @@ module.exports = CipherBase
 
 },{"inherits":245,"safe-buffer":382,"stream":433,"string_decoder":471}],134:[function(require,module,exports){
 /*!
- * clipboard.js v2.0.10
+ * clipboard.js v2.0.11
  * https://clipboardjs.com/
  *
  * Licensed MIT © Zeno Rocha
@@ -21510,11 +21509,27 @@ function createFakeElement(value) {
 
 
 /**
+ * Create fake copy action wrapper using a fake element.
+ * @param {String} target
+ * @param {Object} options
+ * @return {String}
+ */
+
+var fakeCopyAction = function fakeCopyAction(value, options) {
+  var fakeElement = createFakeElement(value);
+  options.container.appendChild(fakeElement);
+  var selectedText = select_default()(fakeElement);
+  command('copy');
+  fakeElement.remove();
+  return selectedText;
+};
+/**
  * Copy action wrapper.
  * @param {String|HTMLElement} target
  * @param {Object} options
  * @return {String}
  */
+
 
 var ClipboardActionCopy = function ClipboardActionCopy(target) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
@@ -21523,11 +21538,10 @@ var ClipboardActionCopy = function ClipboardActionCopy(target) {
   var selectedText = '';
 
   if (typeof target === 'string') {
-    var fakeElement = createFakeElement(target);
-    options.container.appendChild(fakeElement);
-    selectedText = select_default()(fakeElement);
-    command('copy');
-    fakeElement.remove();
+    selectedText = fakeCopyAction(target, options);
+  } else if (target instanceof HTMLInputElement && !['text', 'search', 'url', 'tel', 'password'].includes(target === null || target === void 0 ? void 0 : target.type)) {
+    // If input type doesn't support `setSelectionRange`. Simulate it. https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/setSelectionRange
+    selectedText = fakeCopyAction(target.value, options);
   } else {
     selectedText = select_default()(target);
     command('copy');
@@ -21719,7 +21733,6 @@ var Clipboard = /*#__PURE__*/function (_Emitter) {
             trigger.focus();
           }
 
-          document.activeElement.blur();
           window.getSelection().removeAllRanges();
         }
       });
@@ -23316,7 +23329,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":144,"./_stream_duplex":145,"dup":32,"inherits":245}],149:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":144,"./_stream_duplex":145,"./internal/streams/destroy":152,"./internal/streams/state":156,"./internal/streams/stream":157,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],150:[function(require,module,exports){
+},{"../errors":144,"./_stream_duplex":145,"./internal/streams/destroy":152,"./internal/streams/state":156,"./internal/streams/stream":157,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],150:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":153,"_process":340,"dup":34}],151:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -29773,7 +29786,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":196,"./_stream_duplex":197,"dup":32,"inherits":245}],201:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":196,"./_stream_duplex":197,"./internal/streams/destroy":204,"./internal/streams/state":208,"./internal/streams/stream":209,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],202:[function(require,module,exports){
+},{"../errors":196,"./_stream_duplex":197,"./internal/streams/destroy":204,"./internal/streams/state":208,"./internal/streams/stream":209,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],202:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":205,"_process":340,"dup":34}],203:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -29877,7 +29890,7 @@ class FileReadStream extends Readable {
 
 module.exports = FileReadStream
 
-},{"readable-stream":210,"typedarray-to-buffer":478}],212:[function(require,module,exports){
+},{"readable-stream":210,"typedarray-to-buffer":479}],212:[function(require,module,exports){
 // originally pulled out of simple-peer
 
 module.exports = function getBrowserRTC () {
@@ -30003,7 +30016,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":214,"./_stream_duplex":215,"dup":32,"inherits":245}],219:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":214,"./_stream_duplex":215,"./internal/streams/destroy":222,"./internal/streams/state":226,"./internal/streams/stream":227,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],220:[function(require,module,exports){
+},{"../errors":214,"./_stream_duplex":215,"./internal/streams/destroy":222,"./internal/streams/state":226,"./internal/streams/stream":227,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],220:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":223,"_process":340,"dup":34}],221:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -31401,7 +31414,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":448,"url":481}],243:[function(require,module,exports){
+},{"http":448,"url":482}],243:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -32244,7 +32257,7 @@ module.exports = () => {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":109,"debug":160,"events":192,"unordered-array-remove":480}],256:[function(require,module,exports){
+},{"buffer":109,"debug":160,"events":192,"unordered-array-remove":481}],256:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! magnet-uri. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 module.exports = magnetURIDecode
@@ -32865,7 +32878,7 @@ function downloadBuffers (bufs, name) {
   a.click()
 }
 
-},{"inherits":245,"readable-stream":273,"to-arraybuffer":475}],259:[function(require,module,exports){
+},{"inherits":245,"readable-stream":273,"to-arraybuffer":476}],259:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
 },{"dup":28}],260:[function(require,module,exports){
 arguments[4][29][0].apply(exports,arguments)
@@ -32877,7 +32890,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":259,"./_stream_duplex":260,"dup":32,"inherits":245}],264:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":259,"./_stream_duplex":260,"./internal/streams/destroy":267,"./internal/streams/state":271,"./internal/streams/stream":272,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],265:[function(require,module,exports){
+},{"../errors":259,"./_stream_duplex":260,"./internal/streams/destroy":267,"./internal/streams/state":271,"./internal/streams/stream":272,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],265:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":268,"_process":340,"dup":34}],266:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -43000,7 +43013,7 @@ function readString (buf, offset, length) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./descriptor":287,"./index":288,"buffer":109,"uint64be":479}],287:[function(require,module,exports){
+},{"./descriptor":287,"./index":288,"buffer":109,"uint64be":480}],287:[function(require,module,exports){
 (function (Buffer){(function (){
 var tagToName = {
   0x03: 'ESDescriptor',
@@ -43305,7 +43318,7 @@ Box.encodingLength = function (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./boxes":286,"buffer":109,"uint64be":479}],289:[function(require,module,exports){
+},{"./boxes":286,"buffer":109,"uint64be":480}],289:[function(require,module,exports){
 (function (Buffer){(function (){
 var stream = require('readable-stream')
 var nextEvent = require('next-event')
@@ -43653,7 +43666,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":292,"./_stream_duplex":293,"dup":32,"inherits":245}],297:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":292,"./_stream_duplex":293,"./internal/streams/destroy":300,"./internal/streams/state":304,"./internal/streams/stream":305,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],298:[function(require,module,exports){
+},{"../errors":292,"./_stream_duplex":293,"./internal/streams/destroy":300,"./internal/streams/state":304,"./internal/streams/stream":305,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],298:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":301,"_process":340,"dup":34}],299:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -44015,7 +44028,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":309,"./_stream_duplex":310,"dup":32,"inherits":245}],314:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":309,"./_stream_duplex":310,"./internal/streams/destroy":317,"./internal/streams/state":321,"./internal/streams/stream":322,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],315:[function(require,module,exports){
+},{"../errors":309,"./_stream_duplex":310,"./internal/streams/destroy":317,"./internal/streams/state":321,"./internal/streams/stream":322,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],315:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":318,"_process":340,"dup":34}],316:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -44094,7 +44107,7 @@ function onceStrict (fn) {
   return f
 }
 
-},{"wrappy":495}],326:[function(require,module,exports){
+},{"wrappy":496}],326:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -47303,7 +47316,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":360,"./_stream_duplex":361,"dup":32,"inherits":245}],365:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":360,"./_stream_duplex":361,"./internal/streams/destroy":368,"./internal/streams/state":372,"./internal/streams/stream":373,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],366:[function(require,module,exports){
+},{"../errors":360,"./_stream_duplex":361,"./internal/streams/destroy":368,"./internal/streams/state":372,"./internal/streams/stream":373,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],366:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":369,"_process":340,"dup":34}],367:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -47928,7 +47941,7 @@ function setMediaOpts (elem, opts) {
   elem.controls = !!opts.controls
 }
 
-},{"./lib/mime.json":377,"debug":160,"is-ascii":246,"mediasource":258,"path":332,"stream-to-blob-url":467,"videostream":486}],377:[function(require,module,exports){
+},{"./lib/mime.json":377,"debug":160,"is-ascii":246,"mediasource":258,"path":332,"stream-to-blob-url":467,"videostream":487}],377:[function(require,module,exports){
 module.exports={
   ".3gp": "video/3gpp",
   ".aac": "audio/aac",
@@ -50333,7 +50346,7 @@ simpleGet.concat = (opts, cb) => {
 })
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":109,"decompress-response":66,"http":448,"https":242,"once":325,"querystring":352,"simple-concat":392,"url":481}],394:[function(require,module,exports){
+},{"buffer":109,"decompress-response":66,"http":448,"https":242,"once":325,"querystring":352,"simple-concat":392,"url":482}],394:[function(require,module,exports){
 /*! simple-peer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 const debug = require('debug')('simple-peer')
 const getBrowserRTC = require('get-browser-rtc')
@@ -51399,7 +51412,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":395,"./_stream_duplex":396,"dup":32,"inherits":245}],400:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":395,"./_stream_duplex":396,"./internal/streams/destroy":403,"./internal/streams/state":407,"./internal/streams/stream":408,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],401:[function(require,module,exports){
+},{"../errors":395,"./_stream_duplex":396,"./internal/streams/destroy":403,"./internal/streams/state":407,"./internal/streams/stream":408,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],401:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":404,"_process":340,"dup":34}],402:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -51805,7 +51818,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":413,"./_stream_duplex":414,"dup":32,"inherits":245}],418:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":413,"./_stream_duplex":414,"./internal/streams/destroy":421,"./internal/streams/state":425,"./internal/streams/stream":426,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],419:[function(require,module,exports){
+},{"../errors":413,"./_stream_duplex":414,"./internal/streams/destroy":421,"./internal/streams/state":425,"./internal/streams/stream":426,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],419:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":422,"_process":340,"dup":34}],420:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -52263,7 +52276,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":434,"./_stream_duplex":435,"dup":32,"inherits":245}],439:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":434,"./_stream_duplex":435,"./internal/streams/destroy":442,"./internal/streams/state":446,"./internal/streams/stream":447,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],440:[function(require,module,exports){
+},{"../errors":434,"./_stream_duplex":435,"./internal/streams/destroy":442,"./internal/streams/state":446,"./internal/streams/stream":447,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],440:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":443,"_process":340,"dup":34}],441:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -52367,7 +52380,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":450,"./lib/response":451,"builtin-status-codes":114,"url":481,"xtend":496}],449:[function(require,module,exports){
+},{"./lib/request":450,"./lib/response":451,"builtin-status-codes":114,"url":482,"xtend":497}],449:[function(require,module,exports){
 (function (global){(function (){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -53013,7 +53026,7 @@ arguments[4][31][0].apply(exports,arguments)
 arguments[4][32][0].apply(exports,arguments)
 },{"../errors":452,"./_stream_duplex":453,"dup":32,"inherits":245}],457:[function(require,module,exports){
 arguments[4][33][0].apply(exports,arguments)
-},{"../errors":452,"./_stream_duplex":453,"./internal/streams/destroy":460,"./internal/streams/state":464,"./internal/streams/stream":465,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":484}],458:[function(require,module,exports){
+},{"../errors":452,"./_stream_duplex":453,"./internal/streams/destroy":460,"./internal/streams/state":464,"./internal/streams/stream":465,"_process":340,"buffer":109,"dup":33,"inherits":245,"util-deprecate":485}],458:[function(require,module,exports){
 arguments[4][34][0].apply(exports,arguments)
 },{"./end-of-stream":461,"_process":340,"dup":34}],459:[function(require,module,exports){
 arguments[4][35][0].apply(exports,arguments)
@@ -54537,6 +54550,43 @@ exports.decode = function(encoded) {
 
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"buffer":109}],474:[function(require,module,exports){
+const maxTick = 65535
+const resolution = 10
+const timeDiff = 1000 / resolution
+function getTick (start) {
+  return (+Date.now() - start) / timeDiff & 65535
+}
+
+module.exports = function (seconds) {
+  const start = +Date.now()
+
+  const size = resolution * (seconds || 5)
+  const buffer = [0]
+  let pointer = 1
+  let last = (getTick(start) - 1) & maxTick
+
+  return function (delta) {
+    const tick = getTick(start)
+    let dist = (tick - last) & maxTick
+    if (dist > size) dist = size
+    last = tick
+
+    while (dist--) {
+      if (pointer === size) pointer = 0
+      buffer[pointer] = buffer[pointer === 0 ? size - 1 : pointer - 1]
+      pointer++
+    }
+
+    if (delta) buffer[pointer - 1] += delta
+
+    const top = buffer[pointer - 1]
+    const btm = buffer.length < size ? 0 : buffer[pointer === size ? 0 : pointer]
+
+    return buffer.length < resolution ? top : (top - btm) * resolution / buffer.length
+  }
+}
+
+},{}],475:[function(require,module,exports){
 (function (process){(function (){
 /**!
 * tippy.js v6.3.7
@@ -57037,7 +57087,7 @@ exports.sticky = sticky;
 
 
 }).call(this)}).call(this,require('_process'))
-},{"@popperjs/core":1,"_process":340}],475:[function(require,module,exports){
+},{"@popperjs/core":1,"_process":340}],476:[function(require,module,exports){
 var Buffer = require('buffer').Buffer
 
 module.exports = function (buf) {
@@ -57066,7 +57116,7 @@ module.exports = function (buf) {
 	}
 }
 
-},{"buffer":109}],476:[function(require,module,exports){
+},{"buffer":109}],477:[function(require,module,exports){
 (function (process){(function (){
 /*! torrent-discovery. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const debug = require('debug')('torrent-discovery')
@@ -57292,7 +57342,7 @@ class Discovery extends EventEmitter {
 module.exports = Discovery
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":340,"bittorrent-dht/client":66,"bittorrent-lsd":66,"bittorrent-tracker/client":43,"debug":160,"events":192,"run-parallel":380}],477:[function(require,module,exports){
+},{"_process":340,"bittorrent-dht/client":66,"bittorrent-lsd":66,"bittorrent-tracker/client":43,"debug":160,"events":192,"run-parallel":380}],478:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! torrent-piece. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const BLOCK_LENGTH = 1 << 14
@@ -57403,7 +57453,7 @@ Object.defineProperty(Piece, 'BLOCK_LENGTH', { value: BLOCK_LENGTH })
 module.exports = Piece
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":109}],478:[function(require,module,exports){
+},{"buffer":109}],479:[function(require,module,exports){
 (function (Buffer){(function (){
 /**
  * Convert a typed array to a Buffer without a copy
@@ -57432,7 +57482,7 @@ module.exports = function typedarrayToBuffer (arr) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":109,"is-typedarray":248}],479:[function(require,module,exports){
+},{"buffer":109,"is-typedarray":248}],480:[function(require,module,exports){
 var bufferAlloc = require('buffer-alloc')
 
 var UINT_32_MAX = Math.pow(2, 32)
@@ -57465,7 +57515,7 @@ exports.decode = function (buf, offset) {
 exports.encode.bytes = 8
 exports.decode.bytes = 8
 
-},{"buffer-alloc":111}],480:[function(require,module,exports){
+},{"buffer-alloc":111}],481:[function(require,module,exports){
 module.exports = remove
 
 function remove (arr, i) {
@@ -57479,7 +57529,7 @@ function remove (arr, i) {
   return last
 }
 
-},{}],481:[function(require,module,exports){
+},{}],482:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -58213,7 +58263,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":482,"punycode":349,"querystring":352}],482:[function(require,module,exports){
+},{"./util":483,"punycode":349,"querystring":352}],483:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -58231,7 +58281,7 @@ module.exports = {
   }
 };
 
-},{}],483:[function(require,module,exports){
+},{}],484:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! ut_metadata. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 const { EventEmitter } = require('events')
@@ -58479,7 +58529,7 @@ module.exports = metadata => {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bencode":22,"bitfield":26,"buffer":109,"debug":160,"events":192,"simple-sha1":410}],484:[function(require,module,exports){
+},{"bencode":22,"bitfield":26,"buffer":109,"debug":160,"events":192,"simple-sha1":410}],485:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -58550,7 +58600,7 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],485:[function(require,module,exports){
+},{}],486:[function(require,module,exports){
 (function (Buffer){(function (){
 const bs = require('binary-search')
 const EventEmitter = require('events')
@@ -59030,7 +59080,7 @@ const MIN_FRAGMENT_DURATION = 1 // second
 module.exports = MP4Remuxer
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"binary-search":25,"buffer":109,"events":192,"mp4-box-encoding":288,"mp4-stream":291,"range-slice-stream":359}],486:[function(require,module,exports){
+},{"binary-search":25,"buffer":109,"events":192,"mp4-box-encoding":288,"mp4-stream":291,"range-slice-stream":359}],487:[function(require,module,exports){
 const MediaElementWrapper = require('mediasource')
 const pump = require('pump')
 
@@ -59158,7 +59208,7 @@ VideoStream.prototype = {
 
 module.exports = VideoStream
 
-},{"./mp4-remuxer":485,"mediasource":258,"pump":348}],487:[function(require,module,exports){
+},{"./mp4-remuxer":486,"mediasource":258,"pump":348}],488:[function(require,module,exports){
 (function (Buffer){(function (){
 /*! webtorrent. MIT License. WebTorrent LLC <https://webtorrent.io/opensource> */
 /* global FileList, ServiceWorker */
@@ -59177,7 +59227,7 @@ const Peer = require('simple-peer')
 const queueMicrotask = require('queue-microtask')
 const randombytes = require('randombytes')
 const sha1 = require('simple-sha1')
-const speedometer = require('speedometer')
+const throughput = require('throughput')
 const { ThrottleGroup } = require('speed-limiter')
 const ConnPool = require('./lib/conn-pool.js') // browser exclude
 const Torrent = require('./lib/torrent.js')
@@ -59277,8 +59327,8 @@ class WebTorrent extends EventEmitter {
     }
 
     // stats
-    this._downloadSpeed = speedometer()
-    this._uploadSpeed = speedometer()
+    this._downloadSpeed = throughput()
+    this._uploadSpeed = throughput()
 
     if (opts.dht !== false && typeof DHT === 'function' /* browser exclude */) {
       // use a single DHT instance for all torrents, so the routing table can be reused
@@ -59726,7 +59776,7 @@ function isFileList (obj) {
 module.exports = WebTorrent
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./lib/conn-pool.js":66,"./lib/peer":490,"./lib/torrent.js":492,"./package.json":494,"bittorrent-dht/client":66,"buffer":109,"create-torrent":143,"debug":160,"events":192,"load-ip-set":66,"parse-torrent":331,"path":332,"queue-microtask":353,"randombytes":356,"run-parallel":380,"simple-concat":392,"simple-peer":394,"simple-sha1":410,"speed-limiter":428,"speedometer":432}],488:[function(require,module,exports){
+},{"./lib/conn-pool.js":66,"./lib/peer":491,"./lib/torrent.js":493,"./package.json":495,"bittorrent-dht/client":66,"buffer":109,"create-torrent":143,"debug":160,"events":192,"load-ip-set":66,"parse-torrent":331,"path":332,"queue-microtask":353,"randombytes":356,"run-parallel":380,"simple-concat":392,"simple-peer":394,"simple-sha1":410,"speed-limiter":428,"throughput":474}],489:[function(require,module,exports){
 const stream = require('stream')
 const debugFactory = require('debug')
 const eos = require('end-of-stream')
@@ -59835,7 +59885,7 @@ class FileStream extends stream.Readable {
 
 module.exports = FileStream
 
-},{"debug":160,"end-of-stream":190,"stream":433}],489:[function(require,module,exports){
+},{"debug":160,"end-of-stream":190,"stream":433}],490:[function(require,module,exports){
 const EventEmitter = require('events')
 const { PassThrough } = require('stream')
 const path = require('path')
@@ -60075,7 +60125,7 @@ class File extends EventEmitter {
 
 module.exports = File
 
-},{"./file-stream.js":488,"end-of-stream":190,"events":192,"mime":281,"path":332,"queue-microtask":353,"range-parser":358,"render-media":376,"stream":433,"stream-to-blob":468,"stream-to-blob-url":467,"stream-with-known-length-to-buffer":469}],490:[function(require,module,exports){
+},{"./file-stream.js":489,"end-of-stream":190,"events":192,"mime":281,"path":332,"queue-microtask":353,"range-parser":358,"render-media":376,"stream":433,"stream-to-blob":468,"stream-to-blob-url":467,"stream-with-known-length-to-buffer":469}],491:[function(require,module,exports){
 const EventEmitter = require('events')
 const { Transform } = require('stream')
 const arrayRemove = require('unordered-array-remove')
@@ -60465,7 +60515,7 @@ class Peer extends EventEmitter {
   }
 }
 
-},{"bittorrent-protocol":27,"debug":160,"events":192,"stream":433,"unordered-array-remove":480}],491:[function(require,module,exports){
+},{"bittorrent-protocol":27,"debug":160,"events":192,"stream":433,"unordered-array-remove":481}],492:[function(require,module,exports){
 
 /**
  * Mapping of torrent pieces to their respective availability in the torrent swarm. Used
@@ -60575,7 +60625,7 @@ class RarityMap {
 
 module.exports = RarityMap
 
-},{}],492:[function(require,module,exports){
+},{}],493:[function(require,module,exports){
 (function (process,global){(function (){
 /* global Blob */
 
@@ -60605,7 +60655,7 @@ const pump = require('pump')
 const queueMicrotask = require('queue-microtask')
 const randomIterate = require('random-iterate')
 const sha1 = require('simple-sha1')
-const speedometer = require('speedometer')
+const throughput = require('throughput')
 const utMetadata = require('ut_metadata')
 const utPex = require('ut_pex') // browser exclude
 
@@ -60700,8 +60750,8 @@ class Torrent extends EventEmitter {
     // stats
     this.received = 0
     this.uploaded = 0
-    this._downloadSpeed = speedometer()
-    this._uploadSpeed = speedometer()
+    this._downloadSpeed = throughput()
+    this._uploadSpeed = throughput()
 
     // for cleanup
     this._servers = []
@@ -62531,7 +62581,7 @@ function noop () {}
 module.exports = Torrent
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../package.json":494,"./file.js":489,"./peer.js":490,"./rarity-map.js":491,"./server.js":66,"./utp.js":66,"./webconn.js":493,"_process":340,"addr-to-ip-port":2,"bitfield":26,"cache-chunk-store":116,"chunk-store-stream/write":132,"cpus":136,"debug":160,"events":192,"fs":66,"fs-chunk-store":274,"immediate-chunk-store":244,"lt_donthave":255,"memory-chunk-store":274,"multistream":308,"net":66,"os":66,"parse-torrent":331,"path":332,"pump":348,"queue-microtask":353,"random-iterate":355,"run-parallel":380,"run-parallel-limit":379,"simple-get":393,"simple-sha1":410,"speedometer":432,"torrent-discovery":476,"torrent-piece":477,"ut_metadata":483,"ut_pex":66}],493:[function(require,module,exports){
+},{"../package.json":495,"./file.js":490,"./peer.js":491,"./rarity-map.js":492,"./server.js":66,"./utp.js":66,"./webconn.js":494,"_process":340,"addr-to-ip-port":2,"bitfield":26,"cache-chunk-store":116,"chunk-store-stream/write":132,"cpus":136,"debug":160,"events":192,"fs":66,"fs-chunk-store":274,"immediate-chunk-store":244,"lt_donthave":255,"memory-chunk-store":274,"multistream":308,"net":66,"os":66,"parse-torrent":331,"path":332,"pump":348,"queue-microtask":353,"random-iterate":355,"run-parallel":380,"run-parallel-limit":379,"simple-get":393,"simple-sha1":410,"throughput":474,"torrent-discovery":477,"torrent-piece":478,"ut_metadata":484,"ut_pex":66}],494:[function(require,module,exports){
 (function (Buffer){(function (){
 const { default: BitField } = require('bitfield')
 const debugFactory = require('debug')
@@ -62752,11 +62802,11 @@ class WebConn extends Wire {
 module.exports = WebConn
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../package.json":494,"bitfield":26,"bittorrent-protocol":27,"buffer":109,"debug":160,"lt_donthave":255,"simple-get":393,"simple-sha1":410}],494:[function(require,module,exports){
+},{"../package.json":495,"bitfield":26,"bittorrent-protocol":27,"buffer":109,"debug":160,"lt_donthave":255,"simple-get":393,"simple-sha1":410}],495:[function(require,module,exports){
 module.exports={
-  "version": "1.8.14"
+  "version": "1.8.20"
 }
-},{}],495:[function(require,module,exports){
+},{}],496:[function(require,module,exports){
 // Returns a wrapper function that returns a wrapped callback
 // The wrapper function should do some stuff, and return a
 // presumably different callback function.
@@ -62791,7 +62841,7 @@ function wrappy (fn, cb) {
   }
 }
 
-},{}],496:[function(require,module,exports){
+},{}],497:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -62812,7 +62862,7 @@ function extend() {
     return target
 }
 
-},{}],497:[function(require,module,exports){
+},{}],498:[function(require,module,exports){
 (function (Buffer){(function (){
 require('buffer');
 const clipboard = require('clipboard');
@@ -63341,4 +63391,4 @@ function saveTorrent() {
   a.remove();
 }
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":109,"bytes":115,"clipboard":134,"mime-types":279,"parse-torrent":331,"tippy.js":474,"webtorrent":487}]},{},[497]);
+},{"buffer":109,"bytes":115,"clipboard":134,"mime-types":279,"parse-torrent":331,"tippy.js":475,"webtorrent":488}]},{},[498]);
