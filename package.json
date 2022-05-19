@@ -23,7 +23,8 @@
     "watch": "watchify src/parse.js -o bin/bundle.js",
     "compile": "browserify src/parse.js -o bin/bundle.js",
     "minify": "terser bin/bundle.js -c -m -o bin/bundle.min.js",
-    "build": "npm run compile && npm run minify"
+    "build": "npm run compile && npm run minify",
+    "update": "npm update -g && npm update && npm run build"
   },
   "repository": {
     "type": "git",
