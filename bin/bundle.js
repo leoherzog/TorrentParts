@@ -62985,11 +62985,11 @@ function start() {
   // example buttons
   example1.addEventListener('click', function(event) {
     event.preventDefault();
-    notyf.success('Parsing Ubuntu 20.04 Magnet URL');
+    notyf.success('Parsing Ubuntu 22.04 Magnet URL');
     source = 'magnet';
     originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
     sourceTooltip.setContent('Currently loaded information sourced from Magnet URL');
-    parse('magnet:?xt=urn:btih:9fc20b9e98ea98b4a35e6223041a5ef94ea27809&dn=ubuntu-20.04-desktop-amd64.iso&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce&tr=https%3A%2F%2Fipv6.torrent.ubuntu.com%2Fannounce');
+    parse('magnet:?xt=urn:btih:2c6b6858d61da9543d4231a71db4b1c9264b0685&dn=ubuntu-22.04-desktop-amd64.iso&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce&tr=https%3A%2F%2Fipv6.torrent.ubuntu.com%2Fannounce');
   });
 
   example2.addEventListener('click', async function(event) {
