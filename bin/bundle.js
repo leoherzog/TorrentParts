@@ -13915,15 +13915,15 @@ arguments[4][42][0].apply(exports,arguments)
         var w = this.words[i];
         var word = (((w << off) | carry) & 0xffffff).toString(16);
         carry = (w >>> (24 - off)) & 0xffffff;
-        if (carry !== 0 || i !== this.length - 1) {
-          out = zeros[6 - word.length] + word + out;
-        } else {
-          out = word + out;
-        }
         off += 2;
         if (off >= 26) {
           off -= 26;
           i--;
+        }
+        if (carry !== 0 || i !== this.length - 1) {
+          out = zeros[6 - word.length] + word + out;
+        } else {
+          out = word + out;
         }
       }
       if (carry !== 0) {
@@ -62804,7 +62804,7 @@ module.exports = WebConn
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"../package.json":495,"bitfield":26,"bittorrent-protocol":27,"buffer":109,"debug":160,"lt_donthave":255,"simple-get":393,"simple-sha1":410}],495:[function(require,module,exports){
 module.exports={
-  "version": "1.8.20"
+  "version": "1.8.22"
 }
 },{}],496:[function(require,module,exports){
 // Returns a wrapper function that returns a wrapped callback
