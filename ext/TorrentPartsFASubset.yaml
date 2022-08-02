@@ -1,22 +1,22 @@
-projectName: 'C:\Users\herzog\Desktop\TorrentPartsFASubset'
-version: 5.15.1
+projectName: 'C:\Users\Leo\Desktop\TorrentPartsFASubset'
+version: 6.1.2
 icons:
   - magnet:
       - light
       - solid
       - duotone
-  - file-alt:
+  - file-lines:
       - light
       - regular
       - duotone
-  - cloud-upload:
+  - cloud-arrow-up:
       - solid
   - link:
       - light
       - duotone
-  - share-alt:
+  - share-nodes:
       - solid
-  - file-download:
+  - file-arrow-down:
       - solid
   - file:
       - regular
@@ -26,7 +26,7 @@ icons:
       - regular
   - file-excel:
       - regular
-  - file-archive:
+  - file-zipper:
       - regular
   - file-csv:
       - regular
@@ -44,9 +44,9 @@ icons:
       - regular
   - trash:
       - regular
-  - times:
+  - xmark:
       - regular
-  - info-circle:
+  - circle-info:
       - regular
-  - plus-circle:
+  - circle-plus:
       - regular
