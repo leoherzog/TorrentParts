@@ -27,6 +27,7 @@ var announce = document.getElementById('announce');
 var urlList = document.getElementById('urlList');
 var addWebseed = document.getElementById('addWebseed');
 var removeWebseeds = document.getElementById('removeWebseeds');
+var pieces = document.getElementById('pieces');
 var files = document.getElementById('filesBody');
 var getFiles = document.getElementById('getFiles');
 var copyURL = document.getElementById('copyURL');
@@ -248,6 +249,7 @@ function display() {
   }
   createdBy.value = parsed.createdBy ? ' by ' + parsed.createdBy : '';
   comment.value = parsed.comment ? parsed.comment : '';
+  pieces.value = parsed.pieces ? parsed.pieces.length.toLocaleString() + ' ' + bytes.format(parsed.pieceLength, {"decimalPlaces": 1, "unitSeparator": " "}) + ' pieces (last piece ' + bytes.format(parsed.lastPieceLength, {"decimalPlaces": 1, "unitSeparator": " "}) + ')' : '';
 
   announce.innerHTML = '';
   if (parsed.announce && parsed.announce.length) {
