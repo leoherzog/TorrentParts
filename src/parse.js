@@ -30,10 +30,13 @@ var removeWebseeds = document.getElementById('removeWebseeds');
 var pieces = document.getElementById('pieces');
 var files = document.getElementById('filesBody');
 var getFiles = document.getElementById('getFiles');
+var openURLWrapper = document.getElementById('openURLWrapper');
+var openURL = document.getElementById('openURL');
 var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
 var downloadTorrentWrapper = document.getElementById('downloadTorrentWrapper');
 var downloadTorrent = document.getElementById('downloadTorrent');
+var openURLTooltip = tippy(openURL, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Open this Magnet URL in your Torrent client"});
 var copyURLTooltip = tippy(copyURL, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy torrent.parts link to clipboard"});
 var copyMagnetTooltip = tippy(copyMagnet, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy Magnet link to clipboard"});
 var downloadTorrentTooltip = tippy(downloadTorrentWrapper, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Download Torrent file"});
@@ -63,10 +66,12 @@ var notyf = new Notyf({
 
 function placeDownloadTooltips(e) {
   if (window.innerWidth > 1080) {
+    openURLTooltip.setProps({"placement": "right"});
     copyURLTooltip.setProps({"placement": "right"});
     copyMagnetTooltip.setProps({"placement": "right"});
     downloadTorrentTooltip.setProps({"placement": "right"});
   } else {
+    openURLTooltip.setProps({"placement": "top"});
     copyURLTooltip.setProps({"placement": "top"});
     copyMagnetTooltip.setProps({"placement": "top"});
     downloadTorrentTooltip.setProps({"placement": "top"});
@@ -319,6 +324,7 @@ function display() {
       files.appendChild(createFileRow('', '...and another ' + (parsed.files.length - 100) + ' more files', ''));
     }
     files.appendChild(createFileRow('folder-tree', '', parsed.length));
+    openURLWrapper.href = parser.toMagnetURI(parsed);
     downloadTorrentTooltip.setContent('Download Torrent file');
     downloadTorrent.addEventListener('click', saveTorrent);
     downloadTorrent.disabled = false;

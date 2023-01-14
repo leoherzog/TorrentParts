@@ -251,7 +251,7 @@ label[for="torrent"] {
   flex-direction: column;
 }
 
-#share > div > button {
+#share > * > button {
   width: 64px;
   height: 64px;
   border-radius: 50%;

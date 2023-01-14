@@ -1,5 +1,5 @@
 projectName: 'C:\Users\Leo\Desktop\TorrentPartsFASubset'
-version: 6.1.2
+version: 6.2.1
 icons:
   - magnet:
       - light
@@ -13,10 +13,11 @@ icons:
       - solid
   - link:
       - light
-      - duotone
-  - share-nodes:
       - solid
+      - duotone
   - file-arrow-down:
+      - solid
+  - arrow-up-right-from-square:
       - solid
   - file:
       - regular
