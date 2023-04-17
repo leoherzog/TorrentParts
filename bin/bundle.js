@@ -1,7 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 (function (process){(function (){
 /**
- * @popperjs/core v2.11.6 - MIT License
+ * @popperjs/core v2.11.7 - MIT License
  */
 
 'use strict';
@@ -48,7 +48,7 @@ var round = Math.round;
 function getUAString() {
   var uaData = navigator.userAgentData;
 
-  if (uaData != null && uaData.brands) {
+  if (uaData != null && uaData.brands && Array.isArray(uaData.brands)) {
     return uaData.brands.map(function (item) {
       return item.brand + "/" + item.version;
     }).join(' ');
@@ -1179,10 +1179,9 @@ var unsetSides = {
 // Zooming can change the DPR, but it seems to report a value that will
 // cleanly divide the values into the appropriate subpixels.
 
-function roundOffsetsByDPR(_ref) {
+function roundOffsetsByDPR(_ref, win) {
   var x = _ref.x,
       y = _ref.y;
-  var win = window;
   var dpr = win.devicePixelRatio || 1;
   return {
     x: round(x * dpr) / dpr || 0,
@@ -1265,7 +1264,7 @@ function mapToStyles(_ref2) {
   var _ref4 = roundOffsets === true ? roundOffsetsByDPR({
     x: x,
     y: y
-  }) : {
+  }, getWindow(popper)) : {
     x: x,
     y: y
   };
@@ -29466,9 +29465,11 @@ module.exports = class FastFIFO {
     this.hwm = hwm || 16
     this.head = new FixedFIFO(this.hwm)
     this.tail = this.head
+    this.length = 0
   }
 
   push (val) {
+    this.length++
     if (!this.head.push(val)) {
       const prev = this.head
       this.head = prev.next = new FixedFIFO(2 * this.head.buffer.length)
@@ -29477,6 +29478,7 @@ module.exports = class FastFIFO {
   }
 
   shift () {
+    if (this.length !== 0) this.length--
     const val = this.tail.shift()
     if (val === undefined && this.tail.next) {
       const next = this.tail.next
@@ -29484,6 +29486,7 @@ module.exports = class FastFIFO {
       this.tail = next
       return this.tail.shift()
     }
+
     return val
   }
 
