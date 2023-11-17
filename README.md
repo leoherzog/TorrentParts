@@ -24,7 +24,6 @@ This project wouldn't be possible without the fantastic work of:
 - [@feross](https://github.com/feross) and contributors, for [`parse-torrent`](https://github.com/webtorrent/parse-torrent) and [`WebTorrent`](https://github.com/webtorrent/webtorrent)
 - [@cvisuri](https://github.com/cvisuri), for design work
 - [@CorralPeltzer](https://github.com/CorralPeltzer), for [`newTrackon`](https://github.com/CorralPeltzer/newTrackon)
-- [@substack](https://github.com/substack) and contributors, for [`Browserify`](https://github.com/browserify/browserify)
 - [Cloudflare Pages](https://pages.cloudflare.com/) hosting
 
 ## License
