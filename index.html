@@ -36,12 +36,14 @@
 
   <title>Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link</title>
 
+  <link href="https://cdn.jsdelivr.net/npm/tippy.js@6/dist/tippy.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tippy.js@6/animations/shift-away-subtle.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css" rel="stylesheet" />
   <link href="/src/style.css" rel="stylesheet" />
   <link href="/ext/alata-latin-400.woff2" rel="preload" as="style" />
   <link href="/ext/alata-latin-400.woff" rel="preload" as="style" />
   <script async src="/ext/fa.min.js"></script>
   <script async defer src="https://buttons.github.io/buttons.js"></script>
-  <script src="/ext/notyf.min.js"></script>
 
   <script async defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6f97f49b4c384ee197a2f319cebec274"}'></script>
 
@@ -51,7 +53,7 @@
 
   <header>
     <h1 id="logo">Torrent<span id="originalSourceIcon"><span class="fad fa-magnet fa-fw" aria-hidden="true"></span></span>Parts</h1>
-    <a class="github-button" href="https://github.com/leoherzog/TorrentParts" data-icon="octicon-star" data-show-count="true" aria-label="Star leoherzog/TorrentParts on GitHub">Star on GitHub</a>
+    <a class="github-button" href="https://github.com/leoherzog/TorrentParts" data-icon="octicon-star" data-show-count="true" aria-label="Star TorrentParts on GitHub">Star</a>
   </header>
 
   <div id="startButtons">
@@ -216,10 +218,10 @@
   </div>
 
   <footer>
-    <a href="https://github.com/leoherzog/TorrentParts/releases" target="_blank" rel="noopener">v1.2.1</a>
+    <a href="https://github.com/leoherzog/TorrentParts/releases" target="_blank" rel="noopener">v2.0.0</a>
   </footer>
 
-  <script src="/bin/bundle.min.js"></script>
+  <script type="module" src="/src/parse.js"></script>
 
   <script>
     if ('serviceWorker' in navigator) {

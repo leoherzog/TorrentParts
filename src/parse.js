@@ -1,10 +1,11 @@
-require('buffer');
-const clipboard = require('clipboard');
-const parser = require('parse-torrent');
-const bytes = require('bytes');
-const mime = require('mime-types');
-const WebTorrent = require('webtorrent');
-const tippy = require('tippy.js').default;
+import { Buffer } from 'https://cdn.jsdelivr.net/npm/buffer@6/+esm';
+import clipboard from 'https://cdn.jsdelivr.net/npm/clipboard@2/+esm'
+import parseTorrent, { toMagnetURI, toTorrentFile, remote as parseTorrentRemote } from 'https://cdn.jsdelivr.net/npm/parse-torrent@11/+esm';
+import bytes from 'https://cdn.jsdelivr.net/npm/bytes@3/+esm';
+import mime from 'https://cdn.jsdelivr.net/npm/mime-types@2/+esm'
+import WebTorrent from 'https://cdn.jsdelivr.net/npm/webtorrent@2/dist/webtorrent.min.js';
+import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
+import { Notyf } from 'https://cdn.jsdelivr.net/npm/notyf@3/+esm';
 
 var examples = document.getElementById('examples');
 var example1 = document.getElementById('example1');
@@ -201,11 +202,11 @@ function start() {
 
 }
 
-function parse(toLoad) {
+async function parse(toLoad) {
   resetProperties();
   try {
     console.info('Attempting parse');
-    parsed = parser(toLoad);
+    parsed = await parseTorrent(toLoad);
     display();
     if (parsed.xs) {
       console.info('Magnet includes xs, attempting remote parse');
@@ -224,21 +225,28 @@ function parse(toLoad) {
   }
 }
 
-function parseRemote(toLoad) {
-  parser.remote(toLoad, function(err, result) {
-    if (err) {
-      notyf.error('Problem remotely fetching that file or parsing result');
-      console.warn(err);
-      resetProperties();
-      return;
-    }
+async function parseRemote(toLoad) {
+  try {
+    parsed = await new Promise((resolve, reject) => {
+      parseTorrentRemote(toLoad, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      });
+    });
     source = 'remote-torrent-file';
     originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
     sourceTooltip.setContent('Currently loaded information sourced from remotely fetched Torrent file');
-    parsed = result;
     display();
-  });
+  } catch (err) {
+    console.warn(err);
+    notyf.error('Problem remotely fetching that file or parsing result');
+    resetProperties();
+  }
 }
+
 
 function display() {
 
@@ -324,7 +332,7 @@ function display() {
       files.appendChild(createFileRow('', '...and another ' + (parsed.files.length - 100) + ' more files', ''));
     }
     files.appendChild(createFileRow('folder-tree', '', parsed.length));
-    openURLWrapper.href = parser.toMagnetURI(parsed);
+    openURLWrapper.href = toMagnetURI(parsed);
     downloadTorrentTooltip.setContent('Download Torrent file');
     downloadTorrent.addEventListener('click', saveTorrent);
     downloadTorrent.disabled = false;
@@ -341,13 +349,13 @@ function display() {
     downloadTorrent.disabled = true;
   }
 
-  copyURL.setAttribute('data-clipboard-text', window.location.origin + '#' + parser.toMagnetURI(parsed));
-  copyMagnet.setAttribute('data-clipboard-text', parser.toMagnetURI(parsed));
+  copyURL.setAttribute('data-clipboard-text', window.location.origin + '#' + toMagnetURI(parsed));
+  copyMagnet.setAttribute('data-clipboard-text', toMagnetURI(parsed));
 
   examples.style.display = 'none';
   properties.style.display = 'flex';
 
-  window.location.hash = parser.toMagnetURI(parsed);
+  window.location.hash = toMagnetURI(parsed);
 
   if (parsed.name) {
     document.title = 'Torrent Parts | ' + parsed.name;
@@ -419,7 +427,7 @@ function propertyChange(e) {
   } else {
     parsed[this.id] = this.value ? this.value : '';
   }
-  window.location.hash = parser.toMagnetURI(parsed);
+  window.location.hash = toMagnetURI(parsed);
   updateModified();
 }
 
@@ -503,7 +511,7 @@ function getFilesFromPeers() {
   parsed.announce.push('wss://tracker.btorrent.xyz');
   parsed.announce.push('wss://tracker.fastcast.nz');
   parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
-  client.add(parser.toMagnetURI(parsed), (torrent) => {
+  client.add(toMagnetURI(parsed), (torrent) => {
     parsed.info = Object.assign({}, torrent.info); // clone object
     parsed.files = torrent.files;
     parsed.infoBuffer = torrent.infoBuffer;
@@ -519,7 +527,7 @@ function getFilesFromPeers() {
 
 // https://stackoverflow.com/a/36899900/2700296
 function saveTorrent() {
-  let data = parser.toTorrentFile(parsed);
+  let data = toTorrentFile(parsed);
   if (data !== null && navigator.msSaveBlob)
     return navigator.msSaveBlob(new Blob([data], { "type": "application/x-bittorrent" }), parsed.name + '.torrent');
   let a = document.createElement('a');
