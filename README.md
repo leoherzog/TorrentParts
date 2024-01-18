@@ -59,6 +59,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
   <img src="https://herzog.tech/signature/anchor.svg.png" width="32px" />
 </a>
 <br />
-<a href="https://www.buymeacoffee.com/leoherzog" target="_blank">
-  <img src="https://cdn.buymeacoffee.com/buttons/lato-black.png" alt="Buy Me A Coffee" width="217px" />
+<a href="https://herzog.tech/$" target="_blank">
+  <img src="https://herzog.tech/signature/mug-tea-saucer-solid.svg.png" alt="Buy Me A Coffee" width="32px" />
+  Found this helpful? Buy me a tea!
 </a>
