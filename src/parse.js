@@ -1,8 +1,8 @@
 import { Buffer } from 'https://cdn.jsdelivr.net/npm/buffer@6/+esm';
-import clipboard from 'https://cdn.jsdelivr.net/npm/clipboard@2/+esm'
+import clipboard from 'https://cdn.jsdelivr.net/npm/clipboard@2/+esm';
 import parseTorrent, { toMagnetURI, toTorrentFile, remote as parseTorrentRemote } from 'https://cdn.jsdelivr.net/npm/parse-torrent@11/+esm';
 import bytes from 'https://cdn.jsdelivr.net/npm/bytes@3/+esm';
-import mime from 'https://cdn.jsdelivr.net/npm/mime-types@2/+esm'
+import mime from 'https://cdn.jsdelivr.net/npm/mime-types@2/+esm';
 import WebTorrent from 'https://cdn.jsdelivr.net/npm/webtorrent@2/dist/webtorrent.min.js';
 import tippy from 'https://cdn.jsdelivr.net/npm/tippy.js@6/+esm';
 import { Notyf } from 'https://cdn.jsdelivr.net/npm/notyf@3/+esm';
@@ -14,7 +14,7 @@ var example3 = document.getElementById('example3');
 var properties = document.getElementById('properties');
 var originalSourceIcon = document.getElementById('originalSourceIcon');
 var source;
-var sourceTooltip = tippy(originalSourceIcon, {"theme": "torrent-parts", "animation": "shift-away-subtle"});
+var sourceTooltip = tippy(originalSourceIcon, { theme: 'torrent-parts', animation: 'shift-away-subtle' });
 var name = document.getElementById('name');
 var reset = document.getElementById('reset');
 var created = document.getElementById('created');
@@ -37,45 +37,45 @@ var copyURL = document.getElementById('copyURL');
 var copyMagnet = document.getElementById('copyMagnet');
 var downloadTorrentWrapper = document.getElementById('downloadTorrentWrapper');
 var downloadTorrent = document.getElementById('downloadTorrent');
-var openURLTooltip = tippy(openURL, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Open this Magnet URL in your Torrent client"});
-var copyURLTooltip = tippy(copyURL, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy torrent.parts link to clipboard"});
-var copyMagnetTooltip = tippy(copyMagnet, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Copy Magnet link to clipboard"});
-var downloadTorrentTooltip = tippy(downloadTorrentWrapper, {"theme": "torrent-parts", "animation": "shift-away-subtle", "content": "Download Torrent file"});
+var openURLTooltip = tippy(openURL, { theme: 'torrent-parts', animation: 'shift-away-subtle', content: 'Open this Magnet URL in your Torrent client' });
+var copyURLTooltip = tippy(copyURL, { theme: 'torrent-parts', animation: 'shift-away-subtle', content: 'Copy torrent.parts link to clipboard' });
+var copyMagnetTooltip = tippy(copyMagnet, { theme: 'torrent-parts', animation: 'shift-away-subtle', content: 'Copy Magnet link to clipboard' });
+var downloadTorrentTooltip = tippy(downloadTorrentWrapper, { theme: 'torrent-parts', animation: 'shift-away-subtle', content: 'Download Torrent file' });
 var parsed;
 var client = new WebTorrent();
 var notyf = new Notyf({
-  "duration": 8000,
-  "dismissible": true,
-  "ripple": false,
-  "position": {
-    "x": "right",
-    "y": "top",
+  duration: 8000,
+  dismissible: true,
+  ripple: false,
+  position: {
+    x: 'right',
+    y: 'top',
   },
-  "types": [
+  types: [
     {
-      "type": "success",
-      "background": "#46835C",
-      "icon": false
+      type: 'success',
+      background: '#46835C',
+      icon: false,
     },
     {
-      "type": "error",
-      "background": "#A60A0A",
-      "icon": false
-    }
-  ]
+      type: 'error',
+      background: '#A60A0A',
+      icon: false,
+    },
+  ],
 });
 
 function placeDownloadTooltips(e) {
   if (window.innerWidth > 1080) {
-    openURLTooltip.setProps({"placement": "right"});
-    copyURLTooltip.setProps({"placement": "right"});
-    copyMagnetTooltip.setProps({"placement": "right"});
-    downloadTorrentTooltip.setProps({"placement": "right"});
+    openURLTooltip.setProps({ placement: 'right' });
+    copyURLTooltip.setProps({ placement: 'right' });
+    copyMagnetTooltip.setProps({ placement: 'right' });
+    downloadTorrentTooltip.setProps({ placement: 'right' });
   } else {
-    openURLTooltip.setProps({"placement": "top"});
-    copyURLTooltip.setProps({"placement": "top"});
-    copyMagnetTooltip.setProps({"placement": "top"});
-    downloadTorrentTooltip.setProps({"placement": "top"});
+    openURLTooltip.setProps({ placement: 'top' });
+    copyURLTooltip.setProps({ placement: 'top' });
+    copyMagnetTooltip.setProps({ placement: 'top' });
+    downloadTorrentTooltip.setProps({ placement: 'top' });
   }
 }
 
@@ -85,9 +85,8 @@ placeDownloadTooltips();
 document.addEventListener('DOMContentLoaded', start);
 
 function start() {
-
   // magnet input
-  document.getElementById('magnet').addEventListener('keyup', function(event) {
+  document.getElementById('magnet').addEventListener('keyup', function (event) {
     event.preventDefault();
     if (event.key === 'Enter') {
       source = 'magnet';
@@ -98,9 +97,9 @@ function start() {
   });
 
   // torrent select button
-  document.getElementById('torrent').addEventListener('change', function(event) {
+  document.getElementById('torrent').addEventListener('change', function (event) {
     event.preventDefault();
-    event.target.files[0].arrayBuffer().then(function(arrayBuffer) {
+    event.target.files[0].arrayBuffer().then(function (arrayBuffer) {
       source = 'torrent-file';
       originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
       sourceTooltip.setContent('Currently loaded information sourced from Torrent file');
@@ -109,31 +108,34 @@ function start() {
   });
 
   // body drag-and-drop torrent file support
-  document.addEventListener('dragover', function(event) {
+  document.addEventListener('dragover', function (event) {
     event.preventDefault();
   });
 
-  document.addEventListener('drop', function(event) {
+  document.addEventListener('drop', function (event) {
     event.preventDefault();
-    event.dataTransfer.items[0].getAsFile().arrayBuffer().then(function(arrayBuffer) {
-      source = 'torrent-file';
-      originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
-      sourceTooltip.setContent('Currently loaded information sourced from Torrent file');
-      parse(Buffer.from(arrayBuffer));
-    });
+    event.dataTransfer.items[0]
+      .getAsFile()
+      .arrayBuffer()
+      .then(function (arrayBuffer) {
+        source = 'torrent-file';
+        originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+        sourceTooltip.setContent('Currently loaded information sourced from Torrent file');
+        parse(Buffer.from(arrayBuffer));
+      });
   });
 
   // example buttons
-  example1.addEventListener('click', function(event) {
+  example1.addEventListener('click', function (event) {
     event.preventDefault();
-    notyf.success('Parsing Ubuntu 22.04 Magnet URL');
+    notyf.success('Parsing Ubuntu 24.04 Magnet URL');
     source = 'magnet';
     originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
     sourceTooltip.setContent('Currently loaded information sourced from Magnet URL');
-    parse('magnet:?xt=urn:btih:2c6b6858d61da9543d4231a71db4b1c9264b0685&dn=ubuntu-22.04-desktop-amd64.iso&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce&tr=https%3A%2F%2Fipv6.torrent.ubuntu.com%2Fannounce');
+    parse('magnet:?xt=urn:btih:2aa4f5a7e209e54b32803d43670971c4c8caaa05&dn=ubuntu-24.04-desktop-amd64.iso&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce&tr=https%3A%2F%2Fipv6.torrent.ubuntu.com%2Fannounce');
   });
 
-  example2.addEventListener('click', async function(event) {
+  example2.addEventListener('click', async function (event) {
     event.preventDefault();
     notyf.success('Fetching and Parsing &ldquo;The WIRED CD&rdquo; Torrent File...');
     source = 'remote-torrent-file';
@@ -142,7 +144,7 @@ function start() {
     parseRemote('https://webtorrent.io/torrents/wired-cd.torrent');
   });
 
-  example3.addEventListener('click', async function(event) {
+  example3.addEventListener('click', async function (event) {
     event.preventDefault();
     notyf.success('Parsing Jack Johnson Archive.org Torrent File');
     let response = await fetch('/ext/jj2008-06-14.mk4_archive.torrent');
@@ -155,20 +157,20 @@ function start() {
 
   // share buttons
   let copyurl = new clipboard('#copyURL');
-  copyurl.on('success', function(e) {
+  copyurl.on('success', function (e) {
     notyf.success('Copied site URL to clipboard!');
     console.info(e);
   });
-  copyurl.on('failure', function(e) {
+  copyurl.on('failure', function (e) {
     notyf.error('Problem copying to clipboard');
     console.warn(e);
   });
 
   let copymagnet = new clipboard('#copyMagnet');
-  copymagnet.on('success', function(e) {
+  copymagnet.on('success', function (e) {
     notyf.success('Copied Magnet URL to clipboard!');
   });
-  copymagnet.on('failure', function(e) {
+  copymagnet.on('failure', function (e) {
     notyf.error('Problem copying to clipboard');
     console.warn(e);
   });
@@ -190,7 +192,7 @@ function start() {
   removeWebseeds.addEventListener('click', () => removeAllRows('urlList'));
   getFiles.addEventListener('click', getFilesFromPeers);
 
-  tippy('[data-tippy-content]', {"theme": "torrent-parts", "animation": "shift-away-subtle"}); // all element-defined tooltips
+  tippy('[data-tippy-content]', { theme: 'torrent-parts', animation: 'shift-away-subtle' }); // all element-defined tooltips
   sourceTooltip.disable();
 
   if (window.location.hash) {
@@ -199,7 +201,6 @@ function start() {
     sourceTooltip.setContent('Currently loaded information sourced from shared torrent.parts link');
     parse(window.location.hash.split('#')[1]);
   }
-
 }
 
 async function parse(toLoad) {
@@ -212,13 +213,14 @@ async function parse(toLoad) {
       console.info('Magnet includes xs, attempting remote parse');
       parseRemote(parsed.xs);
     }
-  }
-  catch(e) { // maybe they put a URL to a torrent file in the magnet box?
+  } catch (e) {
+    // maybe they put a URL to a torrent file in the magnet box?
     console.warn(e);
     if (source == 'magnet') {
       console.info('Attempting remote parse');
       parseRemote(toLoad);
-    } else { // probably not. Just a bad file.
+    } else {
+      // probably not. Just a bad file.
       notyf.error('Problem parsing input. Is this a .torrent file?');
       console.error('Problem parsing input');
     }
@@ -247,9 +249,7 @@ async function parseRemote(toLoad) {
   }
 }
 
-
 function display() {
-
   console.log(parsed);
 
   hash.value = parsed.infoHash;
@@ -262,7 +262,7 @@ function display() {
   }
   createdBy.value = parsed.createdBy ? ' by ' + parsed.createdBy : '';
   comment.value = parsed.comment ? parsed.comment : '';
-  pieces.value = parsed.pieces ? parsed.pieces.length.toLocaleString() + ' ' + bytes.format(parsed.pieceLength, {"decimalPlaces": 1, "unitSeparator": " "}) + ' pieces (last piece ' + bytes.format(parsed.lastPieceLength, {"decimalPlaces": 1, "unitSeparator": " "}) + ')' : '';
+  pieces.value = parsed.pieces ? parsed.pieces.length.toLocaleString() + ' ' + bytes.format(parsed.pieceLength, { decimalPlaces: 1, unitSeparator: ' ' }) + ' pieces (last piece ' + bytes.format(parsed.lastPieceLength, { decimalPlaces: 1, unitSeparator: ' ' }) + ')' : '';
 
   announce.innerHTML = '';
   if (parsed.announce && parsed.announce.length) {
@@ -286,8 +286,8 @@ function display() {
       row.appendChild(remove);
       announce.appendChild(row);
     }
-  // } else {
-  //   announce.innerHTML = '<em>No trackers specified in the URL/File provided</em>';
+    // } else {
+    //   announce.innerHTML = '<em>No trackers specified in the URL/File provided</em>';
   }
 
   urlList.innerHTML = '';
@@ -312,8 +312,8 @@ function display() {
       row.appendChild(remove);
       urlList.appendChild(row);
     }
-  // } else {
-  //   urlList.innerHTML = '<em>No webseed URLs in the URL/File provided</em>';
+    // } else {
+    //   urlList.innerHTML = '<em>No webseed URLs in the URL/File provided</em>';
   }
 
   files.innerHTML = '';
@@ -360,11 +360,10 @@ function display() {
   if (parsed.name) {
     document.title = 'Torrent Parts | ' + parsed.name;
   } else {
-    document.title = 'Torrent Parts | Inspect and edit what\'s in your Torrent file or Magnet link';
+    document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
   }
 
   sourceTooltip.enable();
-
 }
 
 function createFileRow(icon, name, size) {
@@ -376,7 +375,7 @@ function createFileRow(icon, name, size) {
   namecell.innerHTML = name;
   row.appendChild(namecell);
   let totalcell = document.createElement('td');
-  totalcell.innerHTML = bytes.format(size, {"decimalPlaces": 1, "unitSeparator": " "});
+  totalcell.innerHTML = bytes.format(size, { decimalPlaces: 1, unitSeparator: ' ' });
   row.appendChild(totalcell);
   return row;
 }
@@ -394,7 +393,7 @@ function getFontAwesomeIconForMimetype(mimetype) {
       return 'file-powerpoint';
     case mimetype.includes('powerpoint'):
     case mimetype.includes('presentation'):
-        return 'file-powerpoint';
+      return 'file-powerpoint';
     case mimetype.includes('7z-'):
     case mimetype.includes('iso9660'):
     case mimetype.includes('zip'):
@@ -443,13 +442,13 @@ function resetProperties() {
   hash.value = '';
   announce.innerHTML = '';
   urlList.innerHTML = '';
-  client.torrents.forEach(torrent => torrent.destroy());
+  client.torrents.forEach((torrent) => torrent.destroy());
   getFiles.style.display = 'block';
   files.innerHTML = '';
   window.location.hash = '';
   copyURL.setAttribute('data-clipboard-text', '');
   copyMagnet.setAttribute('data-clipboard-text', '');
-  document.title = 'Torrent Parts | Inspect and edit what\'s in your Torrent file or Magnet link';
+  document.title = "Torrent Parts | Inspect and edit what's in your Torrent file or Magnet link";
   sourceTooltip.disable();
 }
 
@@ -462,11 +461,10 @@ async function addCurrentTrackers() {
     parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
     parsed.announce.push('http://bt1.archive.org:6969/announce');
     parsed.announce.push('http://bt2.archive.org:6969/announce');
-    parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
+    parsed.announce = parsed.announce.filter((v, i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
     notyf.success('Added known working trackers from newTrackon');
     updateModified();
-  }
-  catch(e) {
+  } catch (e) {
     notyf.error('Problem fetching trackers from newTrackon');
     console.warn(e);
   }
@@ -510,7 +508,7 @@ function getFilesFromPeers() {
   parsed.announce.push('wss://tracker.openwebtorrent.com');
   parsed.announce.push('wss://tracker.btorrent.xyz');
   parsed.announce.push('wss://tracker.fastcast.nz');
-  parsed.announce = parsed.announce.filter((v,i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
+  parsed.announce = parsed.announce.filter((v, i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
   client.add(toMagnetURI(parsed), (torrent) => {
     parsed.info = Object.assign({}, torrent.info); // clone object
     parsed.files = torrent.files;
@@ -528,11 +526,10 @@ function getFilesFromPeers() {
 // https://stackoverflow.com/a/36899900/2700296
 function saveTorrent() {
   let data = toTorrentFile(parsed);
-  if (data !== null && navigator.msSaveBlob)
-    return navigator.msSaveBlob(new Blob([data], { "type": "application/x-bittorrent" }), parsed.name + '.torrent');
+  if (data !== null && navigator.msSaveBlob) return navigator.msSaveBlob(new Blob([data], { type: 'application/x-bittorrent' }), parsed.name + '.torrent');
   let a = document.createElement('a');
   a.style.display = 'none';
-  let url = window.URL.createObjectURL(new Blob([data], { "type": "application/x-bittorrent" }));
+  let url = window.URL.createObjectURL(new Blob([data], { type: 'application/x-bittorrent' }));
   a.setAttribute('href', url);
   a.setAttribute('download', parsed.name + '.torrent');
   document.body.appendChild(a);
