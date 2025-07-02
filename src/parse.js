@@ -92,7 +92,7 @@ function start() {
       source = 'magnet';
       originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
       sourceTooltip.setContent('Currently loaded information sourced from Magnet URL');
-      parse(magnet.value);
+      parse(this.value);
     }
   });
 
