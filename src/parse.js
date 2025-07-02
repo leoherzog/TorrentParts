@@ -390,7 +390,7 @@ function getFontAwesomeIconForMimetype(mimetype) {
       return 'file-word';
     case mimetype.includes('ms-excel'):
     case mimetype.includes('spreadsheet'):
-      return 'file-powerpoint';
+      return 'file-spreadsheet';
     case mimetype.includes('powerpoint'):
     case mimetype.includes('presentation'):
       return 'file-powerpoint';
