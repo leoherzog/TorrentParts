@@ -85,6 +85,11 @@ placeDownloadTooltips();
 document.addEventListener('DOMContentLoaded', start);
 
 function start() {
+  // form submission prevention
+  document.getElementById('startForm').addEventListener('submit', function (event) {
+    event.preventDefault();
+  });
+
   // magnet input
   document.getElementById('magnet').addEventListener('keyup', function (event) {
     event.preventDefault();

@@ -54,34 +54,36 @@
     <a class="github-button" href="https://github.com/leoherzog/TorrentParts" data-icon="octicon-star" data-show-count="true" aria-label="Star TorrentParts on GitHub">Star</a>
   </header>
 
-  <div id="startButtons">
+  <form id="startForm">
+    <div id="startButtons">
 
-    <input id="magnet" type="text" placeholder="Enter URL" aria-label="Enter URL and press enter" />
-    <label for="magnet" class="sr-only">
-      Enter URL and press enter
-    </label>
+      <input id="magnet" type="text" placeholder="Enter URL" aria-label="Enter URL and press enter" />
+      <label for="magnet" class="sr-only">
+        Enter URL and press enter
+      </label>
 
-    <input id="torrent" type="file" accept=".torrent" aria-label="Select Torrent file" />
-    <label for="torrent">
-      <span class="fas fa-cloud-upload" aria-hidden="true"></span> Select Torrent File
-    </label>
+      <input id="torrent" type="file" accept=".torrent" aria-label="Select Torrent file" />
+      <label for="torrent">
+        <span class="fas fa-cloud-upload" aria-hidden="true"></span> Select Torrent File
+      </label>
 
-  </div>
+    </div>
+  </form>
 
-  <div id="examples">
+  <section id="examples">
     <div>...or, try some examples!</div>
     <button id="example1" aria-label="Load Magnet Example"><span class="fal fa-magnet" aria-hidden="true"></span> Magnet URL</button>
     <button id="example2" aria-label="Load URL to Torrent File Example"><span class="fal fa-link" aria-hidden="true"></span> URL to Torrent File</button>
     <button id="example3" aria-label="Load Torrent File Example"><span class="fal fa-file-alt" aria-hidden="true"></span> Torrent File</button>
-  </div>
+  </section>
 
-  <div id="properties" style="display:none">
+  <main id="properties" style="display:none">
 
     <button id="reset" aria-label="Reset the page">
       <span class="far fa-times"></span>
     </button>
     
-    <div id="share">
+    <nav id="share">
       <a id="openURLWrapper" target="_blank">
         <button id="openURL" aria-label="Open this Magnet URL in your Torrent client">
           <span class="fas fa-arrow-up-right-from-square fa-2x"></span>
@@ -102,37 +104,46 @@
           <span class="fas fa-file-download fa-2x"></span>
         </button>
       </div>
-    </div>
+    </nav>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="This is the unique identifier that makes Torrents work. All of the files contained in this Torrent are run through an algorithm that generates a unique string, or &ldquo;hash&rdquo;."><span class="far fa-info-circle"></span></span>
+        Unique Hash
+      </legend>
       <div class="labels">
         <div>
-          <span class="info" data-tippy-content="This is the unique identifier that makes Torrents work. All of the files contained in this Torrent are run through an algorithm that generates a unique string, or &ldquo;hash&rdquo;."><span class="far fa-info-circle"></span></span>
-          <label for="hash">Unique Hash</label>
+          <label for="hash" class="sr-only">Unique Hash</label>
         </div>
       </div>
       <div class="content">
         <input id="hash" type="text" placeholder="" disabled/>
       </div>
-    </div>
+    </fieldset>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="An optional title specified by the creator"><span class="far fa-info-circle"></span></span>
+        Torrent Name
+      </legend>
       <div class="labels">
         <div>
-          <span class="info" data-tippy-content="An optional title specified by the creator"><span class="far fa-info-circle"></span></span>
-          <label for="name">Torrent Name</label>
+          <label for="name" class="sr-only">Torrent Name</label>
         </div>
       </div>
       <div class="content">
         <input id="name" type="text" placeholder="Unnamed" dir="auto" />
       </div>
-    </div>
+    </fieldset>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="Data embedded into a Torrent file that says what program created it and when. Not included in Magnet links."><span class="far fa-info-circle"></span></span>
+        Created
+      </legend>
       <div class="labels">
         <div>
-          <span class="info" data-tippy-content="Data embedded into a Torrent file that says what program created it and when. Not included in Magnet links."><span class="far fa-info-circle"></span></span>
-          <label for="created">Created</label>
+          <label for="created" class="sr-only">Created</label>
         </div>
         <label for="createdBy" style="display:none">Created By</label>
       </div>
@@ -141,28 +152,33 @@
         <br />
         <input id="createdBy" type="text" placeholder="Creation client unspecified" aria-label="Creation client" disabled />
       </div>
-    </div>
+    </fieldset>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="An optional description specified by the creator"><span class="far fa-info-circle"></span></span>
+        Comment
+      </legend>
       <div class="labels">
         <div>
-          <span class="info" data-tippy-content="An optional description specified by the creator"><span class="far fa-info-circle"></span></span>
-          <label for="comment">Comment</label>
+          <label for="comment" class="sr-only">Comment</label>
         </div>
       </div>
       <div class="content">
         <input id="comment" type="text" placeholder="Not included in the URL/File provided" dir="auto" />
       </div>
-    </div>
+    </fieldset>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="Servers that keep track of other users who are actively downloading this Torrent, called &ldquo;peers&rdquo;. Your client will contact these servers first to find out who else is available to download the files from."><span class="far fa-info-circle"></span></span>
+        Tracker URLs
+      </legend>
       <div class="labels">
-        <div>
-          <span class="info" data-tippy-content="Servers that keep track of other users who are actively downloading this Torrent, called &ldquo;peers&rdquo;. Your client will contact these servers first to find out who else is available to download the files from."><span class="far fa-info-circle"></span></span>
-          <label for="announce">Tracker URLs</label>
+        <div class="label-actions">
+          <a id="addTrackers">Add Known Working Trackers</a>
+          <a id="removeTrackers">Remove All</a>
         </div>
-        <a id="addTrackers">Add Known Working Trackers</a>
-        <a id="removeTrackers">Remove All</a>
       </div>
       <div class="content">
         <button id="addTracker" data-type="announce">
@@ -170,15 +186,17 @@
         </button>
         <div id="announce"></div>
       </div>
-    </div>
+    </fieldset>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="A list of webservers on the internet that also have a copy of the file(s) in this Torrent, to use in case no peers are available"><span class="far fa-info-circle"></span></span>
+        Webseed URLs
+      </legend>
       <div class="labels">
-        <div>
-          <span class="info" data-tippy-content="A list of webservers on the internet that also have a copy of the file(s) in this Torrent, to use in case no peers are available"><span class="far fa-info-circle"></span></span>
-          <label for="urlList">Webseed URLs</label>
+        <div class="label-actions">
+          <a id="removeWebseeds">Remove All</a>
         </div>
-        <a id="removeWebseeds">Remove All</a>
       </div>
       <div class="content">
         <button id="addWebseed" data-type="urlList">
@@ -186,34 +204,39 @@
         </button>
         <div id="urlList"></div>
       </div>
-    </div>
+    </fieldset>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="Torrents take files and split them into equal size pieces to make them easy to share. Piece size is configurable when a Torrent file is made."><span class="far fa-info-circle"></span></span>
+        Pieces
+      </legend>
       <div class="labels">
         <div>
-          <span class="info" data-tippy-content="Torrents take files and split them into equal size pieces to make them easy to share. Piece size is configurable when a Torrent file is made."><span class="far fa-info-circle"></span></span>
-          <label for="pieces">Pieces</label>
+          <label for="pieces" class="sr-only">Pieces</label>
         </div>
       </div>
       <div class="content">
         <input id="pieces" type="text" placeholder="Not included in the URL/File provided" aria-label="Piece size and length" disabled required />
       </div>
-    </div>
+    </fieldset>
 
-    <div class="property">
+    <fieldset class="property">
+      <legend>
+        <span class="info" data-tippy-content="The files listed in this Torrent file. Not included in Magnet links."><span class="far fa-info-circle"></span></span>
+        Files
+      </legend>
       <div class="labels">
-        <div>
-          <span class="info" data-tippy-content="The files listed in this Torrent file. Not included in Magnet links."><span class="far fa-info-circle"></span></span>
-          <label for="files">Files</label>
+        <div class="label-actions">
+          <a id="getFiles">Fetch Files List from WebTorrent</a>
         </div>
-        <a id="getFiles">Fetch Files List from WebTorrent</a>
       </div>
       <table id="files">
         <tbody id="filesBody"></tbody>
       </table>
-    </div>
+    </fieldset>
 
-  </div>
+  </main>
 
   <footer>
     <a href="https://github.com/leoherzog/TorrentParts/releases" target="_blank" rel="noopener">v2.0.1</a>

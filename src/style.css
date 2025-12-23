@@ -255,10 +255,27 @@ label[for="torrent"] {
   display: flex;
   align-content: flex-start;
   justify-content: space-between;
+  border: none;
+  padding: 0;
+  position: relative;
 }
 
 .property:first-child {
   width: 240px;
+}
+
+.property > legend {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 280px;
+  text-align: right;
+  margin: 0;
+  padding: 0;
+  text-transform: uppercase;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
 }
 
 .labels {
@@ -269,7 +286,14 @@ label[for="torrent"] {
   flex-direction: column;
 }
 
-.labels > a {
+.label-actions {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.labels > a, .label-actions > a {
   font-size: 80%;
   margin-top: 6px;
 }
@@ -382,8 +406,12 @@ output {
     flex-direction: column;
   }
 
-  .property > label {
-    margin: 12px 0;
+  .property > legend {
+    position: static;
+    left: auto;
+    width: auto;
+    text-align: center;
+    margin-bottom: 16px;
   }
 
   input, button {
@@ -394,6 +422,13 @@ output {
   .labels {
     margin-bottom: 16px;
     align-items: center;
+  }
+
+  .label-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0;
   }
 
   .labels, .content, #files {
