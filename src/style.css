@@ -306,10 +306,35 @@ input {
 
 #announce > *, #urlList > * {
   margin: 0 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .remove {
-  margin-left: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  cursor: pointer;
+  display: inline;
+  color: var(--grey);
+  flex-shrink: 0;
+}
+
+output {
+  color: rgb(120, 126, 133) !important;
+  -webkit-text-fill-color: rgb(120, 126, 133) !important;
+  background: transparent;
+  border: 0;
+  padding: 8px 0;
+  font-style: normal;
+  display: block;
+  width: 440px;
+  height: 40px;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1080px) {
@@ -378,8 +403,28 @@ input {
     align-items: center;
   }
 
+  output {
+    text-align: center;
+  }
+
   #announce, #urlList {
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #announce > *, #urlList > * {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 80vw;
+    gap: 6px;
+  }
+
+  #announce > * > input, #urlList > * > input {
+    width: calc(80vw - 40px);
+    flex: none;
   }
 
   #announce > * > *, #urlList > * > *, #addTracker, #addWebseed, #examples > button {

@@ -279,10 +279,12 @@ function display() {
       tracker.setAttribute('aria-label', 'Tracker URL #' + i);
       tracker.addEventListener('input', propertyChange);
       row.appendChild(tracker);
-      let remove = document.createElement('a');
+      let remove = document.createElement('button');
+      remove.type = 'button';
       remove.className = 'remove';
       remove.dataset.index = i;
       remove.innerHTML = '<span class="far fa-trash"></span>';
+      remove.setAttribute('aria-label', 'Remove tracker #' + i);
       remove.addEventListener('click', removeRow);
       row.appendChild(remove);
       announce.appendChild(row);
@@ -305,10 +307,12 @@ function display() {
       webseed.setAttribute('aria-label', 'Webseed URL #' + i);
       webseed.addEventListener('input', propertyChange);
       row.appendChild(webseed);
-      let remove = document.createElement('a');
+      let remove = document.createElement('button');
+      remove.type = 'button';
       remove.className = 'remove';
       remove.dataset.index = i;
       remove.innerHTML = '<span class="far fa-trash"></span>';
+      remove.setAttribute('aria-label', 'Remove webseed #' + i);
       remove.addEventListener('click', removeRow);
       row.appendChild(remove);
       urlList.appendChild(row);
@@ -340,10 +344,10 @@ function display() {
   } else {
     if (client.torrents.length > 0) {
       getFiles.style.display = 'none';
-      files.innerHTML = '<input type="text" placeholder="Attempting fetching of files from Webtorrent..." aria-label="Attempting fetching of files from Webtorrent..." disabled>';
+      files.innerHTML = '<output>Attempting fetching of files from Webtorrent...</output>';
     } else {
       getFiles.style.display = 'block';
-      files.innerHTML = '<input type="text" placeholder="Not included in the URL/File provided" aria-label="Files information not included in the URL/File provided" disabled>';
+      files.innerHTML = '<output>Not included in the URL/File provided</output>';
     }
     downloadTorrentTooltip.setContent('Files metadata is required to generate a Torrent file. Try fetching files list from WebTorrent.');
     downloadTorrent.removeEventListener('click', saveTorrent);
