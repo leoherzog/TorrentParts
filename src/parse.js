@@ -525,17 +525,13 @@ function getFilesFromPeers() {
   display();
 }
 
-// https://stackoverflow.com/a/36899900/2700296
 function saveTorrent() {
-  let data = toTorrentFile(parsed);
-  if (data !== null && navigator.msSaveBlob) return navigator.msSaveBlob(new Blob([data], { type: 'application/x-bittorrent' }), parsed.name + '.torrent');
-  let a = document.createElement('a');
-  a.style.display = 'none';
-  let url = window.URL.createObjectURL(new Blob([data], { type: 'application/x-bittorrent' }));
-  a.setAttribute('href', url);
-  a.setAttribute('download', parsed.name + '.torrent');
-  document.body.appendChild(a);
+  const data = toTorrentFile(parsed);
+  const blob = new Blob([data], { type: 'application/x-bittorrent' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = parsed.name + '.torrent';
   a.click();
-  window.URL.revokeObjectURL(url);
-  a.remove();
+  URL.revokeObjectURL(url);
 }
