@@ -506,10 +506,11 @@ function getFilesFromPeers() {
   console.info('Attempting fetching files from Webtorrent...');
   getFiles.style.display = 'none';
   parsed.announce = parsed.announce || [];
-  parsed.announce.push('wss://tracker.webtorrent.io');
+  parsed.announce.push('wss://tracker.webtorrent.dev');
   parsed.announce.push('wss://tracker.openwebtorrent.com');
   parsed.announce.push('wss://tracker.btorrent.xyz');
   parsed.announce.push('wss://tracker.fastcast.nz');
+  parsed.announce.push('wss://tracker.files.fm:7073/announce');
   parsed.announce = parsed.announce.filter((v, i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
   client.add(toMagnetURI(parsed), (torrent) => {
     parsed.info = Object.assign({}, torrent.info); // clone object
