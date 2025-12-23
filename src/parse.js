@@ -114,15 +114,16 @@ function start() {
 
   document.addEventListener('drop', function (event) {
     event.preventDefault();
-    event.dataTransfer.items[0]
-      .getAsFile()
-      .arrayBuffer()
-      .then(function (arrayBuffer) {
-        source = 'torrent-file';
-        originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
-        sourceTooltip.setContent('Currently loaded information sourced from Torrent file');
-        parse(Buffer.from(arrayBuffer));
-      });
+    if (event.dataTransfer.items.length === 0) return;
+    if (event.dataTransfer.items[0].kind !== 'file') return;
+    const file = event.dataTransfer.items[0].getAsFile();
+    if (!file) return;
+    file.arrayBuffer().then(function (arrayBuffer) {
+      source = 'torrent-file';
+      originalSourceIcon.innerHTML = '<span class="fad fa-file-alt fa-fw"></span>';
+      sourceTooltip.setContent('Currently loaded information sourced from Torrent file');
+      parse(Buffer.from(arrayBuffer));
+    });
   });
 
   // example buttons
@@ -372,7 +373,7 @@ function createFileRow(icon, name, size) {
   if (icon) iconcell.innerHTML = '<span class="far fa-' + icon + '"></span>';
   row.appendChild(iconcell);
   let namecell = document.createElement('td');
-  namecell.innerHTML = name;
+  namecell.textContent = name;
   row.appendChild(namecell);
   let totalcell = document.createElement('td');
   totalcell.innerHTML = bytes.format(size, { decimalPlaces: 1, unitSeparator: ' ' });
@@ -458,7 +459,7 @@ async function addCurrentTrackers() {
   try {
     let response = await fetch('https://newtrackon.com/api/stable'); // get trackers with 95% uptime
     let trackers = await response.text();
-    parsed.announce = parsed.announce.concat(trackers.split('\n\n'));
+    parsed.announce = (parsed.announce || []).concat(trackers.split('\n\n'));
     parsed.announce.push('http://bt1.archive.org:6969/announce');
     parsed.announce.push('http://bt2.archive.org:6969/announce');
     parsed.announce = parsed.announce.filter((v, i) => v && parsed.announce.indexOf(v) === i); // remove duplicates and empties
@@ -504,6 +505,7 @@ function updateModified() {
 function getFilesFromPeers() {
   console.info('Attempting fetching files from Webtorrent...');
   getFiles.style.display = 'none';
+  parsed.announce = parsed.announce || [];
   parsed.announce.push('wss://tracker.webtorrent.io');
   parsed.announce.push('wss://tracker.openwebtorrent.com');
   parsed.announce.push('wss://tracker.btorrent.xyz');
