@@ -134,11 +134,11 @@ function start() {
   // example buttons
   example1.addEventListener('click', function (event) {
     event.preventDefault();
-    notyf.success('Parsing Ubuntu 24.04 Magnet URL');
+    notyf.success('Parsing Ubuntu 26.04 Magnet URL');
     source = 'magnet';
     originalSourceIcon.innerHTML = '<span class="fad fa-magnet fa-fw"></span>';
     sourceTooltip.setContent('Currently loaded information sourced from Magnet URL');
-    parse('magnet:?xt=urn:btih:2aa4f5a7e209e54b32803d43670971c4c8caaa05&dn=ubuntu-24.04-desktop-amd64.iso&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce&tr=https%3A%2F%2Fipv6.torrent.ubuntu.com%2Fannounce');
+    parse('magnet:?xt=urn:btih:dafc8c076ca2f3ed376eeae7c76a0d6be2415c45&dn=ubuntu-26.04-desktop-amd64.iso&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce&tr=https%3A%2F%2Fipv6.torrent.ubuntu.com%2Fannounce');
   });
 
   example2.addEventListener('click', async function (event) {
